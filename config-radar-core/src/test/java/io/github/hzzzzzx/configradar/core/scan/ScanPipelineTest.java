@@ -676,7 +676,13 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("typesafe.app.mode")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("commons.feature.enabled")));
-        assertEquals(168, result.inventory().summary().keys());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("typesafe.file.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("typesafe.file.enabled")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("typesafe.file.limit")));
+        assertEquals(171, result.inventory().summary().keys());
         assertEquals(34, result.inventory().summary().checks());
     }
 }

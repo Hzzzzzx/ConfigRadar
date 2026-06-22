@@ -79,6 +79,9 @@ public final class DefaultFileIndexer implements FileIndexer {
         if (name.endsWith(".json")) {
             return FileType.JSON;
         }
+        if (name.endsWith(".conf")) {
+            return FileType.CONF;
+        }
         return FileType.OTHER;
     }
 }

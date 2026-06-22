@@ -7,6 +7,7 @@ public enum FileType {
     PROPERTIES,
     XML,
     JSON,
+    CONF,
     OTHER,
     UNKNOWN
 }
