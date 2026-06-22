@@ -270,9 +270,12 @@ final class JavaSourceConfigDetectorTest {
             .filter(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.CONDITION)
             .toList();
 
-        assertEquals(2, profiles.size());
+        assertEquals(5, profiles.size());
         assertTrue(profiles.stream().anyMatch(item -> "prod".equals(item.value().raw())));
         assertTrue(profiles.stream().anyMatch(item -> "region-cn".equals(item.value().raw())));
+        assertTrue(profiles.stream().anyMatch(item -> "qa".equals(item.value().raw())));
+        assertTrue(profiles.stream().anyMatch(item -> "perf".equals(item.value().raw())));
+        assertTrue(profiles.stream().anyMatch(item -> "cloud".equals(item.value().raw())));
     }
 
     @Test

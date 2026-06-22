@@ -71,6 +71,8 @@ public class DemoConfig {
         var resolved = environment.resolvePlaceholders("${resolved.placeholder:ok}");
         var prodProfile = environment.acceptsProfiles("prod");
         var regionProfile = environment.matchesProfiles("region-cn");
+        var arrayProfile = environment.acceptsProfiles(new String[] {"qa", "perf"});
+        var cloudProfile = environment.matchesProfiles(new String[] {"cloud"});
         var binder = org.springframework.boot.context.properties.bind.Binder.get(environment)
             .bind("client.pool", String.class);
         var createdBinder = org.springframework.boot.context.properties.bind.Binder.get(environment)
@@ -102,7 +104,8 @@ public class DemoConfig {
         var customDefined = ConfigCenter.set("custom.defined", "enabled");
         System.setProperty("runtime.region", "cn");
         System.clearProperty("runtime.mode");
-        return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + binder + createdBinder + system
+        return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + arrayProfile + cloudProfile
+            + binder + createdBinder + system
             + env + mapEnv + mapEnvDefault + hasEnvFlag
             + propertyMapValue + propertyMapRawValue + propertyMapDefaultValue + hasPropertyMapFlag
             + legacyPort + legacyLimit + legacyEnabled + jvmArgs + dynamic + operatorMode + custom + customDefined;

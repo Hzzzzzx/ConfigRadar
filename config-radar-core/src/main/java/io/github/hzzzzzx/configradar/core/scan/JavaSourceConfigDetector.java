@@ -461,22 +461,23 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 return;
             }
             for (var argument : tree.getArguments()) {
-                var profile = literal(argument);
-                if (profile == null || profile.isBlank()) {
-                    continue;
+                for (var profile : stringLiterals(argument)) {
+                    if (profile.isBlank()) {
+                        continue;
+                    }
+                    findings.add(new ConfigFinding(
+                        "spring.profiles",
+                        "spring.profiles",
+                        FindingRole.CONDITION,
+                        new ConfigValue(profile, profile, ValueType.STRING),
+                        null,
+                        new EnvironmentContext(profile, null, null),
+                        source(tree, SourceKind.JAVA),
+                        Confidence.HIGH,
+                        id(),
+                        new ExternalDetails("spring", "profile-condition", null)
+                    ));
                 }
-                findings.add(new ConfigFinding(
-                    "spring.profiles",
-                    "spring.profiles",
-                    FindingRole.CONDITION,
-                    new ConfigValue(profile, profile, ValueType.STRING),
-                    null,
-                    new EnvironmentContext(profile, null, null),
-                    source(tree, SourceKind.JAVA),
-                    Confidence.HIGH,
-                    id(),
-                    new ExternalDetails("spring", "profile-condition", null)
-                ));
             }
         }
 
