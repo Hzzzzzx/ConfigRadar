@@ -40,9 +40,12 @@ import io.github.hzzzzzx.configradar.core.rule.AnnotationRule;
 import io.github.hzzzzzx.configradar.core.rule.MethodCallRule;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Pattern;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
@@ -308,7 +311,109 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     id(),
                     new ExternalDetails("spring", "property-source", null)
                 ));
+                readLocalPropertySource(location);
             }
+        }
+
+        private void readLocalPropertySource(String location) {
+            var imported = localPropertySource(location);
+            if (imported == null) {
+                return;
+            }
+            // ponytail: properties only; add YAML/XML factory support when real projects need it.
+            var properties = new Properties();
+            try (var reader = Files.newBufferedReader(imported)) {
+                properties.load(reader);
+            } catch (IOException ignored) {
+                return;
+            }
+            for (var name : properties.stringPropertyNames()) {
+                var value = properties.getProperty(name);
+                findings.add(new ConfigFinding(
+                    name,
+                    name,
+                    FindingRole.DEFINE,
+                    new ConfigValue(value, value, typeOf(value)),
+                    null,
+                    EnvironmentContext.none(),
+                    importedSource(imported, name),
+                    Confidence.HIGH,
+                    id(),
+                    new ExternalDetails("spring", "property-source-file", null)
+                ));
+                addPropertySourcePlaceholders(imported, name, value, location);
+            }
+        }
+
+        private Path localPropertySource(String location) {
+            var root = context.input().projectRoot();
+            if (root == null) {
+                return null;
+            }
+            var text = location.startsWith("optional:") ? location.substring("optional:".length()) : location;
+            Path path;
+            if (text.startsWith("classpath:")) {
+                var resource = text.substring("classpath:".length());
+                path = root.resolve("src/main/resources").resolve(resource.startsWith("/") ? resource.substring(1) : resource);
+            } else if (text.startsWith("file:")) {
+                path = Path.of(text.substring("file:".length()));
+                if (!path.isAbsolute()) {
+                    path = root.resolve(path);
+                }
+            } else {
+                return null;
+            }
+            return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".properties") ? path : null;
+        }
+
+        private void addPropertySourcePlaceholders(Path imported, String name, String value, String location) {
+            var start = value.indexOf("${");
+            while (start >= 0) {
+                var end = placeholderEnd(value, start);
+                if (end < 0) {
+                    return;
+                }
+                var body = value.substring(start + 2, end);
+                var split = placeholderSplit(body);
+                var key = split < 0 ? body : body.substring(0, split);
+                var defaultValue = split < 0 ? null : body.substring(split + (body.startsWith(":-", split) ? 2 : 1));
+                if (!key.isBlank()) {
+                    findings.add(new ConfigFinding(
+                        key,
+                        key,
+                        FindingRole.READ,
+                        null,
+                        defaultValue == null ? null : new ConfigValue(defaultValue, defaultValue, typeOf(defaultValue)),
+                        EnvironmentContext.none(),
+                        importedSource(imported, name),
+                        Confidence.HIGH,
+                        id(),
+                        new SpringPlaceholderDetails(defaultValue, location)
+                    ));
+                }
+                start = value.indexOf("${", end + 1);
+            }
+        }
+
+        private SourceLocation importedSource(Path imported, String key) {
+            var root = context.input().projectRoot();
+            var path = root == null ? imported : root.toAbsolutePath().relativize(imported.toAbsolutePath());
+            return new SourceLocation(path.toString(), propertyLine(imported, key), className, SourceKind.PROPERTIES, file.scope());
+        }
+
+        private Integer propertyLine(Path imported, String key) {
+            try {
+                var lines = Files.readAllLines(imported);
+                for (var index = 0; index < lines.size(); index++) {
+                    var line = lines.get(index).trim();
+                    if (line.startsWith(key + "=") || line.startsWith(key + ":")) {
+                        return index + 1;
+                    }
+                }
+            } catch (IOException ignored) {
+                return null;
+            }
+            return null;
         }
 
         private void readPropertySourcesAnnotation(AnnotationTree annotation, com.sun.source.tree.Tree sourceTree) {

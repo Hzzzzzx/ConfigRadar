@@ -543,6 +543,16 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("spring.property-source") && item.role() == FindingRole.METADATA
                 && "classpath:named-programmatic.properties".equals(item.value().raw())));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("extra.client.timeout") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("named.extra.enabled") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("redis.host") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("redis.password") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("kafka.bootstrap-servers") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.config.import") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("imported.enabled") && item.role() == FindingRole.DEFINE));
@@ -578,7 +588,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(138, result.inventory().summary().keys());
+        assertEquals(143, result.inventory().summary().keys());
         assertEquals(8, result.inventory().summary().checks());
     }
 }

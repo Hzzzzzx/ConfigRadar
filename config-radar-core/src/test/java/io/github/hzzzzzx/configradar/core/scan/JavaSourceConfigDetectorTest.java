@@ -102,6 +102,11 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("custom.placeholder.default")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.profiles")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.property-source")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("extra.client.timeout")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("named.extra.enabled")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("redis.host")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("redis.password")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("kafka.bootstrap-servers")));
     }
 
     @Test
@@ -346,6 +351,29 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(propertySources.stream().anyMatch(item -> item.value().raw().equals("classpath:kafka.properties")));
         assertTrue(propertySources.stream().anyMatch(item -> item.value().raw().equals("classpath:programmatic.properties")));
         assertTrue(propertySources.stream().anyMatch(item -> item.value().raw().equals("classpath:named-programmatic.properties")));
+    }
+
+    @Test
+    void detectsLocalPropertySourceFileEntries() throws Exception {
+        var findings = detect();
+
+        var timeout = finding(findings, "extra.client.timeout");
+        assertEquals(FindingRole.DEFINE, timeout.role());
+        assertEquals("PT3S", timeout.value().raw());
+        assertEquals(ValueType.DURATION, timeout.value().type());
+
+        var enabled = finding(findings, "named.extra.enabled");
+        assertEquals(FindingRole.DEFINE, enabled.role());
+        assertEquals(ValueType.BOOLEAN, enabled.value().type());
+
+        assertEquals("localhost", finding(findings, "redis.host").value().raw());
+        assertEquals("localhost:9092", finding(findings, "kafka.bootstrap-servers").value().raw());
+        assertEquals(FindingRole.DEFINE, finding(findings, "redis.password").role());
+        var redisPassword = findings.stream()
+            .filter(item -> item.key().equals("REDIS_PASSWORD") && item.role() == FindingRole.READ)
+            .findFirst()
+            .orElseThrow();
+        assertEquals("redis-secret", redisPassword.defaultValue().raw());
     }
 
     @Test
