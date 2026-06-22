@@ -562,6 +562,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 return List.of();
             }
             var factory = methodName(mapFactory.getMethodSelect());
+            if (factory.endsWith(".Map.ofEntries") || factory.equals("Map.ofEntries")) {
+                return mapEntries(mapFactory.getArguments());
+            }
             if (!factory.endsWith(".Map.of") && !factory.equals("Map.of")) {
                 return List.of();
             }
@@ -570,6 +573,29 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             for (var index = 0; index + 1 < values.size(); index += 2) {
                 var key = literal(values.get(index));
                 var value = literalValue(values.get(index + 1));
+                if (key != null && !key.isBlank()) {
+                    pairs.add(new PropertyPair(key, value));
+                }
+            }
+            return pairs;
+        }
+
+        private List<PropertyPair> mapEntries(List<? extends ExpressionTree> entries) {
+            var pairs = new ArrayList<PropertyPair>();
+            for (var entry : entries) {
+                if (!(entry instanceof MethodInvocationTree invocation)) {
+                    continue;
+                }
+                var method = methodName(invocation.getMethodSelect());
+                if (!method.endsWith(".Map.entry") && !method.equals("Map.entry")) {
+                    continue;
+                }
+                var args = invocation.getArguments();
+                if (args.size() < 2) {
+                    continue;
+                }
+                var key = literal(args.get(0));
+                var value = literalValue(args.get(1));
                 if (key != null && !key.isBlank()) {
                     pairs.add(new PropertyPair(key, value));
                 }

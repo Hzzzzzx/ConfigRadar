@@ -90,9 +90,9 @@ public class DemoConfig {
     public void programmaticPropertySource(org.springframework.core.env.ConfigurableEnvironment environment) {
         environment.getPropertySources().addFirst(new org.springframework.core.env.MapPropertySource(
             "programmatic",
-            java.util.Map.of(
-                "programmatic.endpoint", "https://local",
-                "programmatic.timeout", "5s"
+            java.util.Map.ofEntries(
+                java.util.Map.entry("programmatic.endpoint", "https://local"),
+                java.util.Map.entry("programmatic.timeout", "5s")
             )
         ));
     }
