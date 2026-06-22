@@ -170,6 +170,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         @Override
         public Void visitNewClass(NewClassTree tree, Void unused) {
             readSpringMapPropertySource(tree);
+            readSpringPropertiesPropertySource(tree);
             readSpringResourcePropertySource(tree);
             return super.visitNewClass(tree, unused);
         }
@@ -422,6 +423,22 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     new ExternalDetails("spring", "map-property-source", null)
                 ));
             }
+        }
+
+        private void readSpringPropertiesPropertySource(NewClassTree tree) {
+            if (!tree.getIdentifier().toString().endsWith("PropertiesPropertySource") || tree.getArguments().size() < 2) {
+                return;
+            }
+            findings.add(new UncertainFinding(
+                tree.getArguments().get(1).toString(),
+                UncertainReason.MAP_DRIVEN_KEY,
+                tree.getIdentifier().toString(),
+                null,
+                source(tree, SourceKind.JAVA),
+                Confidence.LOW,
+                id(),
+                new DynamicKeyDetails(null, null, tree.getArguments().get(1).toString())
+            ));
         }
 
         private void readSpringResourcePropertySource(NewClassTree tree) {

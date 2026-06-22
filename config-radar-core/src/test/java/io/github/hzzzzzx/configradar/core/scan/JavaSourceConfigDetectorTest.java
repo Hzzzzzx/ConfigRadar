@@ -262,6 +262,23 @@ final class JavaSourceConfigDetectorTest {
     }
 
     @Test
+    void exposesPropertiesPropertySourceAsUncertain() throws Exception {
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context);
+
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("properties")
+                && item.reason() == UncertainReason.MAP_DRIVEN_KEY
+                && item.rootSink().endsWith("PropertiesPropertySource")));
+    }
+
+    @Test
     void appliesProjectMethodAndAnnotationRules() throws Exception {
         var rules = new ConfigRules(
             List.of(new MethodCallRule("custom-center", "ConfigCenter", "get", 0, 1, null)),

@@ -117,6 +117,7 @@ public class DemoConfig {
     }
 
     public void programmaticPropertySource(org.springframework.core.env.ConfigurableEnvironment environment) {
+        var properties = new java.util.Properties();
         environment.getPropertySources().addFirst(new org.springframework.core.env.MapPropertySource(
             "programmatic",
             java.util.Map.ofEntries(
@@ -126,6 +127,9 @@ public class DemoConfig {
         ));
         environment.getPropertySources().addLast(
             new org.springframework.core.io.support.ResourcePropertySource("classpath:programmatic.properties")
+        );
+        environment.getPropertySources().addLast(
+            new org.springframework.core.env.PropertiesPropertySource("programmatic-properties", properties)
         );
     }
 
