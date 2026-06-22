@@ -613,10 +613,17 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().uncertain().stream()
             .anyMatch(item -> item.expression().equals("operator.mode")
                 && item.reason() == UncertainReason.USER_INPUT));
+        assertTrue(result.inventory().uncertain().stream()
+            .anyMatch(item -> item.expression().equals("prefix + \".servlet\"")
+                && item.reason() == UncertainReason.STRING_CONCAT));
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
+        assertTrue(result.inventory().checks().stream()
+            .anyMatch(item -> item.type().equals("dynamic-config-key")
+                && item.severity() == DiagnosticSeverity.ERROR
+                && item.message().contains("prefix + \".servlet\"")));
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("remote-config-source")
                 && item.severity() == DiagnosticSeverity.WARNING
@@ -643,7 +650,9 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("mybatis.datasource.driver")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("mybatis.datasource.url")));
-        assertEquals(162, result.inventory().summary().keys());
-        assertEquals(31, result.inventory().summary().checks());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("servlet.feature.enabled")));
+        assertEquals(163, result.inventory().summary().keys());
+        assertEquals(32, result.inventory().summary().checks());
     }
 }

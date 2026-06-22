@@ -156,6 +156,12 @@ public class DemoConfig {
         return endpoint + required + resolved;
     }
 
+    public String readServlet(jakarta.servlet.ServletContext servletContext, String prefix) {
+        var literal = servletContext.getInitParameter("servlet.feature.enabled");
+        var dynamic = servletContext.getInitParameter(prefix + ".servlet");
+        return literal + dynamic;
+    }
+
     public void springApplicationDefaults() {
         var app = new org.springframework.boot.SpringApplication(DemoConfig.class);
         var defaultProperties = new java.util.Properties();

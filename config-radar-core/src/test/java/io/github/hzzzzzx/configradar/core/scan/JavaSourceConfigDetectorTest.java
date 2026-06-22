@@ -2,6 +2,7 @@ package io.github.hzzzzzx.configradar.core.scan;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
 import io.github.hzzzzzx.configradar.core.model.ConfigCenterDetails;
+import io.github.hzzzzzx.configradar.core.model.ExternalDetails;
 import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.JavaSystemPropertyDetails;
 import io.github.hzzzzzx.configradar.core.model.SpringConfigurationPropertiesDetails;
@@ -54,6 +55,7 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.required")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolved.placeholder")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.placeholder.required")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("servlet.feature.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.name")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
@@ -159,6 +161,10 @@ final class JavaSourceConfigDetectorTest {
         assertNull(finding(findings, "resolver.required").defaultValue());
         assertEquals("ok", finding(findings, "resolved.placeholder").defaultValue().raw());
         assertNull(finding(findings, "resolver.placeholder.required").defaultValue());
+        var servletInitParam = finding(findings, "servlet.feature.enabled");
+        assertEquals(FindingRole.READ, servletInitParam.role());
+        var servletDetails = assertInstanceOf(ExternalDetails.class, servletInitParam.details());
+        assertEquals("servlet-init-parameter", servletDetails.type());
         assertEquals("inventory", finding(findings, "inventory.client.name").defaultValue().raw());
         assertEquals("http://localhost", finding(findings, "inventory.client.url").defaultValue().raw());
 
@@ -490,6 +496,23 @@ final class JavaSourceConfigDetectorTest {
             .anyMatch(item -> item.expression().equals("operator.mode")
                 && item.reason() == UncertainReason.USER_INPUT
                 && item.rootSink().endsWith("System.console().readLine")));
+    }
+
+    @Test
+    void exposesDynamicServletInitParameterAsUncertain() throws Exception {
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context);
+
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("prefix + \".servlet\"")
+                && item.reason() == UncertainReason.STRING_CONCAT
+                && item.rootSink().endsWith("getInitParameter")));
     }
 
     @Test
