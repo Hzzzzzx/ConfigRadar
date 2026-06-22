@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 @ConfigurationProperties(prefix = "client")
 @PropertySource("classpath:extra-client.properties")
+@PropertySource(name = "named-extra", value = "classpath:named-extra.properties")
 @PropertySources({
     @PropertySource("classpath:redis.properties"),
     @PropertySource("classpath:kafka.properties")
