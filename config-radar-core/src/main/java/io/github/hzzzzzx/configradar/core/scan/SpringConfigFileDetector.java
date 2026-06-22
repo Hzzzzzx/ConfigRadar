@@ -240,6 +240,9 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         if (name.equals(".env")) {
             return null;
         }
+        if (name.startsWith(".env.")) {
+            return name.substring(".env.".length());
+        }
         var prefix = name.startsWith("application-") ? "application-" : name.startsWith("bootstrap-") ? "bootstrap-" : null;
         if (prefix == null) {
             return null;
@@ -249,7 +252,8 @@ public final class SpringConfigFileDetector implements ConfigDetector {
     }
 
     private static boolean isDotEnv(Path path) {
-        return path.getFileName().toString().equals(".env");
+        var name = path.getFileName().toString();
+        return name.equals(".env") || name.startsWith(".env.");
     }
 
     private static String profileOf(Path path, Object document) {

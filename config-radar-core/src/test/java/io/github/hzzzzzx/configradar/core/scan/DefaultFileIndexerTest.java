@@ -20,6 +20,8 @@ final class DefaultFileIndexerTest {
             .anyMatch(file -> file.path().endsWith("src/main/resources/application-dev.properties")));
         assertTrue(index.files().stream()
             .anyMatch(file -> file.path().endsWith(".env") && file.type() == FileType.OTHER));
+        assertTrue(index.files().stream()
+            .anyMatch(file -> file.path().endsWith(".env.prod") && file.type() == FileType.OTHER));
         assertFalse(index.files().stream()
             .anyMatch(file -> file.path().toString().contains("src/test/")));
     }

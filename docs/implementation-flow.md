@@ -83,7 +83,7 @@ Implemented:
 
 - empty pipeline：即使没有真实 detector，也能产出合法空 inventory
 - file indexing：扫描项目文件并按类型分类
-- Spring config file detector：扫描 `application*.yml/yaml/properties`、`bootstrap*.yml/yaml/properties`、`.env` 定义项和 `${...}` 占位符依赖
+- Spring config file detector：扫描 `application*.yml/yaml/properties`、`bootstrap*.yml/yaml/properties`、`.env`、`.env.*` 定义项和 `${...}` 占位符依赖
 - Spring YAML profile support：识别多文档 YAML 中的 `spring.config.activate.on-profile`
 - Spring metadata role：`spring.config.import` / `spring.config.activate.*` / `spring.profiles*` / `@Profile` / `@PropertySource` 标记为 `METADATA`
 - Java source detector：扫描注解占位符、类/方法级 `@ConfigurationProperties`、`@ConditionalOnProperty`、`@Profile`、`@PropertySource`/`@PropertySources`、`SpringApplication.setDefaultProperties`、`SpringApplicationBuilder.properties`、`Environment.getProperty`、`Environment.getRequiredProperty`、`Environment.containsProperty`、`Binder.get(...).bind`、`System.getProperty`、`System.setProperty`、`System.getenv`、`Integer.getInteger`、`Long.getLong`、`Boolean.getBoolean`

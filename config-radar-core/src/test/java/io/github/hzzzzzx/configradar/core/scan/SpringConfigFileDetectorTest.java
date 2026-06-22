@@ -39,6 +39,8 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.cloud.nacos.config.server-addr")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_PROFILES_ACTIVE")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("REDIS_PASSWORD")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("LOG_LEVEL")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("API_TOKEN")));
     }
 
     @Test
@@ -101,6 +103,15 @@ final class SpringConfigFileDetectorTest {
             .orElseThrow();
         assertEquals("local-secret", envPlaceholder.defaultValue().raw());
         assertEquals(SourceKind.PROPERTIES, envPlaceholder.source().sourceKind());
+
+        assertEquals("prod", finding(findings, "LOG_LEVEL").environment().profile());
+
+        var prodPlaceholder = findings.stream()
+            .filter(item -> item.key().equals("API_TOKEN") && item.role() == FindingRole.READ)
+            .findFirst()
+            .orElseThrow();
+        assertEquals("prod", prodPlaceholder.environment().profile());
+        assertEquals("token", prodPlaceholder.defaultValue().raw());
     }
 
     @Test
