@@ -61,6 +61,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("commons.feature.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("mp.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("mp.timeout")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("preferences.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("preferences.limit")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.name")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
@@ -181,6 +183,11 @@ final class JavaSourceConfigDetectorTest {
         assertEquals("true", finding(findings, "commons.feature.enabled").defaultValue().raw());
         assertNull(finding(findings, "mp.mode").defaultValue());
         assertNull(finding(findings, "mp.timeout").defaultValue());
+        var preferences = finding(findings, "preferences.mode");
+        assertEquals("local", preferences.defaultValue().raw());
+        var preferencesDetails = assertInstanceOf(ExternalDetails.class, preferences.details());
+        assertEquals("preferences", preferencesDetails.type());
+        assertEquals("10", finding(findings, "preferences.limit").defaultValue().raw());
         assertEquals("inventory", finding(findings, "inventory.client.name").defaultValue().raw());
         assertEquals("http://localhost", finding(findings, "inventory.client.url").defaultValue().raw());
 
@@ -563,6 +570,23 @@ final class JavaSourceConfigDetectorTest {
             .anyMatch(item -> item.expression().equals("prefix + \".typesafe\"")
                 && item.reason() == UncertainReason.STRING_CONCAT
                 && item.rootSink().endsWith("getString")));
+    }
+
+    @Test
+    void exposesDynamicPreferencesGetterAsUncertain() throws Exception {
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context);
+
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("prefix + \".preference\"")
+                && item.reason() == UncertainReason.STRING_CONCAT
+                && item.rootSink().endsWith("get")));
     }
 
     @Test

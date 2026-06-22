@@ -177,6 +177,14 @@ public class DemoConfig {
         return mode + enabled + mpMode + mpTimeout + dynamic;
     }
 
+    public String readPreferences(String prefix) {
+        var preferences = java.util.prefs.Preferences.userNodeForPackage(DemoConfig.class);
+        var mode = preferences.get("preferences.mode", "local");
+        var limit = preferences.getInt("preferences.limit", 10);
+        var dynamic = preferences.get(prefix + ".preference", "missing");
+        return mode + limit + dynamic;
+    }
+
     public void springApplicationDefaults() {
         var app = new org.springframework.boot.SpringApplication(DemoConfig.class);
         var defaultProperties = new java.util.Properties();

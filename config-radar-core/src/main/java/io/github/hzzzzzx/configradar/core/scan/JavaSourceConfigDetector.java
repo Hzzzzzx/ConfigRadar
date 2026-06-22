@@ -182,6 +182,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             readServletInitParameter(tree);
             readJndiLookup(tree);
             readSpringBinder(tree);
+            readJavaPreferences(tree);
             readGenericConfigGetter(tree);
             readRuleMethodCall(tree);
             return super.visitMethodInvocation(tree, unused);
@@ -1073,6 +1074,56 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 Confidence.MEDIUM,
                 id(),
                 new ExternalDetails("java", "generic-config-getter", null)
+            ));
+        }
+
+        private void readJavaPreferences(MethodInvocationTree tree) {
+            if (!(tree.getMethodSelect() instanceof MemberSelectTree select) || tree.getArguments().isEmpty()) {
+                return;
+            }
+            var getter = select.getIdentifier().toString();
+            if (!List.of(
+                "get",
+                "getInt",
+                "getLong",
+                "getBoolean",
+                "getFloat",
+                "getDouble",
+                "getByteArray"
+            ).contains(getter)) {
+                return;
+            }
+            var receiver = select.getExpression().toString().toLowerCase(java.util.Locale.ROOT);
+            if (!receiver.contains("preferences") && !receiver.equals("prefs") && !receiver.endsWith(".prefs")) {
+                return;
+            }
+            var args = tree.getArguments();
+            var key = literal(args.getFirst());
+            if (key == null || key.isBlank()) {
+                findings.add(new UncertainFinding(
+                    args.getFirst().toString(),
+                    args.getFirst() instanceof BinaryTree ? UncertainReason.STRING_CONCAT : UncertainReason.UNKNOWN,
+                    methodName(tree.getMethodSelect()),
+                    null,
+                    source(tree, SourceKind.JAVA),
+                    Confidence.LOW,
+                    id(),
+                    new DynamicKeyDetails(null, null, args.getFirst().toString())
+                ));
+                return;
+            }
+            var defaultValue = args.size() > 1 ? literalValue(args.get(1)) : null;
+            findings.add(new ConfigFinding(
+                key,
+                key,
+                FindingRole.READ,
+                null,
+                defaultValue == null ? null : new ConfigValue(defaultValue, defaultValue, typeOf(defaultValue)),
+                EnvironmentContext.none(),
+                source(tree, SourceKind.JAVA),
+                Confidence.MEDIUM,
+                id(),
+                new ExternalDetails("java", "preferences", null)
             ));
         }
 
