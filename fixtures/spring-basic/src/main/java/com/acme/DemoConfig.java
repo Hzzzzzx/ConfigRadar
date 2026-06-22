@@ -54,13 +54,16 @@ public class DemoConfig {
             .bind("client.pool", String.class);
         var system = System.getProperty("app.mode", "local");
         var env = System.getenv("APP_SECRET");
+        var mapEnv = System.getenv().get("MAP_SECRET");
+        var mapEnvDefault = System.getenv().getOrDefault("MAP_REGION", "cn");
         var legacyPort = Integer.getInteger("legacy.port", 8081);
         var legacyLimit = Long.getLong("legacy.limit", 10L);
         var legacyEnabled = Boolean.getBoolean("legacy.enabled");
         var dynamic = environment.getProperty(prefix + ".url");
         var custom = ConfigCenter.get("custom.center", "fallback");
         System.setProperty("runtime.region", "cn");
-        return direct + required + typed + hasCache + binder + system + env + legacyPort + legacyLimit + legacyEnabled + dynamic + custom;
+        return direct + required + typed + hasCache + binder + system + env + mapEnv + mapEnvDefault
+            + legacyPort + legacyLimit + legacyEnabled + dynamic + custom;
     }
 
     public String readResolver(PropertyResolver resolver) {

@@ -262,6 +262,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("APP_SECRET")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("MAP_SECRET")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("MAP_REGION")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("legacy.port")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("legacy.limit")));
@@ -295,7 +299,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(54, result.inventory().summary().keys());
+        assertEquals(56, result.inventory().summary().keys());
         assertEquals(1, result.inventory().summary().checks());
     }
 }

@@ -322,11 +322,14 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var isContainsProperty = method.endsWith(".containsProperty") || method.equals("containsProperty");
             var isSetProperty = method.endsWith(".setProperty") || method.equals("setProperty");
             var isGetenv = method.endsWith(".getenv") || method.equals("getenv");
+            var isGetenvMapGet = method.endsWith("System.getenv().get");
+            var isGetenvMapGetOrDefault = method.endsWith("System.getenv().getOrDefault");
             var isIntegerGetInteger = method.equals("Integer.getInteger") || method.endsWith(".Integer.getInteger");
             var isLongGetLong = method.equals("Long.getLong") || method.endsWith(".Long.getLong");
             var isBooleanGetBoolean = method.equals("Boolean.getBoolean") || method.endsWith(".Boolean.getBoolean");
             var isTypedSystemProperty = isIntegerGetInteger || isLongGetLong || isBooleanGetBoolean;
-            if (!isGetProperty && !isGetRequiredProperty && !isContainsProperty && !isSetProperty && !isGetenv && !isTypedSystemProperty) {
+            if (!isGetProperty && !isGetRequiredProperty && !isContainsProperty && !isSetProperty && !isGetenv
+                && !isGetenvMapGet && !isGetenvMapGetOrDefault && !isTypedSystemProperty) {
                 return;
             }
             var args = tree.getArguments();
@@ -335,7 +338,11 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             }
             var key = literal(args.getFirst());
             var value = isSetProperty && args.size() > 1 ? literalValue(args.get(1)) : null;
-            var defaultValue = defaultValue(args, isGetProperty, isGetenv || isBooleanGetBoolean || isSetProperty);
+            var defaultValue = defaultValue(
+                args,
+                isGetProperty,
+                isGetenv || isBooleanGetBoolean || isSetProperty || isGetenvMapGet
+            );
             if (key == null) {
                 findings.add(new UncertainFinding(
                     args.getFirst().toString(),
