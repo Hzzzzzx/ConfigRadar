@@ -37,9 +37,9 @@ Current implementation status:
 - CLI: `inventory` and key-based `diff`
 - Implemented detectors:
   - Spring `application*.yml/yaml/properties` definitions and placeholder dependencies
-  - Java source annotation placeholders, class/method `@ConfigurationProperties`, `@ConditionalOnProperty`, `@Profile`, `@PropertySource`, `Environment.getProperty`, `Environment.getRequiredProperty`, `System.getProperty`, `System.getenv`, `Integer.getInteger`, `Long.getLong`, `Boolean.getBoolean`
+  - Java source annotation placeholders, common `@Value` SpEL property references, class/method `@ConfigurationProperties`, `@ConditionalOnProperty`, `@Profile`, `@PropertySource`, `SpringApplication` default/command-line properties, programmatic Spring `PropertySource`, `Environment.getProperty`, `Environment.getRequiredProperty`, `System.getProperty`, `System.getenv`, `Integer.getInteger`, `Long.getLong`, `Boolean.getBoolean`
 - Spring YAML multi-document profile detection via `spring.config.activate.on-profile`
-- Spring profile/import control keys, `@Profile`, and `@PropertySource` findings are marked as `METADATA`
+- Spring profile/config control keys, including env-style keys such as `SPRING_PROFILES_ACTIVE`, plus `@Profile` and `@PropertySource` findings are marked as `METADATA`
 - Project rules: Java method-call and annotation rules from `config-radar-rules.yaml`
 - Project rules: custom YAML/properties config file patterns from `config-radar-rules.yaml`
 - CLI auto-loads `<projectRoot>/config-radar-rules.yaml` when `--rules` is omitted
