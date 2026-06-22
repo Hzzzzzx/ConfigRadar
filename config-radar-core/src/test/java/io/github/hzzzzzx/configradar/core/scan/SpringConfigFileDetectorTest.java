@@ -194,6 +194,7 @@ final class SpringConfigFileDetectorTest {
         assertEquals(FindingRole.METADATA, finding(findings, "spring.config.activate.on-profile").role());
         assertEquals(FindingRole.METADATA, finding(findings, "spring.config.import").role());
         assertEquals(FindingRole.METADATA, finding(findings, "spring.profiles.include").role());
+        assertEquals(FindingRole.METADATA, finding(findings, "SPRING_PROFILES_ACTIVE").role());
     }
 
     @Test

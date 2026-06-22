@@ -205,7 +205,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("spring.cloud.nacos.config.server-addr")
                 && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
-            .anyMatch(item -> item.key().equals("SPRING_PROFILES_ACTIVE") && item.role() == FindingRole.DEFINE));
+            .anyMatch(item -> item.key().equals("SPRING_PROFILES_ACTIVE") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("REDIS_PASSWORD") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()

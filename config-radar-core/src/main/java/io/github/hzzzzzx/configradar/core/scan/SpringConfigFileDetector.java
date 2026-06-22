@@ -276,10 +276,10 @@ public final class SpringConfigFileDetector implements ConfigDetector {
     }
 
     private static FindingRole roleOf(String key) {
-        return key.equals("spring.profiles")
-            || key.startsWith("spring.profiles.")
-            || key.equals("spring.config.import")
-            || key.startsWith("spring.config.activate.")
+        var canonical = key.toLowerCase().replace('_', '.');
+        return canonical.equals("spring.profiles")
+            || canonical.startsWith("spring.profiles.")
+            || canonical.startsWith("spring.config.")
             ? FindingRole.METADATA
             : FindingRole.DEFINE;
     }
