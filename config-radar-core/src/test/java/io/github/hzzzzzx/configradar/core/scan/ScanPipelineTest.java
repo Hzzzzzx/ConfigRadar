@@ -292,11 +292,17 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("JAVA_TOOL_OPTIONS") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("JDK_JAVA_OPTIONS") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("tool.mode") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("tool.timeout")
                 && item.role() == FindingRole.DEFINE
                 && item.value().type() == ValueType.DURATION));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("dev.tool.enabled")
+                && item.role() == FindingRole.DEFINE
+                && item.value().type() == ValueType.BOOLEAN));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("feature.json") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
@@ -448,7 +454,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(90, result.inventory().summary().keys());
+        assertEquals(92, result.inventory().summary().keys());
         assertEquals(5, result.inventory().summary().checks());
     }
 }

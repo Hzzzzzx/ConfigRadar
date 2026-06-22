@@ -59,6 +59,7 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("API_TOKEN")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("tool.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("tool.timeout")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("dev.tool.enabled")));
     }
 
     @Test
@@ -134,6 +135,8 @@ final class SpringConfigFileDetectorTest {
         assertEquals("worker", finding(findings, "tool.mode").value().raw());
         assertEquals("5s", finding(findings, "tool.timeout").value().raw());
         assertEquals(ValueType.DURATION, finding(findings, "tool.timeout").value().type());
+        assertEquals("true", finding(findings, "dev.tool.enabled").value().raw());
+        assertEquals(ValueType.BOOLEAN, finding(findings, "dev.tool.enabled").value().type());
         assertEquals("enabled", finding(findings, "INLINE_COMMENT").value().raw());
         var shellDefault = findings.stream()
             .filter(item -> item.key().equals("SHELL_DEFAULT") && item.role() == FindingRole.READ)

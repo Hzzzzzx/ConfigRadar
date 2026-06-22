@@ -222,6 +222,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             ));
             addPlaceholderReads(context, file, rawValue, profileOf(file.path()), line, SourceKind.PROPERTIES, findings);
             expandSpringApplicationJson(context, file, name, rawValue, profileOf(file.path()), line, SourceKind.PROPERTIES, findings);
+            expandJvmToolOptions(context, file, name, rawValue, profileOf(file.path()), line, findings);
         }
         return findings;
     }
