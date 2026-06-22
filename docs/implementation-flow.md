@@ -108,7 +108,7 @@ Implemented:
 - YAML inventory output：默认下游消费格式
 - metrics sidecar output：记录阶段耗时和 diagnostics
 - CLI `inventory`：从项目目录生成 inventory，支持 `--include` / `--exclude` 扫描路径过滤、`--profile` / `--region` / `--namespace` 默认环境提示，以及 `--redact-sensitive` 可选脱敏
-- CLI `diff`：读取两个 inventory，按 key-based 策略输出 `added/removed/changed/uncertainChanged`
+- CLI `diff`：读取两个 inventory，按 key-based 策略输出 `added/removed/changed/uncertainChanged/checks`；新增动态配置访问会生成高风险 check
 - optional codegraph detector：`--enable-codegraph` 可启用外部语义索引，当前只增强自定义 `@Value` meta-annotation 使用点
 - detector failure diagnostics：单 detector 失败不会拖垮整次扫描
 
