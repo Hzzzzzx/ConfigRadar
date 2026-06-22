@@ -159,6 +159,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         public Void visitMethodInvocation(MethodInvocationTree tree, Void unused) {
             readSpringDefaultProperties(tree);
             readSpringCommandLineArgs(tree);
+            readSpringPlaceholderResolver(tree);
             readJavaConfigRead(tree);
             readSpringBinder(tree);
             readRuleMethodCall(tree);
@@ -364,6 +365,16 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     id(),
                     new ExternalDetails("spring", "command-line-args", null)
                 ));
+            }
+        }
+
+        private void readSpringPlaceholderResolver(MethodInvocationTree tree) {
+            var method = methodName(tree.getMethodSelect());
+            if (!method.endsWith(".resolvePlaceholders") && !method.endsWith(".resolveRequiredPlaceholders")) {
+                return;
+            }
+            if (!tree.getArguments().isEmpty()) {
+                readPlaceholders(tree.getArguments().getFirst());
             }
         }
 

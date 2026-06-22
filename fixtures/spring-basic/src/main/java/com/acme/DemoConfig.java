@@ -63,6 +63,7 @@ public class DemoConfig {
         var required = environment.getRequiredProperty("db.url");
         var typed = environment.getProperty("http.timeout", Integer.class, 2500);
         var hasCache = environment.containsProperty("cache.enabled");
+        var resolved = environment.resolvePlaceholders("${resolved.placeholder:ok}");
         var binder = org.springframework.boot.context.properties.bind.Binder.get(environment)
             .bind("client.pool", String.class);
         var system = System.getProperty("app.mode", "local");
@@ -80,7 +81,7 @@ public class DemoConfig {
         var dynamic = environment.getProperty(prefix + ".url");
         var custom = ConfigCenter.get("custom.center", "fallback");
         System.setProperty("runtime.region", "cn");
-        return direct + required + typed + hasCache + binder + system + env + mapEnv + mapEnvDefault + hasEnvFlag
+        return direct + required + typed + hasCache + resolved + binder + system + env + mapEnv + mapEnvDefault + hasEnvFlag
             + propertyMapValue + hasPropertyMapFlag
             + legacyPort + legacyLimit + legacyEnabled + dynamic + custom;
     }
@@ -88,7 +89,8 @@ public class DemoConfig {
     public String readResolver(PropertyResolver resolver) {
         var endpoint = resolver.getProperty("resolver.endpoint", "http://localhost");
         var required = resolver.getRequiredProperty("resolver.required");
-        return endpoint + required;
+        var resolved = resolver.resolveRequiredPlaceholders("${resolver.placeholder.required}");
+        return endpoint + required + resolved;
     }
 
     public void springApplicationDefaults() {
