@@ -85,6 +85,21 @@ final class KeyBasedDiffStrategyTest {
         assertTrue(diff.changed().isEmpty());
     }
 
+    @Test
+    void detectsValueTypeChanges() {
+        var base = inventory(typedItem("feature.enabled", "true", ValueType.STRING));
+        var head = inventory(typedItem("feature.enabled", "true", ValueType.BOOLEAN));
+
+        var diff = new KeyBasedDiffStrategy().diff(base, head);
+
+        assertTrue(diff.changed().stream().anyMatch(change ->
+            change.key().equals("feature.enabled")
+                && change.field().equals("value.type")
+                && change.oldValue().equals("STRING")
+                && change.newValue().equals("BOOLEAN")
+        ));
+    }
+
     private static ConfigInventory inventory(ConfigFinding... items) {
         return new ConfigInventory(null, null, null, List.of(items), List.of(), List.of(), List.of());
     }
@@ -94,11 +109,26 @@ final class KeyBasedDiffStrategyTest {
     }
 
     private static ConfigFinding item(String key, String value, String profile, String region, String namespace) {
+        return item(key, value, ValueType.STRING, profile, region, namespace);
+    }
+
+    private static ConfigFinding typedItem(String key, String value, ValueType type) {
+        return item(key, value, type, null, null, null);
+    }
+
+    private static ConfigFinding item(
+        String key,
+        String value,
+        ValueType type,
+        String profile,
+        String region,
+        String namespace
+    ) {
         return new ConfigFinding(
             key,
             key,
             FindingRole.DEFINE,
-            new ConfigValue(value, value, ValueType.STRING),
+            new ConfigValue(value, value, type),
             null,
             new EnvironmentContext(profile, region, namespace),
             new SourceLocation("application.yml", 1, null, SourceKind.YAML, Scope.MAIN),

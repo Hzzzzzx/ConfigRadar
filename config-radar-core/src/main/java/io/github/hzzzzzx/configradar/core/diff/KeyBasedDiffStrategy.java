@@ -73,7 +73,9 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
     private static List<ConfigChange> changes(ConfigFinding before, ConfigFinding after) {
         var changes = new ArrayList<ConfigChange>();
         addChange(changes, after.normalizedKey(), "value", raw(before.value()), raw(after.value()));
+        addChange(changes, after.normalizedKey(), "value.type", type(before.value()), type(after.value()));
         addChange(changes, after.normalizedKey(), "defaultValue", raw(before.defaultValue()), raw(after.defaultValue()));
+        addChange(changes, after.normalizedKey(), "defaultValue.type", type(before.defaultValue()), type(after.defaultValue()));
         addChange(changes, after.normalizedKey(), "source.path", before.source().path(), after.source().path());
         return changes;
     }
@@ -94,6 +96,10 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
 
     private static String raw(ConfigValue value) {
         return value == null ? null : value.raw();
+    }
+
+    private static String type(ConfigValue value) {
+        return value == null || value.type() == null ? null : value.type().name();
     }
 
     private static String nullToEmpty(String value) {
