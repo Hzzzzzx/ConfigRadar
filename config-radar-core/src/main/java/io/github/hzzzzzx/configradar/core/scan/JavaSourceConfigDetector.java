@@ -521,6 +521,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var isSystemPropertiesContainsKey = method.endsWith("System.getProperties().containsKey");
             var isSystemPropertiesPut = method.endsWith("System.getProperties().put");
             var isSystemPropertiesPutIfAbsent = method.endsWith("System.getProperties().putIfAbsent");
+            var isSystemPropertiesReplace = method.endsWith("System.getProperties().replace");
             var isSystemPropertiesRemove = method.endsWith("System.getProperties().remove");
             var isGetenv = method.endsWith(".getenv") || method.equals("getenv");
             var isGetenvMapGet = method.endsWith("System.getenv().get");
@@ -533,8 +534,8 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             if (!isGetProperty && !isGetRequiredProperty && !isContainsProperty && !isSetProperty && !isClearProperty
                 && !isSystemPropertiesGetProperty && !isSystemPropertiesGet && !isSystemPropertiesGetOrDefault
                 && !isSystemPropertiesContainsKey && !isSystemPropertiesPut && !isSystemPropertiesPutIfAbsent
-                && !isSystemPropertiesRemove && !isGetenv && !isGetenvMapGet && !isGetenvMapGetOrDefault
-                && !isGetenvMapContainsKey && !isTypedSystemProperty) {
+                && !isSystemPropertiesReplace && !isSystemPropertiesRemove && !isGetenv && !isGetenvMapGet
+                && !isGetenvMapGetOrDefault && !isGetenvMapContainsKey && !isTypedSystemProperty) {
                 return;
             }
             var args = tree.getArguments();
@@ -542,8 +543,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 return;
             }
             var key = literal(args.getFirst());
-            var value = (isSetProperty || isSystemPropertiesPut || isSystemPropertiesPutIfAbsent) && args.size() > 1
-                ? literalValue(args.get(1))
+            var value = (isSetProperty || isSystemPropertiesPut || isSystemPropertiesPutIfAbsent
+                || isSystemPropertiesReplace) && args.size() > 1
+                ? literalValue(args.get(args.size() - 1))
                 : null;
             var defaultValue = defaultValue(
                 args,
@@ -551,6 +553,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 isGetenv || isBooleanGetBoolean || isSetProperty || isClearProperty || isGetenvMapGet || isGetenvMapContainsKey
                     || isSystemPropertiesGet || isSystemPropertiesContainsKey || isSystemPropertiesPut
                     || isSystemPropertiesPutIfAbsent
+                    || isSystemPropertiesReplace
                     || isSystemPropertiesRemove
             );
             if (key == null) {
@@ -570,7 +573,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 key,
                 key,
                 isSetProperty || isClearProperty || isSystemPropertiesPut || isSystemPropertiesPutIfAbsent
-                    || isSystemPropertiesRemove
+                    || isSystemPropertiesReplace || isSystemPropertiesRemove
                     ? FindingRole.DEFINE
                     : FindingRole.READ,
                 value == null ? null : new ConfigValue(value, value, typeOf(value)),

@@ -142,6 +142,9 @@ final class JavaSourceConfigDetectorTest {
         var propertyDefaultWrite = finding(findings, "map.property.default-write");
         assertEquals(FindingRole.DEFINE, propertyDefaultWrite.role());
         assertEquals("lazy", propertyDefaultWrite.value().raw());
+        var propertyReplaced = finding(findings, "map.property.replaced");
+        assertEquals(FindingRole.DEFINE, propertyReplaced.role());
+        assertEquals("new", propertyReplaced.value().raw());
         var propertySet = finding(findings, "map.property.set");
         assertEquals(FindingRole.DEFINE, propertySet.role());
         assertEquals("ready", propertySet.value().raw());
