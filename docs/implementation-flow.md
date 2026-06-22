@@ -103,7 +103,7 @@ Implemented:
 - pipeline builder：统一组合 detector、processor、normalizer、enricher 等阶段，后续新增组件不需要散落修改构造器参数
 - processor/normalizer/enricher hooks：主流程已调用
 - uncertain finding checks：动态/无法解析的配置 key 会生成高风险 check
-- remote config center checks：`spring.config.import` 远程来源和 Spring Cloud Config/Nacos 配置入口会生成 warning check；不抓取远程值
+- remote config center checks：`spring.config.import` 远程来源，以及 Spring Cloud Config/Nacos/Consul/Zookeeper/Etcd/Apollo 配置入口会生成 warning check；不抓取远程值
 - sensitive key checks：password/secret/token 等敏感 key 名会生成 warning check
 - sensitive value redaction：`--redact-sensitive` 开启后，对 password/secret/token 等敏感 key 的 value/defaultValue/details 做遮盖
 - YAML inventory output：默认下游消费格式
