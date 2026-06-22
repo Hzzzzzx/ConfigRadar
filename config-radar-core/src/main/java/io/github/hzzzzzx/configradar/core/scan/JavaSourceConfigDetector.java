@@ -317,7 +317,20 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             if (!isSetDefaultProperties && !isSpringApplicationBuilderProperties) {
                 return;
             }
-            for (var property : springDefaultProperties(tree.getArguments(), isSpringApplicationBuilderProperties)) {
+            var properties = springDefaultProperties(tree.getArguments(), isSpringApplicationBuilderProperties);
+            if (properties.isEmpty() && isSetDefaultProperties && !tree.getArguments().isEmpty()) {
+                findings.add(new UncertainFinding(
+                    tree.getArguments().getFirst().toString(),
+                    UncertainReason.MAP_DRIVEN_KEY,
+                    method,
+                    null,
+                    source(tree, SourceKind.JAVA),
+                    Confidence.LOW,
+                    id(),
+                    new DynamicKeyDetails(null, null, tree.getArguments().getFirst().toString())
+                ));
+            }
+            for (var property : properties) {
                 findings.add(new ConfigFinding(
                     property.key(),
                     property.key(),

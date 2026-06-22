@@ -353,11 +353,14 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().uncertain().stream()
             .anyMatch(item -> item.expression().equals("properties")
                 && item.reason() == UncertainReason.MAP_DRIVEN_KEY));
+        assertTrue(result.inventory().uncertain().stream()
+            .anyMatch(item -> item.expression().equals("defaultProperties")
+                && item.reason() == UncertainReason.MAP_DRIVEN_KEY));
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
         assertEquals(81, result.inventory().summary().keys());
-        assertEquals(3, result.inventory().summary().checks());
+        assertEquals(4, result.inventory().summary().checks());
     }
 }
