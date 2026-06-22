@@ -19,11 +19,29 @@ public final class DefaultFileIndexer implements FileIndexer {
             var files = paths
                 .filter(Files::isRegularFile)
                 .filter(path -> !isIgnored(root.relativize(path)))
+                .filter(path -> isIncluded(input, root, path))
+                .filter(path -> !isExcluded(input, root, path))
                 .filter(path -> options.includeTests() || !isTestPath(root.relativize(path)))
                 .map(path -> new IndexedFile(path, typeOf(path), scopeOf(root.relativize(path))))
                 .toList();
             return new FileIndex(files);
         }
+    }
+
+    private static boolean isIncluded(ScanInput input, Path root, Path path) {
+        return input.includePaths().isEmpty()
+            || input.includePaths().stream().anyMatch(include -> matches(root, path, include));
+    }
+
+    private static boolean isExcluded(ScanInput input, Path root, Path path) {
+        return input.excludePaths().stream().anyMatch(exclude -> matches(root, path, exclude));
+    }
+
+    private static boolean matches(Path root, Path path, Path configured) {
+        var absolute = path.toAbsolutePath().normalize();
+        var direct = configured.toAbsolutePath().normalize();
+        var rooted = root.resolve(configured).toAbsolutePath().normalize();
+        return absolute.startsWith(direct) || absolute.startsWith(rooted);
     }
 
     private static boolean isIgnored(Path relative) {

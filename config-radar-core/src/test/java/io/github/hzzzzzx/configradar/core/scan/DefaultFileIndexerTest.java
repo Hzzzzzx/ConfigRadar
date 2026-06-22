@@ -1,5 +1,6 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,6 +36,28 @@ final class DefaultFileIndexerTest {
 
         assertTrue(index.files().stream()
             .anyMatch(file -> file.path().endsWith("src/test/resources/application-test.yml")));
+    }
+
+    @Test
+    void appliesIncludeAndExcludePaths() throws Exception {
+        var root = FixturePaths.springBasic();
+        var input = new ScanInput(
+            root,
+            List.of(root.resolve("src/main/resources")),
+            List.of(root.resolve("src/main/resources/logback-spring.xml")),
+            null,
+            EnvironmentHints.none(),
+            BuildHints.unknown()
+        );
+
+        var index = new DefaultFileIndexer().index(input, ScanOptions.defaults());
+
+        assertTrue(index.files().stream()
+            .anyMatch(file -> file.path().endsWith("src/main/resources/application.yml")));
+        assertFalse(index.files().stream()
+            .anyMatch(file -> file.path().endsWith("src/main/java/com/acme/DemoConfig.java")));
+        assertFalse(index.files().stream()
+            .anyMatch(file -> file.path().endsWith("src/main/resources/logback-spring.xml")));
     }
 
     @Test
