@@ -616,6 +616,9 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().uncertain().stream()
             .anyMatch(item -> item.expression().equals("prefix + \".servlet\"")
                 && item.reason() == UncertainReason.STRING_CONCAT));
+        assertTrue(result.inventory().uncertain().stream()
+            .anyMatch(item -> item.expression().equals("\"java:comp/env/\" + name")
+                && item.reason() == UncertainReason.STRING_CONCAT));
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
@@ -624,6 +627,10 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".servlet\"")));
+        assertTrue(result.inventory().checks().stream()
+            .anyMatch(item -> item.type().equals("dynamic-config-key")
+                && item.severity() == DiagnosticSeverity.ERROR
+                && item.message().contains("\"java:comp/env/\" + name")));
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("remote-config-source")
                 && item.severity() == DiagnosticSeverity.WARNING
@@ -652,7 +659,9 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("mybatis.datasource.url")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("servlet.feature.enabled")));
-        assertEquals(163, result.inventory().summary().keys());
-        assertEquals(32, result.inventory().summary().checks());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("java:comp/env/jdbc/orders")));
+        assertEquals(164, result.inventory().summary().keys());
+        assertEquals(33, result.inventory().summary().checks());
     }
 }

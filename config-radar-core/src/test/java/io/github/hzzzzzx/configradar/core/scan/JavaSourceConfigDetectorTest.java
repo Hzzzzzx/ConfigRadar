@@ -56,6 +56,7 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolved.placeholder")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.placeholder.required")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("servlet.feature.enabled")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("java:comp/env/jdbc/orders")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.name")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
@@ -165,6 +166,10 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(FindingRole.READ, servletInitParam.role());
         var servletDetails = assertInstanceOf(ExternalDetails.class, servletInitParam.details());
         assertEquals("servlet-init-parameter", servletDetails.type());
+        var jndiLookup = finding(findings, "java:comp/env/jdbc/orders");
+        assertEquals(FindingRole.READ, jndiLookup.role());
+        var jndiDetails = assertInstanceOf(ExternalDetails.class, jndiLookup.details());
+        assertEquals("jndi-lookup", jndiDetails.type());
         assertEquals("inventory", finding(findings, "inventory.client.name").defaultValue().raw());
         assertEquals("http://localhost", finding(findings, "inventory.client.url").defaultValue().raw());
 
@@ -513,6 +518,23 @@ final class JavaSourceConfigDetectorTest {
             .anyMatch(item -> item.expression().equals("prefix + \".servlet\"")
                 && item.reason() == UncertainReason.STRING_CONCAT
                 && item.rootSink().endsWith("getInitParameter")));
+    }
+
+    @Test
+    void exposesDynamicJndiLookupAsUncertain() throws Exception {
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context);
+
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("\"java:comp/env/\" + name")
+                && item.reason() == UncertainReason.STRING_CONCAT
+                && item.rootSink().endsWith("lookup")));
     }
 
     @Test

@@ -162,6 +162,12 @@ public class DemoConfig {
         return literal + dynamic;
     }
 
+    public Object readJndi(javax.naming.InitialContext context, String name) throws Exception {
+        var datasource = context.lookup("java:comp/env/jdbc/orders");
+        var dynamic = context.lookup("java:comp/env/" + name);
+        return datasource + ":" + dynamic;
+    }
+
     public void springApplicationDefaults() {
         var app = new org.springframework.boot.SpringApplication(DemoConfig.class);
         var defaultProperties = new java.util.Properties();

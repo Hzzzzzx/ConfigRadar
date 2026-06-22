@@ -180,6 +180,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             readJavaConfigRead(tree);
             readConsoleInput(tree);
             readServletInitParameter(tree);
+            readJndiLookup(tree);
             readSpringBinder(tree);
             readRuleMethodCall(tree);
             return super.visitMethodInvocation(tree, unused);
@@ -953,6 +954,46 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 Confidence.MEDIUM,
                 id(),
                 new ExternalDetails("java", "servlet-init-parameter", null)
+            ));
+        }
+
+        private void readJndiLookup(MethodInvocationTree tree) {
+            var method = methodName(tree.getMethodSelect());
+            if (!method.endsWith(".lookup") && !method.equals("lookup")) {
+                return;
+            }
+            var args = tree.getArguments();
+            if (args.isEmpty()) {
+                return;
+            }
+            var key = literal(args.getFirst());
+            if (key == null || key.isBlank()) {
+                findings.add(new UncertainFinding(
+                    args.getFirst().toString(),
+                    args.getFirst() instanceof BinaryTree ? UncertainReason.STRING_CONCAT : UncertainReason.UNKNOWN,
+                    method,
+                    null,
+                    source(tree, SourceKind.JAVA),
+                    Confidence.LOW,
+                    id(),
+                    new DynamicKeyDetails(null, null, args.getFirst().toString())
+                ));
+                return;
+            }
+            if (!key.startsWith("java:comp/env/")) {
+                return;
+            }
+            findings.add(new ConfigFinding(
+                key,
+                key,
+                FindingRole.READ,
+                null,
+                null,
+                EnvironmentContext.none(),
+                source(tree, SourceKind.JAVA),
+                Confidence.MEDIUM,
+                id(),
+                new ExternalDetails("java", "jndi-lookup", null)
             ));
         }
 
