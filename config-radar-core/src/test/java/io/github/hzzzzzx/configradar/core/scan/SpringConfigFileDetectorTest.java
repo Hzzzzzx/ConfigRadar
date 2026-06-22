@@ -42,6 +42,9 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("FEATURE_FLAG")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("QUOTED_NAME")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SHELL_DEFAULT")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_APPLICATION_JSON")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("management.server.port")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("feature.json")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("LOG_LEVEL")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("API_TOKEN")));
     }
@@ -109,6 +112,10 @@ final class SpringConfigFileDetectorTest {
         assertEquals("true", finding(findings, "FEATURE_FLAG").value().raw());
         assertEquals(ValueType.BOOLEAN, finding(findings, "FEATURE_FLAG").value().type());
         assertEquals("config radar", finding(findings, "QUOTED_NAME").value().raw());
+        assertEquals("9090", finding(findings, "management.server.port").value().raw());
+        assertEquals(ValueType.INTEGER, finding(findings, "management.server.port").value().type());
+        assertEquals("true", finding(findings, "feature.json").value().raw());
+        assertEquals(ValueType.BOOLEAN, finding(findings, "feature.json").value().type());
         var shellDefault = findings.stream()
             .filter(item -> item.key().equals("SHELL_DEFAULT") && item.role() == FindingRole.READ)
             .findFirst()

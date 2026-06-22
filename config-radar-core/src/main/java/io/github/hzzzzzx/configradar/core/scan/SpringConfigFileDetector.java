@@ -71,6 +71,9 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             var rawValue = unquote(line.substring(equals + 1).trim());
             findings.add(finding(context, file, key, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES));
             addPlaceholderReads(context, file, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
+            if (key.equals("SPRING_APPLICATION_JSON")) {
+                flattenJsonEnv(context, file, rawValue, profileOf(file.path()), index + 1, findings);
+            }
         }
         return findings;
     }
@@ -113,6 +116,46 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             var line = lineOf(file.path(), prefix);
             findings.add(finding(context, file, prefix, rawValue, profile, line, SourceKind.YAML));
             addPlaceholderReads(context, file, rawValue, profile, line, SourceKind.YAML, findings);
+        }
+    }
+
+    private void flattenJsonEnv(
+        ScanContext context,
+        IndexedFile file,
+        String rawValue,
+        String profile,
+        Integer line,
+        List<ScanFinding> findings
+    ) throws Exception {
+        flattenJsonEnv(context, file, YAML_READER.readValue(rawValue), "", profile, line, findings);
+    }
+
+    private void flattenJsonEnv(
+        ScanContext context,
+        IndexedFile file,
+        Object node,
+        String prefix,
+        String profile,
+        Integer line,
+        List<ScanFinding> findings
+    ) {
+        if (node instanceof Map<?, ?> map) {
+            for (var entry : map.entrySet()) {
+                var key = String.valueOf(entry.getKey());
+                flattenJsonEnv(context, file, entry.getValue(), prefix.isBlank() ? key : prefix + "." + key, profile, line, findings);
+            }
+            return;
+        }
+        if (node instanceof List<?> list) {
+            for (var index = 0; index < list.size(); index++) {
+                flattenJsonEnv(context, file, list.get(index), prefix + "[" + index + "]", profile, line, findings);
+            }
+            return;
+        }
+        if (!prefix.isBlank() && node != null) {
+            var raw = String.valueOf(node);
+            findings.add(finding(context, file, prefix, raw, profile, line, SourceKind.PROPERTIES));
+            addPlaceholderReads(context, file, raw, profile, line, SourceKind.PROPERTIES, findings);
         }
     }
 
