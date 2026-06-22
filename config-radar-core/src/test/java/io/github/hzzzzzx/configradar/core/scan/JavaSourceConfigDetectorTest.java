@@ -48,6 +48,7 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.method.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPEL_METHOD_SECRET")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.method.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("nacos.feature.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("http.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.endpoint")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.required")));
@@ -267,6 +268,12 @@ final class JavaSourceConfigDetectorTest {
         var nacosDetails = assertInstanceOf(ConfigCenterDetails.class, nacosConfig.details());
         assertEquals("orders.yaml", nacosDetails.dataId());
         assertEquals("DEFAULT_GROUP", nacosDetails.group());
+
+        var nacosSource = finding(findings, "nacos.config.shared.yaml");
+        assertEquals(FindingRole.METADATA, nacosSource.role());
+        var nacosSourceDetails = assertInstanceOf(ConfigCenterDetails.class, nacosSource.details());
+        assertEquals("shared.yaml", nacosSourceDetails.dataId());
+        assertEquals("DEFAULT_GROUP", nacosSourceDetails.group());
 
         var programmaticEndpoint = finding(findings, "programmatic.endpoint");
         assertEquals(FindingRole.DEFINE, programmaticEndpoint.role());

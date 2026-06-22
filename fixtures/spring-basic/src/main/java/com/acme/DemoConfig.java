@@ -30,6 +30,7 @@ import io.github.resilience4j.retry.annotation.Retry;
     @PropertySource("classpath:redis.properties"),
     @PropertySource("classpath:kafka.properties")
 })
+@com.alibaba.nacos.api.config.annotation.NacosPropertySource(dataId = "shared.yaml", groupId = "DEFAULT_GROUP")
 public class DemoConfig {
     @FeignClient(name = "${inventory.client.name:inventory}", url = "${inventory.client.url:http://localhost}")
     interface InventoryClient {
@@ -78,6 +79,9 @@ public class DemoConfig {
 
     @Value("#{systemProperties.get('spel.method.raw')}")
     private String spelMethodRaw;
+
+    @com.alibaba.nacos.api.config.annotation.NacosValue(value = "${nacos.feature.enabled:true}", autoRefreshed = true)
+    private String nacosFeatureEnabled;
 
     @CustomConfigValue(key = "custom.annotated", configuredValue = "live", defaultValue = "yes")
     private String annotated;

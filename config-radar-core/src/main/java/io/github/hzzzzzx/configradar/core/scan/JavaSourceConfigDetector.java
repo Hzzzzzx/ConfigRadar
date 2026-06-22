@@ -134,6 +134,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 readProfileAnnotation(annotation, tree);
                 readPropertySourceAnnotation(annotation, tree);
                 readPropertySourcesAnnotation(annotation, tree);
+                readNacosPropertySourceAnnotation(annotation, tree);
                 readAnnotationPlaceholders(annotation);
                 readRuleAnnotation(annotation);
             }
@@ -435,6 +436,30 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     readPropertySourceAnnotation(nestedAnnotation, sourceTree);
                 }
             }
+        }
+
+        private void readNacosPropertySourceAnnotation(AnnotationTree annotation, com.sun.source.tree.Tree sourceTree) {
+            if (!annotationName(annotation).endsWith("NacosPropertySource")) {
+                return;
+            }
+            var dataId = annotationValue(annotation, "dataId");
+            if (dataId == null || dataId.isBlank()) {
+                return;
+            }
+            var group = annotationValue(annotation, "groupId");
+            var key = "nacos.config." + dataId;
+            findings.add(new ConfigFinding(
+                key,
+                key,
+                FindingRole.METADATA,
+                null,
+                null,
+                EnvironmentContext.none(),
+                source(sourceTree, SourceKind.JAVA),
+                Confidence.HIGH,
+                id(),
+                new ConfigCenterDetails(null, group, dataId, null)
+            ));
         }
 
         private void readSpringDefaultProperties(MethodInvocationTree tree) {
