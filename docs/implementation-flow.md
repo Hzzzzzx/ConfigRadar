@@ -104,6 +104,7 @@ Implemented:
 - processor/normalizer/enricher hooks：主流程已调用
 - uncertain finding checks：动态/无法解析的配置 key 会生成高风险 check
 - remote config center checks：`spring.config.import` 远程来源和 Spring Cloud Config/Nacos 配置入口会生成 warning check；不抓取远程值
+- sensitive key checks：password/secret/token 等敏感 key 名会生成 warning check
 - sensitive value redaction：`--redact-sensitive` 开启后，对 password/secret/token 等敏感 key 的 value/defaultValue/details 做遮盖
 - YAML inventory output：默认下游消费格式
 - metrics sidecar output：记录阶段耗时和 diagnostics
