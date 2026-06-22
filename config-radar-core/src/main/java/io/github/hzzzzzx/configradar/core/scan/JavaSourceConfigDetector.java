@@ -21,6 +21,7 @@ import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
 import io.github.hzzzzzx.configradar.core.io.YamlSupport;
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
+import io.github.hzzzzzx.configradar.core.model.ConfigCenterDetails;
 import io.github.hzzzzzx.configradar.core.model.ConfigValue;
 import io.github.hzzzzzx.configradar.core.model.Confidence;
 import io.github.hzzzzzx.configradar.core.model.DynamicKeyDetails;
@@ -173,6 +174,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             readSpringAdditionalProfiles(tree);
             readSpringProfilePredicate(tree);
             readSystemPropertiesReplacement(tree);
+            readApolloConfigRead(tree);
             readJavaConfigRead(tree);
             readConsoleInput(tree);
             readSpringBinder(tree);
@@ -668,6 +670,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
 
         private void readJavaConfigRead(MethodInvocationTree tree) {
             var method = methodName(tree.getMethodSelect());
+            if (isApolloGetProperty(tree)) {
+                return;
+            }
             var isGetProperty = method.endsWith(".getProperty") || method.equals("getProperty");
             var isGetRequiredProperty = method.endsWith(".getRequiredProperty") || method.equals("getRequiredProperty");
             var isContainsProperty = method.endsWith(".containsProperty") || method.equals("containsProperty");
@@ -743,6 +748,68 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 new JavaSystemPropertyDetails(defaultValue, false)
             ));
             expandSpringApplicationJson(key, value, tree);
+        }
+
+        private void readApolloConfigRead(MethodInvocationTree tree) {
+            if (!isApolloGetProperty(tree)) {
+                return;
+            }
+            var args = tree.getArguments();
+            if (args.isEmpty()) {
+                return;
+            }
+            var key = literal(args.getFirst());
+            if (key == null) {
+                findings.add(new UncertainFinding(
+                    args.getFirst().toString(),
+                    args.getFirst() instanceof BinaryTree ? UncertainReason.STRING_CONCAT : UncertainReason.UNKNOWN,
+                    "apollo.getProperty",
+                    null,
+                    source(tree, SourceKind.JAVA),
+                    Confidence.LOW,
+                    id(),
+                    new DynamicKeyDetails(apolloNamespace(tree), null, args.getFirst().toString())
+                ));
+                return;
+            }
+            var defaultValue = args.size() > 1 ? literalValue(args.get(1)) : null;
+            findings.add(new ConfigFinding(
+                key,
+                key,
+                FindingRole.READ,
+                null,
+                defaultValue == null ? null : new ConfigValue(defaultValue, defaultValue, typeOf(defaultValue)),
+                EnvironmentContext.none(),
+                source(tree, SourceKind.JAVA),
+                Confidence.HIGH,
+                id(),
+                new ConfigCenterDetails(apolloNamespace(tree), null, null, defaultValue)
+            ));
+        }
+
+        private boolean isApolloGetProperty(MethodInvocationTree tree) {
+            if (!(tree.getMethodSelect() instanceof MemberSelectTree select)
+                || !select.getIdentifier().contentEquals("getProperty")) {
+                return false;
+            }
+            var expression = select.getExpression();
+            return expression.toString().startsWith("ConfigService.getAppConfig()")
+                || expression.toString().startsWith("ConfigService.getConfig(")
+                || expression.toString().startsWith("com.ctrip.framework.apollo.ConfigService.getAppConfig()")
+                || expression.toString().startsWith("com.ctrip.framework.apollo.ConfigService.getConfig(");
+        }
+
+        private String apolloNamespace(MethodInvocationTree tree) {
+            if (!(tree.getMethodSelect() instanceof MemberSelectTree select)
+                || !(select.getExpression() instanceof MethodInvocationTree configCall)) {
+                return "application";
+            }
+            var method = methodName(configCall.getMethodSelect());
+            if (method.endsWith(".getConfig") && !configCall.getArguments().isEmpty()) {
+                var namespace = literal(configCall.getArguments().getFirst());
+                return namespace == null || namespace.isBlank() ? null : namespace;
+            }
+            return "application";
         }
 
         private void readSystemPropertiesReplacement(MethodInvocationTree tree) {

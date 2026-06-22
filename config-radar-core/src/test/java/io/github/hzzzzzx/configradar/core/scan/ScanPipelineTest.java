@@ -490,6 +490,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("builder.cli.array.timeout") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("apollo.app.timeout") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("apollo.orders.enabled") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("programmatic.endpoint") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("programmatic.timeout") && item.role() == FindingRole.DEFINE));
@@ -620,7 +624,7 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("remote-config-source")
                 && item.key().equals("spring.cloud.nacos.config.server-addr")));
-        assertEquals(155, result.inventory().summary().keys());
+        assertEquals(157, result.inventory().summary().keys());
         assertEquals(11, result.inventory().summary().checks());
     }
 }

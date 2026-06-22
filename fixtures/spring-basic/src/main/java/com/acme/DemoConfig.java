@@ -125,6 +125,10 @@ public class DemoConfig {
         var operatorMode = System.console().readLine("operator.mode");
         var custom = ConfigCenter.get("custom.center", "fallback");
         var customDefined = ConfigCenter.set("custom.defined", "enabled");
+        var apolloApp = com.ctrip.framework.apollo.ConfigService.getAppConfig()
+            .getProperty("apollo.app.timeout", "3000");
+        var apolloNamespace = com.ctrip.framework.apollo.ConfigService.getConfig("orders")
+            .getProperty("apollo.orders.enabled", "true");
         System.setProperty("runtime.region", "cn");
         System.setProperty("spring.application.json", "{\"java\":{\"json\":{\"enabled\":true}}}");
         System.clearProperty("runtime.mode");
@@ -132,7 +136,8 @@ public class DemoConfig {
             + binder + createdBinder + system
             + env + mapEnv + mapEnvDefault + hasEnvFlag
             + propertyMapValue + propertyMapRawValue + propertyMapDefaultValue + hasPropertyMapFlag
-            + legacyPort + legacyLimit + legacyEnabled + jvmArgs + dynamic + operatorMode + custom + customDefined;
+            + legacyPort + legacyLimit + legacyEnabled + jvmArgs + dynamic + operatorMode + custom + customDefined
+            + apolloApp + apolloNamespace;
     }
 
     public String readResolver(PropertyResolver resolver) {

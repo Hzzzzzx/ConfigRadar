@@ -1,6 +1,7 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
+import io.github.hzzzzzx.configradar.core.model.ConfigCenterDetails;
 import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.JavaSystemPropertyDetails;
 import io.github.hzzzzzx.configradar.core.model.SpringConfigurationPropertiesDetails;
@@ -250,6 +251,16 @@ final class JavaSourceConfigDetectorTest {
         assertEquals("45", finding(findings, "builder.cli.timeout").value().raw());
         assertEquals("on", finding(findings, "builder.cli.array.mode").value().raw());
         assertEquals("75", finding(findings, "builder.cli.array.timeout").value().raw());
+
+        var apolloApp = finding(findings, "apollo.app.timeout");
+        assertEquals("3000", apolloApp.defaultValue().raw());
+        var apolloAppDetails = assertInstanceOf(ConfigCenterDetails.class, apolloApp.details());
+        assertEquals("application", apolloAppDetails.namespace());
+
+        var apolloNamespace = finding(findings, "apollo.orders.enabled");
+        assertEquals("true", apolloNamespace.defaultValue().raw());
+        var apolloNamespaceDetails = assertInstanceOf(ConfigCenterDetails.class, apolloNamespace.details());
+        assertEquals("orders", apolloNamespaceDetails.namespace());
 
         var programmaticEndpoint = finding(findings, "programmatic.endpoint");
         assertEquals(FindingRole.DEFINE, programmaticEndpoint.role());
