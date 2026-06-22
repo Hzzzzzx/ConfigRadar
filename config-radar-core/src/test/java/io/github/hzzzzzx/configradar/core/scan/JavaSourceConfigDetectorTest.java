@@ -57,6 +57,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.placeholder.required")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("servlet.feature.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("java:comp/env/jdbc/orders")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("typesafe.app.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("commons.feature.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.name")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
@@ -170,6 +172,11 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(FindingRole.READ, jndiLookup.role());
         var jndiDetails = assertInstanceOf(ExternalDetails.class, jndiLookup.details());
         assertEquals("jndi-lookup", jndiDetails.type());
+        var genericConfig = finding(findings, "typesafe.app.mode");
+        assertEquals(FindingRole.READ, genericConfig.role());
+        var genericDetails = assertInstanceOf(ExternalDetails.class, genericConfig.details());
+        assertEquals("generic-config-getter", genericDetails.type());
+        assertEquals("true", finding(findings, "commons.feature.enabled").defaultValue().raw());
         assertEquals("inventory", finding(findings, "inventory.client.name").defaultValue().raw());
         assertEquals("http://localhost", finding(findings, "inventory.client.url").defaultValue().raw());
 
@@ -535,6 +542,23 @@ final class JavaSourceConfigDetectorTest {
             .anyMatch(item -> item.expression().equals("\"java:comp/env/\" + name")
                 && item.reason() == UncertainReason.STRING_CONCAT
                 && item.rootSink().endsWith("lookup")));
+    }
+
+    @Test
+    void exposesDynamicGenericConfigGetterAsUncertain() throws Exception {
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context);
+
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("prefix + \".typesafe\"")
+                && item.reason() == UncertainReason.STRING_CONCAT
+                && item.rootSink().endsWith("getString")));
     }
 
     @Test

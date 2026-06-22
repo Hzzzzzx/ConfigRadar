@@ -619,6 +619,9 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().uncertain().stream()
             .anyMatch(item -> item.expression().equals("\"java:comp/env/\" + name")
                 && item.reason() == UncertainReason.STRING_CONCAT));
+        assertTrue(result.inventory().uncertain().stream()
+            .anyMatch(item -> item.expression().equals("prefix + \".typesafe\"")
+                && item.reason() == UncertainReason.STRING_CONCAT));
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
@@ -631,6 +634,10 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("\"java:comp/env/\" + name")));
+        assertTrue(result.inventory().checks().stream()
+            .anyMatch(item -> item.type().equals("dynamic-config-key")
+                && item.severity() == DiagnosticSeverity.ERROR
+                && item.message().contains("prefix + \".typesafe\"")));
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("remote-config-source")
                 && item.severity() == DiagnosticSeverity.WARNING
@@ -665,7 +672,11 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("web.context.mode")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("web.servlet.timeout")));
-        assertEquals(166, result.inventory().summary().keys());
-        assertEquals(33, result.inventory().summary().checks());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("typesafe.app.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("commons.feature.enabled")));
+        assertEquals(168, result.inventory().summary().keys());
+        assertEquals(34, result.inventory().summary().checks());
     }
 }

@@ -168,6 +168,13 @@ public class DemoConfig {
         return datasource + ":" + dynamic;
     }
 
+    public String readGenericConfig(com.typesafe.config.Config appConfig, org.apache.commons.configuration2.Configuration configuration, String prefix) {
+        var mode = appConfig.getString("typesafe.app.mode");
+        var enabled = configuration.getBoolean("commons.feature.enabled", true);
+        var dynamic = appConfig.getString(prefix + ".typesafe");
+        return mode + enabled + dynamic;
+    }
+
     public void springApplicationDefaults() {
         var app = new org.springframework.boot.SpringApplication(DemoConfig.class);
         var defaultProperties = new java.util.Properties();
