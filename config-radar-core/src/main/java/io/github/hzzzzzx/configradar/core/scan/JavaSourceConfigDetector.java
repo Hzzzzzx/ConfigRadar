@@ -324,12 +324,13 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var isGetenv = method.endsWith(".getenv") || method.equals("getenv");
             var isGetenvMapGet = method.endsWith("System.getenv().get");
             var isGetenvMapGetOrDefault = method.endsWith("System.getenv().getOrDefault");
+            var isGetenvMapContainsKey = method.endsWith("System.getenv().containsKey");
             var isIntegerGetInteger = method.equals("Integer.getInteger") || method.endsWith(".Integer.getInteger");
             var isLongGetLong = method.equals("Long.getLong") || method.endsWith(".Long.getLong");
             var isBooleanGetBoolean = method.equals("Boolean.getBoolean") || method.endsWith(".Boolean.getBoolean");
             var isTypedSystemProperty = isIntegerGetInteger || isLongGetLong || isBooleanGetBoolean;
             if (!isGetProperty && !isGetRequiredProperty && !isContainsProperty && !isSetProperty && !isGetenv
-                && !isGetenvMapGet && !isGetenvMapGetOrDefault && !isTypedSystemProperty) {
+                && !isGetenvMapGet && !isGetenvMapGetOrDefault && !isGetenvMapContainsKey && !isTypedSystemProperty) {
                 return;
             }
             var args = tree.getArguments();
@@ -341,7 +342,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var defaultValue = defaultValue(
                 args,
                 isGetProperty,
-                isGetenv || isBooleanGetBoolean || isSetProperty || isGetenvMapGet
+                isGetenv || isBooleanGetBoolean || isSetProperty || isGetenvMapGet || isGetenvMapContainsKey
             );
             if (key == null) {
                 findings.add(new UncertainFinding(
