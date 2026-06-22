@@ -23,6 +23,12 @@ public class DemoConfig {
     @Value("jdbc://${db.host:localhost}:${db.port:5432}/main")
     private String jdbcUrl;
 
+    @Value("#{environment['spel.timeout']}")
+    private String spelTimeout;
+
+    @Value("#{systemEnvironment['SPEL_SECRET']}")
+    private String spelSecret;
+
     @CustomConfigValue(key = "custom.annotated", defaultValue = "yes")
     private String annotated;
 

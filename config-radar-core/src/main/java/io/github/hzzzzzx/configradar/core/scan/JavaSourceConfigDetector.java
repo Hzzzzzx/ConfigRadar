@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.SimpleJavaFileObject;
@@ -46,6 +47,9 @@ import javax.tools.ToolProvider;
 
 /** Detects common Java/Spring configuration reads from source AST. */
 public final class JavaSourceConfigDetector implements ConfigDetector {
+    private static final Pattern SPEL_ENVIRONMENT = Pattern.compile("environment\\[['\"]([^'\"]+)['\"]]");
+    private static final Pattern SPEL_SYSTEM_ENVIRONMENT = Pattern.compile("systemEnvironment\\[['\"]([^'\"]+)['\"]]");
+
     @Override
     public String id() {
         return "java-source-config";
@@ -559,6 +563,31 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var text = literal(tree);
             if (text != null) {
                 addPlaceholder(text, tree);
+                addSpelReferences(text, tree);
+            }
+        }
+
+        private void addSpelReferences(String text, ExpressionTree tree) {
+            addSpelReferences(text, tree, SPEL_ENVIRONMENT);
+            addSpelReferences(text, tree, SPEL_SYSTEM_ENVIRONMENT);
+        }
+
+        private void addSpelReferences(String text, ExpressionTree tree, Pattern pattern) {
+            var matcher = pattern.matcher(text);
+            while (matcher.find()) {
+                var key = matcher.group(1);
+                findings.add(new ConfigFinding(
+                    key,
+                    key,
+                    FindingRole.READ,
+                    null,
+                    null,
+                    EnvironmentContext.none(),
+                    source(tree, SourceKind.JAVA),
+                    Confidence.HIGH,
+                    id(),
+                    new ExternalDetails("spring", "spel-value", null)
+                ));
             }
         }
 
