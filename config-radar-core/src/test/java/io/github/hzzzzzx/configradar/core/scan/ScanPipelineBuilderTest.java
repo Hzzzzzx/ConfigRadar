@@ -11,12 +11,15 @@ import io.github.hzzzzzx.configradar.core.model.Scope;
 import io.github.hzzzzzx.configradar.core.model.ScanFinding;
 import io.github.hzzzzzx.configradar.core.model.SourceKind;
 import io.github.hzzzzzx.configradar.core.model.SourceLocation;
+import io.github.hzzzzzx.configradar.core.pack.DetectorPack;
+import io.github.hzzzzzx.configradar.core.rule.ConfigRule;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ScanPipelineBuilderTest {
     @Test
@@ -45,6 +48,43 @@ final class ScanPipelineBuilderTest {
                 @Override
                 public List<ScanFinding> detect(ScanContext context) {
                     return List.of(finding);
+                }
+            })
+            .detectorPack(new DetectorPack() {
+                @Override
+                public String id() {
+                    return "builder-pack";
+                }
+
+                @Override
+                public List<ConfigDetector> detectors() {
+                    return List.of(new ConfigDetector() {
+                        @Override
+                        public String id() {
+                            return "builder-pack-detector";
+                        }
+
+                        @Override
+                        public List<ScanFinding> detect(ScanContext context) {
+                            return List.of(new ConfigFinding(
+                                "PACK_KEY",
+                                "PACK_KEY",
+                                FindingRole.READ,
+                                null,
+                                null,
+                                null,
+                                source,
+                                Confidence.HIGH,
+                                "builder-pack-detector",
+                                new JavaSystemPropertyDetails(null, false)
+                            ));
+                        }
+                    });
+                }
+
+                @Override
+                public List<ConfigRule> rules() {
+                    return List.of();
                 }
             })
             .processor(new FindingProcessor() {
@@ -85,7 +125,8 @@ final class ScanPipelineBuilderTest {
 
         var result = pipeline.scan(ScanInput.of(FixturePaths.springBasic()), ScanOptions.defaults(), ConfigRules.empty());
 
-        assertEquals("server-port", result.inventory().items().get(0).normalizedKey());
+        assertTrue(result.inventory().items().stream().anyMatch(item -> item.normalizedKey().equals("server-port")));
+        assertTrue(result.inventory().items().stream().anyMatch(item -> item.normalizedKey().equals("pack-key")));
         assertEquals(1, result.inventory().checks().size());
         assertEquals(1, result.inventory().summary().checks());
     }

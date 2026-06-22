@@ -1,5 +1,6 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
+import io.github.hzzzzzx.configradar.core.pack.DetectorPack;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +20,11 @@ public final class ScanPipelineBuilder {
 
     public ScanPipelineBuilder detector(ConfigDetector detector) {
         detectors.add(detector);
+        return this;
+    }
+
+    public ScanPipelineBuilder detectorPack(DetectorPack pack) {
+        detectors.addAll(pack.detectors());
         return this;
     }
 
