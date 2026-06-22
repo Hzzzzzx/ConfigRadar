@@ -1,6 +1,7 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
+import io.github.hzzzzzx.configradar.core.model.ConfigCenterDetails;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.model.DiagnosticSeverity;
 import io.github.hzzzzzx.configradar.core.model.InventoryCheck;
@@ -53,6 +54,9 @@ public final class RemoteConfigCenterCheckEnricher implements InventoryEnricher 
     }
 
     private static boolean isRemoteConfigReference(ConfigFinding item) {
+        if (item.details() instanceof ConfigCenterDetails) {
+            return true;
+        }
         var key = item.normalizedKey().toLowerCase(Locale.ROOT);
         if (key.startsWith("spring.cloud.config.") || key.startsWith("spring.cloud.nacos.config.")) {
             return true;

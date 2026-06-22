@@ -1,6 +1,7 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
+import io.github.hzzzzzx.configradar.core.model.ConfigCenterDetails;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.model.ConfigValue;
 import io.github.hzzzzzx.configradar.core.model.Confidence;
@@ -38,6 +39,36 @@ final class RemoteConfigCenterCheckEnricherTest {
         assertEquals("remote-config-source", enriched.checks().getFirst().type());
         assertEquals(DiagnosticSeverity.WARNING, enriched.checks().getFirst().severity());
         assertEquals("spring.config.import", enriched.checks().getFirst().key());
+    }
+
+    @Test
+    void addsWarningForConfigCenterDetails() {
+        var source = new SourceLocation("App.java", 9, "App", SourceKind.JAVA, Scope.MAIN);
+        var inventory = new ConfigInventory(
+            null,
+            ProjectInfo.unknown(),
+            null,
+            List.of(new ConfigFinding(
+                "apollo.app.timeout",
+                "apollo.app.timeout",
+                FindingRole.READ,
+                null,
+                new ConfigValue("3000", "3000", ValueType.INTEGER),
+                EnvironmentContext.none(),
+                source,
+                Confidence.HIGH,
+                "test",
+                new ConfigCenterDetails("application", null, null, "3000")
+            )),
+            List.of(),
+            List.of(),
+            List.of()
+        );
+
+        var enriched = new RemoteConfigCenterCheckEnricher().enrich(inventory, null);
+
+        assertEquals(1, enriched.checks().size());
+        assertEquals("apollo.app.timeout", enriched.checks().getFirst().key());
     }
 
     private static ConfigFinding item(String key, String value, SourceLocation source) {
