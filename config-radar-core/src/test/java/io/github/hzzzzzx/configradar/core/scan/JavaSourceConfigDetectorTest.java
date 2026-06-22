@@ -32,6 +32,7 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("db.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPEL_SECRET")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("http.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("client.pool")));
@@ -65,6 +66,7 @@ final class JavaSourceConfigDetectorTest {
         assertEquals("5432", finding(findings, "db.port").defaultValue().raw());
         assertEquals(FindingRole.READ, finding(findings, "spel.timeout").role());
         assertEquals(FindingRole.READ, finding(findings, "SPEL_SECRET").role());
+        assertEquals(FindingRole.READ, finding(findings, "spel.mode").role());
 
         var properties = finding(findings, "client");
         assertInstanceOf(SpringConfigurationPropertiesDetails.class, properties.details());

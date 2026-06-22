@@ -29,6 +29,9 @@ public class DemoConfig {
     @Value("#{systemEnvironment['SPEL_SECRET']}")
     private String spelSecret;
 
+    @Value("#{systemProperties['spel.mode']}")
+    private String spelMode;
+
     @CustomConfigValue(key = "custom.annotated", defaultValue = "yes")
     private String annotated;
 

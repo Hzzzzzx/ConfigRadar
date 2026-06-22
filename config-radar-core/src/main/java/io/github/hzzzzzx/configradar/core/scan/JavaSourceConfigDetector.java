@@ -49,6 +49,7 @@ import javax.tools.ToolProvider;
 public final class JavaSourceConfigDetector implements ConfigDetector {
     private static final Pattern SPEL_ENVIRONMENT = Pattern.compile("environment\\[['\"]([^'\"]+)['\"]]");
     private static final Pattern SPEL_SYSTEM_ENVIRONMENT = Pattern.compile("systemEnvironment\\[['\"]([^'\"]+)['\"]]");
+    private static final Pattern SPEL_SYSTEM_PROPERTIES = Pattern.compile("systemProperties\\[['\"]([^'\"]+)['\"]]");
 
     @Override
     public String id() {
@@ -570,6 +571,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         private void addSpelReferences(String text, ExpressionTree tree) {
             addSpelReferences(text, tree, SPEL_ENVIRONMENT);
             addSpelReferences(text, tree, SPEL_SYSTEM_ENVIRONMENT);
+            addSpelReferences(text, tree, SPEL_SYSTEM_PROPERTIES);
         }
 
         private void addSpelReferences(String text, ExpressionTree tree, Pattern pattern) {

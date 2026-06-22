@@ -234,6 +234,8 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("SPEL_SECRET") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("spel.mode") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("http.timeout")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("cache.enabled")));
@@ -279,7 +281,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(46, result.inventory().summary().keys());
+        assertEquals(47, result.inventory().summary().keys());
         assertEquals(1, result.inventory().summary().checks());
     }
 }
