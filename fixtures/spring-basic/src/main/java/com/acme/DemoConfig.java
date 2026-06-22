@@ -53,6 +53,9 @@ public class DemoConfig {
     @Value("#{systemProperties.getProperty('spel.method.mode')}")
     private String spelMethodMode;
 
+    @Value("#{systemProperties.get('spel.method.raw')}")
+    private String spelMethodRaw;
+
     @CustomConfigValue(key = "custom.annotated", configuredValue = "live", defaultValue = "yes")
     private String annotated;
 

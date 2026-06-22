@@ -98,6 +98,7 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(FindingRole.READ, finding(findings, "spel.method.timeout").role());
         assertEquals(FindingRole.READ, finding(findings, "SPEL_METHOD_SECRET").role());
         assertEquals(FindingRole.READ, finding(findings, "spel.method.mode").role());
+        assertEquals(FindingRole.READ, finding(findings, "spel.method.raw").role());
 
         var properties = finding(findings, "client");
         assertInstanceOf(SpringConfigurationPropertiesDetails.class, properties.details());
