@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+  <properties>
+    <property name="driver" value="${mybatis.datasource.driver:org.postgresql.Driver}"/>
+    <property name="url" value="${mybatis.datasource.url:${DB_URL:jdbc:postgresql://localhost:5432/app}}"/>
+  </properties>
+</configuration>

@@ -639,7 +639,11 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("sensitive-looking-key")
                 && item.key().equals("redis.password")));
-        assertEquals(160, result.inventory().summary().keys());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("mybatis.datasource.driver")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("mybatis.datasource.url")));
+        assertEquals(162, result.inventory().summary().keys());
         assertEquals(31, result.inventory().summary().checks());
     }
 }

@@ -29,6 +29,9 @@ final class LogbackSpringXmlDetectorTest {
         assertEquals("WARN", finding(findings, "LOG_NESTED_INNER").defaultValue().raw());
         assertEquals("./logs", finding(findings, "log4j2.file.path").defaultValue().raw());
         assertEquals("INFO", finding(findings, "LOG4J_LEVEL").defaultValue().raw());
+        assertEquals("org.postgresql.Driver", finding(findings, "mybatis.datasource.driver").defaultValue().raw());
+        assertEquals("${DB_URL:jdbc:postgresql://localhost:5432/app}", finding(findings, "mybatis.datasource.url").defaultValue().raw());
+        assertEquals("jdbc:postgresql://localhost:5432/app", finding(findings, "DB_URL").defaultValue().raw());
     }
 
     private static ConfigFinding finding(java.util.List<ConfigFinding> findings, String key) {

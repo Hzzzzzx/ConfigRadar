@@ -18,7 +18,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 
-/** Detects Spring-aware logging XML configuration reads. */
+/** Detects Spring-style placeholders in runtime XML resources. */
 public final class LogbackSpringXmlDetector implements ConfigDetector {
     @Override
     public String id() {
@@ -29,36 +29,47 @@ public final class LogbackSpringXmlDetector implements ConfigDetector {
     public List<ScanFinding> detect(ScanContext context) throws Exception {
         var findings = new ArrayList<ScanFinding>();
         for (var file : context.fileIndex().ofType(FileType.XML)) {
-            if (!isLoggingXml(file)) {
+            if (!isScannableXml(context, file)) {
                 continue;
             }
-            var factory = DocumentBuilderFactory.newInstance();
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-            var document = factory.newDocumentBuilder().parse(file.path().toFile());
-            var springProperties = document.getElementsByTagName("springProperty");
-            for (var index = 0; index < springProperties.getLength(); index++) {
-                var element = (Element) springProperties.item(index);
-                var key = element.getAttribute("source");
-                if (!key.isBlank()) {
-                    findings.add(new ConfigFinding(
-                        key,
-                        key,
-                        FindingRole.READ,
-                        null,
-                        value(element.getAttribute("defaultValue")),
-                        EnvironmentContext.none(),
-                        source(context, file),
-                        Confidence.HIGH,
-                        id(),
-                        new ExternalDetails("spring", "logback-spring-property", null)
-                    ));
+            if (isLoggingXml(file)) {
+                var factory = DocumentBuilderFactory.newInstance();
+                factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+                var document = factory.newDocumentBuilder().parse(file.path().toFile());
+                var springProperties = document.getElementsByTagName("springProperty");
+                for (var index = 0; index < springProperties.getLength(); index++) {
+                    var element = (Element) springProperties.item(index);
+                    var key = element.getAttribute("source");
+                    if (!key.isBlank()) {
+                        findings.add(new ConfigFinding(
+                            key,
+                            key,
+                            FindingRole.READ,
+                            null,
+                            value(element.getAttribute("defaultValue")),
+                            EnvironmentContext.none(),
+                            source(context, file),
+                            Confidence.HIGH,
+                            id(),
+                            new ExternalDetails("spring", "logback-spring-property", null)
+                        ));
+                    }
                 }
             }
             addPlaceholders(context, file, Files.readString(file.path()), findings);
         }
         return findings;
+    }
+
+    private static boolean isScannableXml(ScanContext context, IndexedFile file) {
+        if (isLoggingXml(file)) {
+            return true;
+        }
+        var root = context.input().projectRoot();
+        var path = root == null ? file.path() : root.toAbsolutePath().relativize(file.path().toAbsolutePath());
+        return path.toString().contains("src/main/resources/");
     }
 
     private static boolean isLoggingXml(IndexedFile file) {
