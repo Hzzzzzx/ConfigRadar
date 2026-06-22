@@ -763,7 +763,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         ) {
             var start = raw.indexOf("${");
             while (start >= 0) {
-                var end = raw.indexOf('}', start + 2);
+                var end = placeholderEnd(raw, start);
                 if (end < 0) {
                     return;
                 }
@@ -796,6 +796,27 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 id(),
                 new SpringPlaceholderDetails(defaultValue, raw)
             ));
+            if (defaultValue != null) {
+                addPlaceholders(defaultValue, tree, role);
+            }
+        }
+
+        private int placeholderEnd(String raw, int start) {
+            var depth = 0;
+            for (var index = start; index < raw.length(); index++) {
+                if (raw.startsWith("${", index)) {
+                    depth++;
+                    index++;
+                    continue;
+                }
+                if (raw.charAt(index) == '}') {
+                    depth--;
+                    if (depth == 0) {
+                        return index;
+                    }
+                }
+            }
+            return -1;
         }
 
         private int placeholderSplit(String body) {

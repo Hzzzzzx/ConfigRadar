@@ -49,6 +49,9 @@ public class DemoConfig {
     @Value("${empty.default:}")
     private String emptyDefault;
 
+    @Value("${nested.outer:${nested.inner:42}}")
+    private String nestedDefault;
+
     @Value("jdbc://${db.host:localhost}:${db.port:5432}/main")
     private String jdbcUrl;
 

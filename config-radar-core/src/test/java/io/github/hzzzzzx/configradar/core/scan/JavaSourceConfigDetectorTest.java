@@ -28,6 +28,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("payment.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("java.shell.default")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("empty.default")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("nested.outer")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("nested.inner")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("db.host")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("db.port")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("client")));
@@ -111,6 +113,8 @@ final class JavaSourceConfigDetectorTest {
         assertNotNull(value.source().line());
         assertEquals("fallback", finding(findings, "java.shell.default").defaultValue().raw());
         assertEquals("", finding(findings, "empty.default").defaultValue().raw());
+        assertEquals("${nested.inner:42}", finding(findings, "nested.outer").defaultValue().raw());
+        assertEquals("42", finding(findings, "nested.inner").defaultValue().raw());
 
         assertEquals("localhost", finding(findings, "db.host").defaultValue().raw());
         assertEquals("5432", finding(findings, "db.port").defaultValue().raw());
