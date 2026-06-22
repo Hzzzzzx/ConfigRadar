@@ -276,6 +276,29 @@ final class SpringConfigFileDetectorTest {
         assertEquals("ok", finding(findings, "PLAIN_AFTER_BAD_JSON").value().raw());
     }
 
+    @Test
+    void scansLocalSpringConfigLocationDirectories() throws Exception {
+        var project = tempDir.resolve("project");
+        var resources = project.resolve("src/main/resources");
+        var external = tempDir.resolve("external-config");
+        Files.createDirectories(resources);
+        Files.createDirectories(external);
+        Files.writeString(resources.resolve("application.properties"), "spring.config.additional-location=file:"
+            + external + "/\n");
+        Files.writeString(external.resolve("application.properties"), "external.dir.enabled=true\n");
+
+        var input = ScanInput.of(project);
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new SpringConfigFileDetector().detect(context).stream()
+            .map(ConfigFinding.class::cast)
+            .toList();
+
+        assertEquals("true", finding(findings, "external.dir.enabled").value().raw());
+    }
+
     private static ConfigFinding finding(List<ConfigFinding> findings, String key) {
         return findings.stream().filter(item -> item.key().equals(key)).findFirst().orElseThrow();
     }

@@ -241,17 +241,14 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         if (!isSpringConfigReference(key)) {
             return;
         }
-        // ponytail: one-hop local files only; add directory expansion/remote clients when users need them.
         for (var location : rawValue.split(",")) {
             addConfigTree(context, sourceFile, location.trim(), findings);
-            var imported = importedFile(context, sourceFile, location.trim());
-            if (imported == null) {
-                continue;
-            }
-            if (imported.type() == FileType.YAML) {
-                findings.addAll(readYaml(context, imported));
-            } else if (imported.type() == FileType.PROPERTIES) {
-                findings.addAll(readProperties(context, imported));
+            for (var imported : importedFiles(context, sourceFile, location.trim())) {
+                if (imported.type() == FileType.YAML) {
+                    findings.addAll(readYaml(context, imported));
+                } else if (imported.type() == FileType.PROPERTIES) {
+                    findings.addAll(readProperties(context, imported));
+                }
             }
         }
     }
@@ -281,19 +278,19 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         }
     }
 
-    private static IndexedFile importedFile(ScanContext context, IndexedFile sourceFile, String location) {
+    private static List<IndexedFile> importedFiles(ScanContext context, IndexedFile sourceFile, String location) throws Exception {
         var text = location.startsWith("optional:") ? location.substring("optional:".length()) : location;
         var root = context.input().projectRoot();
         Path path;
         if (text.startsWith("classpath:")) {
             if (root == null) {
-                return null;
+                return List.of();
             }
             var resource = text.substring("classpath:".length());
             path = root.resolve("src/main/resources").resolve(resource.startsWith("/") ? resource.substring(1) : resource);
         } else if (text.startsWith("file:")) {
             if (root == null) {
-                return null;
+                return List.of();
             }
             var value = text.substring("file:".length());
             path = Path.of(value);
@@ -301,12 +298,33 @@ public final class SpringConfigFileDetector implements ConfigDetector {
                 path = root.resolve(value);
             }
         } else {
-            return null;
+            return List.of();
         }
         if (!Files.isRegularFile(path)) {
-            return null;
+            return importedDirectoryFiles(context, sourceFile, path);
         }
-        return new IndexedFile(path, typeOf(path), sourceFile.scope());
+        return List.of(new IndexedFile(path, typeOf(path), sourceFile.scope()));
+    }
+
+    private static List<IndexedFile> importedDirectoryFiles(
+        ScanContext context,
+        IndexedFile sourceFile,
+        Path directory
+    ) throws Exception {
+        if (!Files.isDirectory(directory)) {
+            return List.of();
+        }
+        var indexed = context.fileIndex().files().stream()
+            .map(file -> file.path().toAbsolutePath().normalize())
+            .toList();
+        try (var paths = Files.list(directory)) {
+            return paths
+                .filter(Files::isRegularFile)
+                .filter(SpringConfigFileDetector::isSpringConfig)
+                .filter(path -> !indexed.contains(path.toAbsolutePath().normalize()))
+                .map(path -> new IndexedFile(path, typeOf(path), sourceFile.scope()))
+                .toList();
+        }
     }
 
     private static Path configTreeDirectory(ScanContext context, String location) {
