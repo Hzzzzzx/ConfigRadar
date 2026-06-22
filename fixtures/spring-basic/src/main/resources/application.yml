@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: spring-basic
+  config:
+    import: optional:configserver:http://localhost:8888
+  profiles:
+    include: shared
+server:
+  port: 8080
+datasource:
+  url: ${DB_URL:jdbc:postgresql://localhost:5432/app}
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+client:
+  endpoint: https://api.example.com

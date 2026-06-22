@@ -1,0 +1,7 @@
+spring:
+  cloud:
+    config:
+      uri: ${CONFIG_SERVER_URL:http://localhost:8888}
+    nacos:
+      config:
+        server-addr: localhost:8848
