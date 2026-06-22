@@ -87,6 +87,7 @@ public class DemoConfig {
         var propertyMapRawValue = System.getProperties().get("map.property.raw");
         var propertyMapDefaultValue = System.getProperties().getOrDefault("map.property.default", "safe-default");
         var hasPropertyMapFlag = System.getProperties().containsKey("map.property.flag");
+        System.getProperties().put("SPRING_APPLICATION_JSON", "{\"javaEnv\":{\"json\":{\"limit\":5}}}");
         System.getProperties().put("map.property.write", "enabled");
         System.getProperties().putIfAbsent("map.property.default-write", "lazy");
         System.getProperties().replace("map.property.replaced", "old", "new");
