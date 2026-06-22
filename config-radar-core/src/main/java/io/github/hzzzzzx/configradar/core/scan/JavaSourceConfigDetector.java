@@ -323,6 +323,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var isSetProperty = method.endsWith(".setProperty") || method.equals("setProperty");
             var isSystemPropertiesGetProperty = method.endsWith("System.getProperties().getProperty");
             var isSystemPropertiesContainsKey = method.endsWith("System.getProperties().containsKey");
+            var isSystemPropertiesPut = method.endsWith("System.getProperties().put");
             var isGetenv = method.endsWith(".getenv") || method.equals("getenv");
             var isGetenvMapGet = method.endsWith("System.getenv().get");
             var isGetenvMapGetOrDefault = method.endsWith("System.getenv().getOrDefault");
@@ -332,7 +333,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var isBooleanGetBoolean = method.equals("Boolean.getBoolean") || method.endsWith(".Boolean.getBoolean");
             var isTypedSystemProperty = isIntegerGetInteger || isLongGetLong || isBooleanGetBoolean;
             if (!isGetProperty && !isGetRequiredProperty && !isContainsProperty && !isSetProperty
-                && !isSystemPropertiesGetProperty && !isSystemPropertiesContainsKey && !isGetenv
+                && !isSystemPropertiesGetProperty && !isSystemPropertiesContainsKey && !isSystemPropertiesPut && !isGetenv
                 && !isGetenvMapGet && !isGetenvMapGetOrDefault && !isGetenvMapContainsKey && !isTypedSystemProperty) {
                 return;
             }
@@ -341,12 +342,12 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 return;
             }
             var key = literal(args.getFirst());
-            var value = isSetProperty && args.size() > 1 ? literalValue(args.get(1)) : null;
+            var value = (isSetProperty || isSystemPropertiesPut) && args.size() > 1 ? literalValue(args.get(1)) : null;
             var defaultValue = defaultValue(
                 args,
                 isGetProperty || isSystemPropertiesGetProperty,
                 isGetenv || isBooleanGetBoolean || isSetProperty || isGetenvMapGet || isGetenvMapContainsKey
-                    || isSystemPropertiesContainsKey
+                    || isSystemPropertiesContainsKey || isSystemPropertiesPut
             );
             if (key == null) {
                 findings.add(new UncertainFinding(
@@ -364,7 +365,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             findings.add(new ConfigFinding(
                 key,
                 key,
-                isSetProperty ? FindingRole.DEFINE : FindingRole.READ,
+                isSetProperty || isSystemPropertiesPut ? FindingRole.DEFINE : FindingRole.READ,
                 value == null ? null : new ConfigValue(value, value, typeOf(value)),
                 defaultValue == null ? null : new ConfigValue(defaultValue, defaultValue, typeOf(defaultValue)),
                 EnvironmentContext.none(),

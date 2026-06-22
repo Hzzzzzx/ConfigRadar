@@ -47,6 +47,7 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("ENV_FEATURE_FLAG")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("map.property.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("map.property.flag")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("map.property.write")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("legacy.port")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("legacy.limit")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("legacy.enabled")));
@@ -109,6 +110,9 @@ final class JavaSourceConfigDetectorTest {
         assertNull(finding(findings, "ENV_FEATURE_FLAG").defaultValue());
         assertEquals("safe", finding(findings, "map.property.mode").defaultValue().raw());
         assertNull(finding(findings, "map.property.flag").defaultValue());
+        var propertyWrite = finding(findings, "map.property.write");
+        assertEquals(FindingRole.DEFINE, propertyWrite.role());
+        assertEquals("enabled", propertyWrite.value().raw());
 
         var legacyPort = finding(findings, "legacy.port");
         assertEquals("8081", legacyPort.defaultValue().raw());

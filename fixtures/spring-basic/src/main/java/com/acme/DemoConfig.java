@@ -59,6 +59,7 @@ public class DemoConfig {
         var hasEnvFlag = System.getenv().containsKey("ENV_FEATURE_FLAG");
         var propertyMapValue = System.getProperties().getProperty("map.property.mode", "safe");
         var hasPropertyMapFlag = System.getProperties().containsKey("map.property.flag");
+        System.getProperties().put("map.property.write", "enabled");
         var legacyPort = Integer.getInteger("legacy.port", 8081);
         var legacyLimit = Long.getLong("legacy.limit", 10L);
         var legacyEnabled = Boolean.getBoolean("legacy.enabled");
