@@ -116,6 +116,7 @@ public class DemoConfig {
     public void springApplicationDefaults() {
         var app = new org.springframework.boot.SpringApplication(DemoConfig.class);
         var defaultProperties = new java.util.Properties();
+        app.setAdditionalProfiles("blue", "canary");
         app.setDefaultProperties(java.util.Map.of(
             "spring.main.banner-mode", "off",
             "management.endpoints.web.exposure.include", "health,info"
