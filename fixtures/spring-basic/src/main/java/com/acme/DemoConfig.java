@@ -24,6 +24,9 @@ public class DemoConfig {
     @Value("${java.shell.default:-fallback}")
     private String javaShellDefault;
 
+    @Value("${empty.default:}")
+    private String emptyDefault;
+
     @Value("jdbc://${db.host:localhost}:${db.port:5432}/main")
     private String jdbcUrl;
 
