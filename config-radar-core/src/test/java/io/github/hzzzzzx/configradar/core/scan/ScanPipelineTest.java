@@ -244,6 +244,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("http.timeout")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("resolver.endpoint")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("resolver.required")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("cache.enabled")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("client.pool")));
@@ -287,7 +291,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(50, result.inventory().summary().keys());
+        assertEquals(52, result.inventory().summary().keys());
         assertEquals(1, result.inventory().summary().checks());
     }
 }

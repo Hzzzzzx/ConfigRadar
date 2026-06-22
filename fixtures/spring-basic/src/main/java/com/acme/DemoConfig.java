@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.PropertySources;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.PropertyResolver;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @ConfigurationProperties(prefix = "client")
@@ -54,6 +55,12 @@ public class DemoConfig {
         var custom = ConfigCenter.get("custom.center", "fallback");
         System.setProperty("runtime.region", "cn");
         return direct + required + typed + hasCache + binder + system + env + legacyPort + legacyLimit + legacyEnabled + dynamic + custom;
+    }
+
+    public String readResolver(PropertyResolver resolver) {
+        var endpoint = resolver.getProperty("resolver.endpoint", "http://localhost");
+        var required = resolver.getRequiredProperty("resolver.required");
+        return endpoint + required;
     }
 
     public void springApplicationDefaults() {

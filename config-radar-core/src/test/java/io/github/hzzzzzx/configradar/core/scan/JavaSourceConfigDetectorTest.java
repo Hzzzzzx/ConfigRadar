@@ -34,6 +34,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPEL_SECRET")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("http.timeout")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.endpoint")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.required")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("client.pool")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("app.mode")));
@@ -83,6 +85,8 @@ final class JavaSourceConfigDetectorTest {
         var typedEnvironment = finding(findings, "http.timeout");
         assertEquals("2500", typedEnvironment.defaultValue().raw());
         assertInstanceOf(JavaSystemPropertyDetails.class, typedEnvironment.details());
+        assertEquals("http://localhost", finding(findings, "resolver.endpoint").defaultValue().raw());
+        assertNull(finding(findings, "resolver.required").defaultValue());
 
         assertEquals(FindingRole.READ, finding(findings, "cache.enabled").role());
         assertEquals(FindingRole.READ, finding(findings, "client.pool").role());
