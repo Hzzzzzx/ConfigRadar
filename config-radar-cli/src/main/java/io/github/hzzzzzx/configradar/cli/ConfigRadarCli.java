@@ -170,13 +170,11 @@ public final class ConfigRadarCli implements Runnable {
             var mapper = YamlSupport.mapper();
             var baseInventory = mapper.readValue(base.toFile(), ConfigInventory.class);
             var headInventory = mapper.readValue(head.toFile(), ConfigInventory.class);
+            var diff = new KeyBasedDiffStrategy().diff(baseInventory, headInventory);
             if (redactSensitive) {
                 var redactor = new SensitiveValueRedactionEnricher();
-                var policy = RedactionPolicy.redactSensitive();
-                baseInventory = redactor.redact(baseInventory, policy);
-                headInventory = redactor.redact(headInventory, policy);
+                diff = redactor.redact(diff, RedactionPolicy.redactSensitive());
             }
-            var diff = new KeyBasedDiffStrategy().diff(baseInventory, headInventory);
             writeParent(output);
             mapper.writeValue(output.toFile(), diff);
             return 0;

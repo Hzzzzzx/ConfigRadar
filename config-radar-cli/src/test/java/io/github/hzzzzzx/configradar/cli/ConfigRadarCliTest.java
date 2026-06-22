@@ -258,6 +258,7 @@ final class ConfigRadarCliTest {
         assertEquals(0, exitCode);
         var yaml = Files.readString(output);
         assertTrue(yaml.contains("config-diff/v1"));
+        assertTrue(yaml.contains("******"));
         assertFalse(yaml.contains("old-secret"));
         assertFalse(yaml.contains("new-secret"));
     }

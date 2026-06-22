@@ -1,6 +1,8 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
 import com.fasterxml.jackson.databind.node.TextNode;
+import io.github.hzzzzzx.configradar.core.model.ConfigChange;
+import io.github.hzzzzzx.configradar.core.model.ConfigDiff;
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.model.ConfigValue;
@@ -44,8 +46,35 @@ public final class SensitiveValueRedactionEnricher implements InventoryEnricher 
         );
     }
 
+    public ConfigDiff redact(ConfigDiff diff, RedactionPolicy policy) {
+        if (!policy.enabled()) {
+            return diff;
+        }
+        return new ConfigDiff(
+            diff.schemaVersion(),
+            null,
+            diff.added().stream().map(item -> redactIfNeeded(item, policy)).toList(),
+            diff.removed().stream().map(item -> redactIfNeeded(item, policy)).toList(),
+            diff.changed().stream().map(change -> redact(change, policy)).toList(),
+            diff.uncertainChanged(),
+            diff.checks()
+        );
+    }
+
     private static boolean shouldRedact(ConfigFinding finding, RedactionPolicy policy) {
         return policy.matchesKey(finding.normalizedKey() == null ? finding.key() : finding.normalizedKey());
+    }
+
+    private static ConfigFinding redactIfNeeded(ConfigFinding finding, RedactionPolicy policy) {
+        return shouldRedact(finding, policy) ? redact(finding, policy.replacement()) : finding;
+    }
+
+    private static ConfigChange redact(ConfigChange change, RedactionPolicy policy) {
+        if (!policy.matchesKey(change.key())
+            || (!change.field().equals("value") && !change.field().equals("defaultValue"))) {
+            return change;
+        }
+        return new ConfigChange(change.key(), change.field(), policy.replacement(), policy.replacement());
     }
 
     private static ConfigFinding redact(ConfigFinding finding, String replacement) {
