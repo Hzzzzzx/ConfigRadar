@@ -147,6 +147,9 @@ final class JavaSourceConfigDetectorTest {
         var propertyReplaced = finding(findings, "map.property.replaced");
         assertEquals(FindingRole.DEFINE, propertyReplaced.role());
         assertEquals("new", propertyReplaced.value().raw());
+        var propertyReplacedDirect = finding(findings, "map.property.replaced-direct");
+        assertEquals(FindingRole.DEFINE, propertyReplacedDirect.role());
+        assertEquals("direct", propertyReplacedDirect.value().raw());
         var propertySet = finding(findings, "map.property.set");
         assertEquals(FindingRole.DEFINE, propertySet.role());
         assertEquals("ready", propertySet.value().raw());

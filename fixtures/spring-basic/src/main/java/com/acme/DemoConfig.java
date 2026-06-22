@@ -87,6 +87,7 @@ public class DemoConfig {
         System.getProperties().put("map.property.write", "enabled");
         System.getProperties().putIfAbsent("map.property.default-write", "lazy");
         System.getProperties().replace("map.property.replaced", "old", "new");
+        System.getProperties().replace("map.property.replaced-direct", "direct");
         System.getProperties().setProperty("map.property.set", "ready");
         System.getProperties().remove("map.property.removed");
         var legacyPort = Integer.getInteger("legacy.port", 8081);
