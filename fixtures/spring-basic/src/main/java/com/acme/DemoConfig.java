@@ -21,6 +21,9 @@ public class DemoConfig {
     @Value("${payment.timeout:30}")
     private int timeout;
 
+    @Value("${java.shell.default:-fallback}")
+    private String javaShellDefault;
+
     @Value("jdbc://${db.host:localhost}:${db.port:5432}/main")
     private String jdbcUrl;
 

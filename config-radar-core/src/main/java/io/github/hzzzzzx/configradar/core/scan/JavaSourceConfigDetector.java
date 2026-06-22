@@ -446,9 +446,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         }
 
         private void addPlaceholderBody(String body, String raw, ExpressionTree tree) {
-            var colon = body.indexOf(':');
-            var key = colon < 0 ? body : body.substring(0, colon);
-            var defaultValue = colon < 0 ? null : body.substring(colon + 1);
+            var split = placeholderSplit(body);
+            var key = split < 0 ? body : body.substring(0, split);
+            var defaultValue = split < 0 ? null : body.substring(split + (body.startsWith(":-", split) ? 2 : 1));
             if (key.isBlank()) {
                 return;
             }
@@ -464,6 +464,11 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 id(),
                 new SpringPlaceholderDetails(defaultValue, raw)
             ));
+        }
+
+        private int placeholderSplit(String body) {
+            var shellDefault = body.indexOf(":-");
+            return shellDefault >= 0 ? shellDefault : body.indexOf(':');
         }
 
         private SourceLocation source(com.sun.source.tree.Tree tree, SourceKind sourceKind) {

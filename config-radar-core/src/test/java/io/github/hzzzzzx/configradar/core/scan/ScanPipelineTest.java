@@ -188,6 +188,8 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("payment.timeout")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("java.shell.default") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("payment.client.timeout")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("payment.endpoint") && item.role() == FindingRole.DEFINE));
@@ -291,7 +293,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(52, result.inventory().summary().keys());
+        assertEquals(53, result.inventory().summary().keys());
         assertEquals(1, result.inventory().summary().checks());
     }
 }
