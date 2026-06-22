@@ -40,7 +40,7 @@ Current implementation status:
   - Simple Typesafe Config HOCON `application.conf` / `reference.conf` key-value definitions
   - Spring Boot `spring-configuration-metadata.json` and `additional-spring-configuration-metadata.json`
   - Runtime XML placeholders, `web.xml` params, plus Logback and Log4j2 `springProperty`
-  - Dockerfile `ENV` and docker-compose `environment` runtime environment definitions
+  - Dockerfile `ENV`, docker-compose `environment`, and Kubernetes `ConfigMap.data` / container `env` runtime definitions
   - Java source annotation placeholders, common `@Value` SpEL property references, class/method `@ConfigurationProperties`, `@ConditionalOnProperty`, `@ConditionalOnExpression`, `@Profile`, profile predicate calls, `@PropertySource`, `SpringApplication` default/command-line properties and additional profiles, programmatic Spring `PropertySource` entries, dynamic `PropertiesPropertySource` entries, Apollo `ConfigService` reads, Nacos `ConfigService.getConfig(...)` and `@NacosPropertySource` source entries, Servlet `getInitParameter` and `@WebInitParam`, JNDI `java:comp/env` lookups, generic config getters such as Typesafe Config / Apache Commons Configuration / MicroProfile Config, Java `Preferences` and `ResourceBundle` getters, `Environment.getProperty`, `Environment.getRequiredProperty`, `System.getProperty`, `System.getProperties`, `System.getenv`, `System.console` input, `Integer.getInteger`, `Long.getLong`, `Boolean.getBoolean`
 - Spring YAML multi-document profile detection via `spring.config.activate.on-profile`
 - Spring profile/config control keys, including env-style keys such as `SPRING_PROFILES_ACTIVE`, plus `@Profile` and `@PropertySource` findings are marked as `METADATA`

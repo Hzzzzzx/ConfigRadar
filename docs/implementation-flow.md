@@ -40,7 +40,7 @@ CLI inventory
 | Hook | Interface | 当前实现 | 后续用途 |
 |---|---|---|---|
 | 文件索引 | `FileIndexer` | `DefaultFileIndexer` | 支持特殊目录、生成文件、自定义配置文件 |
-| 配置检测 | `ConfigDetector` | `SpringConfigFileDetector`、`DockerfileEnvDetector`、`DockerComposeEnvDetector`、`JavaSourceConfigDetector` | Spring、Java、部署文件、配置中心、三方组件扫描器 |
+| 配置检测 | `ConfigDetector` | `SpringConfigFileDetector`、`DockerfileEnvDetector`、`DockerComposeEnvDetector`、`KubernetesEnvDetector`、`JavaSourceConfigDetector` | Spring、Java、部署文件、配置中心、三方组件扫描器 |
 | 发现处理 | `FindingProcessor` | `NoopFindingProcessor` | 去重、过滤误报、补 detector 标签 |
 | 归一化 | `FindingNormalizer` | `BasicFindingNormalizer` | relaxed binding、环境/profile、source 归一化 |
 | 清单构建 | `InventoryBuilder` | `DefaultInventoryBuilder` | 固定 public inventory schema |
@@ -93,7 +93,7 @@ Implemented:
 - HOCON config file detector：保守扫描 `application.conf` / `reference.conf` 中简单单行 `key = value` / `key: value` 定义；复杂对象块暂不展开
 - Spring configuration metadata detector：扫描 `spring-configuration-metadata.json` / `additional-spring-configuration-metadata.json` 中的 `properties[].name`
 - Runtime XML detector：扫描 `src/main/resources` 运行时 XML 中的 `${...}` 占位符，扫描 `web.xml` 中的 `context-param` / `init-param`；日志 XML 额外扫描 `<springProperty source="...">`
-- Docker deploy detectors：扫描 `Dockerfile*` 中的 `ENV` 和 docker-compose `services.*.environment` 环境变量定义
+- Deploy detectors：扫描 `Dockerfile*` 中的 `ENV`、docker-compose `services.*.environment`、Kubernetes `ConfigMap.data` 与 container `env` 环境变量定义
 - Spring YAML profile support：识别多文档 YAML 中的 `spring.config.activate.on-profile`
 - Spring metadata role：`spring.config.import` / `spring.config.activate.*` / `spring.profiles*` / `@Profile` / `@PropertySource` 标记为 `METADATA`
 - Java source detector：扫描注解占位符、`@Value` SpEL `environment['key']` / `environment.getProperty('key')` / `systemEnvironment['KEY']` / `systemEnvironment.get('KEY')` / `systemProperties['key']` / `systemProperties.getProperty('key')`、类/方法级 `@ConfigurationProperties`、`@ConditionalOnProperty`、`@Profile`、profile predicate calls、`@PropertySource`/`@PropertySources` 本地 properties、`SpringApplication.setDefaultProperties`、`SpringApplicationBuilder.properties`、`SpringApplication.run(..., "--key=value")`、动态启动参数入口、programmatic `MapPropertySource` / 本地 `ResourcePropertySource`、动态 `PropertiesPropertySource`、Apollo `ConfigService.getAppConfig/getConfig(...).getProperty(...)` 字面量读取、Nacos `ConfigService.getConfig(...)` 和 `@NacosPropertySource` 远程配置源入口、Servlet `getInitParameter` / `@WebInitParam`、JNDI `java:comp/env` lookup、Typesafe Config / Apache Commons Configuration / MicroProfile Config 等 generic config getter、Java `Preferences` / `ResourceBundle` getter、`Environment.getProperty`、`Environment.getRequiredProperty`、`Environment.containsProperty`、`Binder.get(...).bind`、`System.getProperty`、`System.setProperty`、`System.getenv`、`System.getProperties()` map 读写、`Integer.getInteger`、`Long.getLong`、`Boolean.getBoolean`
