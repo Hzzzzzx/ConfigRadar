@@ -124,13 +124,12 @@ Decision:
 
 - Add logs for key scan stages.
 - Add performance metrics for major pipeline phases.
+- Add per-detector metrics as `detector:<id>` so slow or noisy detectors can be tuned later.
 
 Key timings:
 
 - file indexing
-- resource scanning
-- Java/OpenRewrite parsing
-- Java detector execution
+- detector execution and each detector id
 - finding processing
 - normalization
 - enrichment
