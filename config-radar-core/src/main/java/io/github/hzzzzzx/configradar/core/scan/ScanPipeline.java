@@ -80,6 +80,7 @@ public final class ScanPipeline {
     public static ScanPipeline defaults(boolean enableCodegraph) {
         var detectors = new ArrayList<ConfigDetector>();
         detectors.add(new SpringConfigFileDetector());
+        detectors.add(new SpringConfigurationMetadataDetector());
         detectors.add(new LogbackSpringXmlDetector());
         detectors.add(new JavaSourceConfigDetector());
         if (enableCodegraph) {

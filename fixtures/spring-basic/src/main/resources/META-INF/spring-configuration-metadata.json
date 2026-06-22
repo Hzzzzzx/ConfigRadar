@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "metadata.client.timeout",
+      "type": "java.lang.Integer",
+      "defaultValue": 3000
+    },
+    {
+      "name": "metadata.client.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true
+    }
+  ]
+}
