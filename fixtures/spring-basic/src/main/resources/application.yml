@@ -10,6 +10,8 @@ server:
   shutdown-grace-period: 30s
 datasource:
   url: ${DB_URL:jdbc:postgresql://localhost:5432/app}
+nested:
+  url: ${NESTED_URL:${NESTED_HOST:-localhost}}
 ---
 spring:
   config:

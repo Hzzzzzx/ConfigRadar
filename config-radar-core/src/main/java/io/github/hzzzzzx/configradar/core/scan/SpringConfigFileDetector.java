@@ -262,7 +262,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
     ) {
         var start = rawValue.indexOf("${");
         while (start >= 0) {
-            var end = rawValue.indexOf('}', start + 2);
+            var end = placeholderEnd(rawValue, start);
             if (end < 0) {
                 return;
             }
@@ -299,6 +299,9 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             id(),
             new SpringPlaceholderDetails(defaultValue, rawValue)
         ));
+        if (defaultValue != null) {
+            addPlaceholderReads(context, file, defaultValue, profile, line, sourceKind, findings);
+        }
     }
 
     private static FindingRole roleOf(String key) {
@@ -397,8 +400,41 @@ public final class SpringConfigFileDetector implements ConfigDetector {
     }
 
     private static int placeholderSplit(String body) {
-        var shellDefault = body.indexOf(":-");
-        return shellDefault >= 0 ? shellDefault : body.indexOf(':');
+        var depth = 0;
+        for (var index = 0; index < body.length(); index++) {
+            if (body.startsWith("${", index)) {
+                depth++;
+                index++;
+                continue;
+            }
+            var character = body.charAt(index);
+            if (character == '}') {
+                depth--;
+                continue;
+            }
+            if (character == ':' && depth == 0) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private static int placeholderEnd(String raw, int start) {
+        var depth = 0;
+        for (var index = start; index < raw.length(); index++) {
+            if (raw.startsWith("${", index)) {
+                depth++;
+                index++;
+                continue;
+            }
+            if (raw.charAt(index) == '}') {
+                depth--;
+                if (depth == 0) {
+                    return index;
+                }
+            }
+        }
+        return -1;
     }
 
     private static String profileOf(Path path, Object document) {

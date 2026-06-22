@@ -37,6 +37,9 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("server.shutdown-grace-period")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("datasource.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("DB_URL")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("nested.url")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("NESTED_URL")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("NESTED_HOST")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("payment.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("payment.endpoint")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("PAYMENT_ENDPOINT")));
@@ -102,6 +105,13 @@ final class SpringConfigFileDetectorTest {
         assertEquals(FindingRole.READ, placeholder.role());
         assertEquals("jdbc:postgresql://localhost:5432/app", placeholder.defaultValue().raw());
         assertEquals(SourceKind.YAML, placeholder.source().sourceKind());
+
+        var nestedUrl = finding(findings, "NESTED_URL");
+        assertEquals(FindingRole.READ, nestedUrl.role());
+        assertEquals("${NESTED_HOST:-localhost}", nestedUrl.defaultValue().raw());
+        var nestedHost = finding(findings, "NESTED_HOST");
+        assertEquals(FindingRole.READ, nestedHost.role());
+        assertEquals("localhost", nestedHost.defaultValue().raw());
 
         assertEquals(FindingRole.DEFINE, finding(findings, "payment.endpoint").role());
 
