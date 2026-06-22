@@ -85,8 +85,11 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
     }
 
     private static String identity(ConfigFinding item) {
-        var profile = item.environment() == null ? "" : nullToEmpty(item.environment().profile());
-        return item.normalizedKey() + "|" + item.role() + "|" + profile;
+        var environment = item.environment();
+        var profile = environment == null ? "" : nullToEmpty(environment.profile());
+        var region = environment == null ? "" : nullToEmpty(environment.region());
+        var namespace = environment == null ? "" : nullToEmpty(environment.namespace());
+        return item.normalizedKey() + "|" + item.role() + "|" + profile + "|" + region + "|" + namespace;
     }
 
     private static String raw(ConfigValue value) {

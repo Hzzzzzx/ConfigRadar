@@ -73,18 +73,34 @@ final class KeyBasedDiffStrategyTest {
         assertEquals("payment-timeout", diff.changed().getFirst().key());
     }
 
+    @Test
+    void treatsRegionAndNamespaceAsIdentityDimensions() {
+        var base = inventory(item("server.port", "8080", "prod", "us", "blue"));
+        var head = inventory(item("server.port", "8080", "prod", "eu", "blue"));
+
+        var diff = new KeyBasedDiffStrategy().diff(base, head);
+
+        assertEquals(1, diff.added().size());
+        assertEquals(1, diff.removed().size());
+        assertTrue(diff.changed().isEmpty());
+    }
+
     private static ConfigInventory inventory(ConfigFinding... items) {
         return new ConfigInventory(null, null, null, List.of(items), List.of(), List.of(), List.of());
     }
 
     private static ConfigFinding item(String key, String value, String profile) {
+        return item(key, value, profile, null, null);
+    }
+
+    private static ConfigFinding item(String key, String value, String profile, String region, String namespace) {
         return new ConfigFinding(
             key,
             key,
             FindingRole.DEFINE,
             new ConfigValue(value, value, ValueType.STRING),
             null,
-            new EnvironmentContext(profile, null, null),
+            new EnvironmentContext(profile, region, namespace),
             new SourceLocation("application.yml", 1, null, SourceKind.YAML, Scope.MAIN),
             Confidence.HIGH,
             "test",
