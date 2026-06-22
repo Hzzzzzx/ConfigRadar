@@ -1,0 +1,11 @@
+services:
+  app:
+    image: config-radar-demo
+    environment:
+      COMPOSE_APP_MODE: prod
+      COMPOSE_FEATURE_ENABLED: true
+  worker:
+    image: config-radar-worker
+    environment:
+      - COMPOSE_WORKER_THREADS=4
+      - COMPOSE_LOG_LEVEL=debug

@@ -712,7 +712,15 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("DOCKER_SERVER_PORT")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("DOCKER_JAVA_OPTS")));
-        assertEquals(186, result.inventory().summary().keys());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("COMPOSE_APP_MODE")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("COMPOSE_FEATURE_ENABLED")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("COMPOSE_WORKER_THREADS")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("COMPOSE_LOG_LEVEL")));
+        assertEquals(190, result.inventory().summary().keys());
         assertEquals(36, result.inventory().summary().checks());
     }
 }
