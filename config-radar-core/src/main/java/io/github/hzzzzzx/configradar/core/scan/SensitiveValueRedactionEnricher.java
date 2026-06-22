@@ -11,7 +11,6 @@ import io.github.hzzzzzx.configradar.core.model.JavaSystemPropertyDetails;
 import io.github.hzzzzzx.configradar.core.model.SpringPlaceholderDetails;
 import io.github.hzzzzzx.configradar.core.model.UnknownDetails;
 import java.util.ArrayList;
-import java.util.Locale;
 
 /** Masks values for keys that look sensitive when redaction is enabled. */
 public final class SensitiveValueRedactionEnricher implements InventoryEnricher {
@@ -42,8 +41,7 @@ public final class SensitiveValueRedactionEnricher implements InventoryEnricher 
     }
 
     private static boolean shouldRedact(ConfigFinding finding, RedactionPolicy policy) {
-        var key = (finding.normalizedKey() == null ? finding.key() : finding.normalizedKey()).toLowerCase(Locale.ROOT);
-        return policy.sensitiveKeyTokens().stream().anyMatch(key::contains);
+        return policy.matchesKey(finding.normalizedKey() == null ? finding.key() : finding.normalizedKey());
     }
 
     private static ConfigFinding redact(ConfigFinding finding, String replacement) {

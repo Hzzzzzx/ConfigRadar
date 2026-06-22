@@ -1,6 +1,7 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
 import java.util.List;
+import java.util.Locale;
 
 /** Output masking policy for sensitive configuration values. */
 public record RedactionPolicy(
@@ -21,5 +22,13 @@ public record RedactionPolicy(
 
     public static RedactionPolicy redactSensitive() {
         return new RedactionPolicy(true, List.of(), "******");
+    }
+
+    public boolean matchesKey(String key) {
+        if (key == null || key.isBlank()) {
+            return false;
+        }
+        var normalized = key.toLowerCase(Locale.ROOT);
+        return sensitiveKeyTokens.stream().anyMatch(normalized::contains);
     }
 }

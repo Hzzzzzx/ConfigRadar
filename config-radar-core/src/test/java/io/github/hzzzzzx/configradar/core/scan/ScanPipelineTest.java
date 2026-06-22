@@ -630,7 +630,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("remote-config-source")
                 && item.key().equals("apollo.orders.enabled")));
+        assertTrue(result.inventory().checks().stream()
+            .anyMatch(item -> item.type().equals("sensitive-looking-key")
+                && item.key().equals("redis.password")));
         assertEquals(157, result.inventory().summary().keys());
-        assertEquals(13, result.inventory().summary().checks());
+        assertEquals(29, result.inventory().summary().checks());
     }
 }
