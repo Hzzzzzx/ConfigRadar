@@ -1,6 +1,7 @@
 package io.github.hzzzzzx.configradar.core.diff;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
+import io.github.hzzzzzx.configradar.core.model.ConfigCenterDetails;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.model.ConfigValue;
 import io.github.hzzzzzx.configradar.core.model.Confidence;
@@ -124,6 +125,19 @@ final class KeyBasedDiffStrategyTest {
         assertEquals("dynamic-config-key", diff.checks().getFirst().type());
     }
 
+    @Test
+    void addsCheckForNewRemoteConfigFinding() {
+        var diff = new KeyBasedDiffStrategy().diff(
+            inventory(),
+            inventory(configCenterItem("apollo.app.timeout"))
+        );
+
+        assertEquals(1, diff.checks().size());
+        assertEquals(1, diff.summary().checks());
+        assertEquals("remote-config-source", diff.checks().getFirst().type());
+        assertEquals("apollo.app.timeout", diff.checks().getFirst().key());
+    }
+
     private static ConfigInventory inventory(ConfigFinding... items) {
         return new ConfigInventory(null, null, null, List.of(items), List.of(), List.of(), List.of());
     }
@@ -151,6 +165,21 @@ final class KeyBasedDiffStrategyTest {
 
     private static ConfigFinding typedItem(String key, String value, ValueType type) {
         return item(key, value, type, null, null, null);
+    }
+
+    private static ConfigFinding configCenterItem(String key) {
+        return new ConfigFinding(
+            key,
+            key,
+            FindingRole.READ,
+            null,
+            new ConfigValue("3000", "3000", ValueType.INTEGER),
+            EnvironmentContext.none(),
+            new SourceLocation("App.java", 1, "App", SourceKind.JAVA, Scope.MAIN),
+            Confidence.HIGH,
+            "test",
+            new ConfigCenterDetails("application", null, null, "3000")
+        );
     }
 
     private static ConfigFinding item(

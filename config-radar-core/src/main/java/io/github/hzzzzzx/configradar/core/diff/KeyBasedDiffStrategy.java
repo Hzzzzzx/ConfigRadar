@@ -1,6 +1,7 @@
 package io.github.hzzzzzx.configradar.core.diff;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigChange;
+import io.github.hzzzzzx.configradar.core.model.ConfigCenterDetails;
 import io.github.hzzzzzx.configradar.core.model.ConfigDiff;
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /** Diffs inventories by normalized key, role, and profile. */
@@ -28,11 +30,13 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
         var added = new ArrayList<ConfigFinding>();
         var removed = new ArrayList<ConfigFinding>();
         var changed = new ArrayList<ConfigChange>();
+        var checks = new ArrayList<InventoryCheck>();
 
         for (var entry : headItems.entrySet()) {
             var before = baseItems.get(entry.getKey());
             if (before == null) {
                 added.add(entry.getValue());
+                addRemoteConfigCheck(checks, entry.getValue());
             } else {
                 changed.addAll(changes(before, entry.getValue()));
             }
@@ -44,7 +48,6 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
         }
 
         var uncertainChanged = new ArrayList<UncertainFinding>();
-        var checks = new ArrayList<InventoryCheck>();
         var baseUncertain = base.uncertain().stream().map(UncertainFinding::expression).toList();
         for (var item : head.uncertain()) {
             if (!baseUncertain.contains(item.expression())) {
@@ -120,6 +123,29 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
 
     private static String sink(String rootSink) {
         return rootSink == null || rootSink.isBlank() ? "unknown sink" : rootSink;
+    }
+
+    private static void addRemoteConfigCheck(List<InventoryCheck> checks, ConfigFinding item) {
+        if (!isRemoteConfigReference(item)) {
+            return;
+        }
+        checks.add(new InventoryCheck(
+            "remote-config-source",
+            DiagnosticSeverity.WARNING,
+            "New remote config center reference requires review: " + item.key(),
+            item.key(),
+            item.source()
+        ));
+    }
+
+    private static boolean isRemoteConfigReference(ConfigFinding item) {
+        if (item.details() instanceof ConfigCenterDetails) {
+            return true;
+        }
+        var key = item.normalizedKey().toLowerCase(Locale.ROOT);
+        return key.startsWith("spring.cloud.config.")
+            || key.startsWith("spring.cloud.nacos.config.")
+            || key.equals("spring.config.import");
     }
 
     private static List<ConfigFinding> sorted(List<ConfigFinding> findings) {
