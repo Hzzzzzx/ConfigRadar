@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
@@ -240,5 +241,10 @@ public class DemoConfig {
     @Bulkhead(name = "${resilience.orders.bulkhead:orders}")
     public String callInventory() {
         return "ok";
+    }
+
+    @Cacheable(cacheNames = "${cache.orders.name:orders}", key = "${cache.orders.key:default}")
+    public String cachedOrder(String id) {
+        return id;
     }
 }

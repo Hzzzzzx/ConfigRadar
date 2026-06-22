@@ -91,6 +91,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resilience.orders.retry")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resilience.orders.ratelimiter")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resilience.orders.bulkhead")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.orders.name")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.orders.key")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("custom.placeholder.default")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.profiles")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.property-source")));
@@ -248,6 +250,8 @@ final class JavaSourceConfigDetectorTest {
         assertEquals("orders", finding(findings, "resilience.orders.retry").defaultValue().raw());
         assertEquals("orders", finding(findings, "resilience.orders.ratelimiter").defaultValue().raw());
         assertEquals("orders", finding(findings, "resilience.orders.bulkhead").defaultValue().raw());
+        assertEquals("orders", finding(findings, "cache.orders.name").defaultValue().raw());
+        assertEquals("default", finding(findings, "cache.orders.key").defaultValue().raw());
         assertEquals("no", finding(findings, "custom.placeholder.default").defaultValue().raw());
     }
 
