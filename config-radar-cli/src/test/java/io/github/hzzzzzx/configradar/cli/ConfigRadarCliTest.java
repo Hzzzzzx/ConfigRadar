@@ -117,6 +117,23 @@ final class ConfigRadarCliTest {
     }
 
     @Test
+    void inventoryCommandAcceptsParallelism() throws Exception {
+        var inventory = tempDir.resolve("inventory-parallel.yaml");
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "inventory",
+            springBasic().toString(),
+            "-o",
+            inventory.toString(),
+            "--parallelism",
+            "2"
+        );
+
+        assertEquals(0, exitCode);
+        assertTrue(Files.readString(inventory).contains("config-inventory/v1"));
+    }
+
+    @Test
     void diffCommandWritesKeyBasedDiff() throws Exception {
         var base = tempDir.resolve("base.yaml");
         var head = tempDir.resolve("head.yaml");

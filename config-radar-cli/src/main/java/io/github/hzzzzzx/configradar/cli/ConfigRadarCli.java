@@ -63,6 +63,9 @@ public final class ConfigRadarCli implements Runnable {
         @Option(names = "--enable-codegraph", description = "Use optional codegraph semantic detector when available.")
         private boolean enableCodegraph;
 
+        @Option(names = "--parallelism", description = "Detector worker count. Defaults to CPU count capped at 8.")
+        private int parallelism;
+
         /**
          * Runs the inventory skeleton: build input, load rules, scan, then write YAML outputs.
          *
@@ -83,7 +86,7 @@ public final class ConfigRadarCli implements Runnable {
                     input.buildHints()
                 );
             }
-            var options = new ScanOptions(includeTests, true, 0, 0, null);
+            var options = new ScanOptions(includeTests, true, parallelism, 0, null);
             var rules = new RuleLoader().load(resolvedRulesFile);
             var result = ScanPipeline.defaults(enableCodegraph).scan(input, options, rules);
             writeParent(output);
