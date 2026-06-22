@@ -9,7 +9,10 @@ import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.Scope;
 import io.github.hzzzzzx.configradar.core.model.SourceKind;
 import io.github.hzzzzzx.configradar.core.model.SourceLocation;
+import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
+import io.github.hzzzzzx.configradar.core.model.UncertainReason;
 import io.github.hzzzzzx.configradar.core.model.UnknownDetails;
+import io.github.hzzzzzx.configradar.core.model.UnknownUncertainDetails;
 import io.github.hzzzzzx.configradar.core.model.ValueType;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -100,8 +103,42 @@ final class KeyBasedDiffStrategyTest {
         ));
     }
 
+    @Test
+    void addsCheckForNewUncertainFinding() {
+        var base = inventory();
+        var head = new ConfigInventory(
+            null,
+            null,
+            null,
+            List.of(),
+            List.of(uncertain("environment.getProperty(prefix + \".url\")")),
+            List.of(),
+            List.of()
+        );
+
+        var diff = new KeyBasedDiffStrategy().diff(base, head);
+
+        assertEquals(1, diff.uncertainChanged().size());
+        assertEquals(1, diff.checks().size());
+        assertEquals(1, diff.summary().checks());
+        assertEquals("dynamic-config-key", diff.checks().getFirst().type());
+    }
+
     private static ConfigInventory inventory(ConfigFinding... items) {
         return new ConfigInventory(null, null, null, List.of(items), List.of(), List.of(), List.of());
+    }
+
+    private static UncertainFinding uncertain(String expression) {
+        return new UncertainFinding(
+            expression,
+            UncertainReason.STRING_CONCAT,
+            "Environment.getProperty",
+            EnvironmentContext.none(),
+            new SourceLocation("App.java", 1, "App", SourceKind.JAVA, Scope.MAIN),
+            Confidence.LOW,
+            "test",
+            new UnknownUncertainDetails(expression)
+        );
     }
 
     private static ConfigFinding item(String key, String value, String profile) {

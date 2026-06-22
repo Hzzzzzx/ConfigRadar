@@ -9,7 +9,8 @@ public record ConfigDiff(
     List<ConfigFinding> added,
     List<ConfigFinding> removed,
     List<ConfigChange> changed,
-    List<UncertainFinding> uncertainChanged
+    List<UncertainFinding> uncertainChanged,
+    List<InventoryCheck> checks
 ) {
     public static final String SCHEMA_VERSION = "config-diff/v1";
 
@@ -19,8 +20,20 @@ public record ConfigDiff(
         removed = List.copyOf(removed == null ? List.of() : removed);
         changed = List.copyOf(changed == null ? List.of() : changed);
         uncertainChanged = List.copyOf(uncertainChanged == null ? List.of() : uncertainChanged);
+        checks = List.copyOf(checks == null ? List.of() : checks);
         summary = summary == null
-            ? new DiffSummary(added.size(), removed.size(), changed.size(), uncertainChanged.size())
+            ? new DiffSummary(added.size(), removed.size(), changed.size(), uncertainChanged.size(), checks.size())
             : summary;
+    }
+
+    public ConfigDiff(
+        String schemaVersion,
+        DiffSummary summary,
+        List<ConfigFinding> added,
+        List<ConfigFinding> removed,
+        List<ConfigChange> changed,
+        List<UncertainFinding> uncertainChanged
+    ) {
+        this(schemaVersion, summary, added, removed, changed, uncertainChanged, List.of());
     }
 }

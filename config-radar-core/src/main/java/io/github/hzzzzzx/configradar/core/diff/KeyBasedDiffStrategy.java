@@ -5,6 +5,8 @@ import io.github.hzzzzzx.configradar.core.model.ConfigDiff;
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.model.ConfigValue;
+import io.github.hzzzzzx.configradar.core.model.DiagnosticSeverity;
+import io.github.hzzzzzx.configradar.core.model.InventoryCheck;
 import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -42,10 +44,19 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
         }
 
         var uncertainChanged = new ArrayList<UncertainFinding>();
+        var checks = new ArrayList<InventoryCheck>();
         var baseUncertain = base.uncertain().stream().map(UncertainFinding::expression).toList();
         for (var item : head.uncertain()) {
             if (!baseUncertain.contains(item.expression())) {
                 uncertainChanged.add(item);
+                checks.add(new InventoryCheck(
+                    "dynamic-config-key",
+                    DiagnosticSeverity.ERROR,
+                    "New dynamic configuration access requires review: "
+                        + item.reason() + " via " + sink(item.rootSink()) + ": " + item.expression(),
+                    null,
+                    item.source()
+                ));
             }
         }
 
@@ -55,7 +66,8 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
             sorted(added),
             sorted(removed),
             changed.stream().sorted(Comparator.comparing(ConfigChange::key).thenComparing(ConfigChange::field)).toList(),
-            uncertainChanged
+            uncertainChanged,
+            checks
         );
     }
 
@@ -104,6 +116,10 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
 
     private static String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private static String sink(String rootSink) {
+        return rootSink == null || rootSink.isBlank() ? "unknown sink" : rootSink;
     }
 
     private static List<ConfigFinding> sorted(List<ConfigFinding> findings) {

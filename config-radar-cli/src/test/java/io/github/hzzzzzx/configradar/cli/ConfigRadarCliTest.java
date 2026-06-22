@@ -10,7 +10,10 @@ import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.Scope;
 import io.github.hzzzzzx.configradar.core.model.SourceKind;
 import io.github.hzzzzzx.configradar.core.model.SourceLocation;
+import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
+import io.github.hzzzzzx.configradar.core.model.UncertainReason;
 import io.github.hzzzzzx.configradar.core.model.UnknownDetails;
+import io.github.hzzzzzx.configradar.core.model.UnknownUncertainDetails;
 import io.github.hzzzzzx.configradar.core.model.ValueType;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -207,7 +210,10 @@ final class ConfigRadarCliTest {
         var output = tempDir.resolve("diff.yaml");
         var mapper = YamlSupport.mapper();
         mapper.writeValue(base.toFile(), inventory(item("server.port", "8080")));
-        mapper.writeValue(head.toFile(), inventory(item("server.port", "9090"), item("feature.enabled", "true")));
+        mapper.writeValue(head.toFile(), inventoryWithUncertain(
+            List.of(item("server.port", "9090"), item("feature.enabled", "true")),
+            List.of(uncertain("environment.getProperty(prefix + \".url\")"))
+        ));
 
         int exitCode = new CommandLine(new ConfigRadarCli()).execute(
             "diff",
@@ -225,6 +231,8 @@ final class ConfigRadarCliTest {
         assertTrue(yaml.contains("feature.enabled"));
         assertTrue(yaml.contains("oldValue: \"8080\""));
         assertTrue(yaml.contains("newValue: \"9090\""));
+        assertTrue(yaml.contains("checks:"));
+        assertTrue(yaml.contains("dynamic-config-key"));
     }
 
     private static Path springBasic() {
@@ -268,6 +276,23 @@ final class ConfigRadarCliTest {
 
     private static ConfigInventory inventory(ConfigFinding... items) {
         return new ConfigInventory(null, null, null, List.of(items), List.of(), List.of(), List.of());
+    }
+
+    private static ConfigInventory inventoryWithUncertain(List<ConfigFinding> items, List<UncertainFinding> uncertain) {
+        return new ConfigInventory(null, null, null, items, uncertain, List.of(), List.of());
+    }
+
+    private static UncertainFinding uncertain(String expression) {
+        return new UncertainFinding(
+            expression,
+            UncertainReason.STRING_CONCAT,
+            "Environment.getProperty",
+            EnvironmentContext.none(),
+            new SourceLocation("App.java", 1, "App", SourceKind.JAVA, Scope.MAIN),
+            Confidence.LOW,
+            "test",
+            new UnknownUncertainDetails(expression)
+        );
     }
 
     private static ConfigFinding item(String key, String value) {
