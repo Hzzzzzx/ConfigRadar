@@ -72,14 +72,14 @@ public final class LogbackSpringXmlDetector implements ConfigDetector {
     private void addPlaceholders(ScanContext context, IndexedFile file, String text, List<ScanFinding> findings) {
         var start = text.indexOf("${");
         while (start >= 0) {
-            var end = text.indexOf('}', start + 2);
+            var end = placeholderEnd(text, start);
             if (end < 0) {
                 return;
             }
             var body = text.substring(start + 2, end);
-            var split = body.contains(":-") ? body.indexOf(":-") : body.indexOf(':');
-            var key = split < 0 ? body : body.substring(0, split);
-            var defaultValue = split < 0 ? null : body.substring(split + (body.contains(":-") ? 2 : 1));
+            var split = placeholderSplit(body);
+            var key = split.position() < 0 ? body : body.substring(0, split.position());
+            var defaultValue = split.position() < 0 ? null : body.substring(split.position() + split.separatorLength());
             if (!key.isBlank()) {
                 findings.add(new ConfigFinding(
                     key,
@@ -94,8 +94,52 @@ public final class LogbackSpringXmlDetector implements ConfigDetector {
                     new SpringPlaceholderDetails(defaultValue, body)
                 ));
             }
+            if (defaultValue != null) {
+                addPlaceholders(context, file, defaultValue, findings);
+            }
             start = text.indexOf("${", end + 1);
         }
+    }
+
+    private static int placeholderEnd(String text, int start) {
+        var depth = 0;
+        for (var index = start; index < text.length(); index++) {
+            if (index + 1 < text.length() && text.charAt(index) == '$' && text.charAt(index + 1) == '{') {
+                depth++;
+                index++;
+                continue;
+            }
+            if (text.charAt(index) == '}') {
+                depth--;
+                if (depth == 0) {
+                    return index;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static PlaceholderSplit placeholderSplit(String body) {
+        var depth = 0;
+        for (var index = 0; index < body.length(); index++) {
+            if (index + 1 < body.length() && body.charAt(index) == '$' && body.charAt(index + 1) == '{') {
+                depth++;
+                index++;
+                continue;
+            }
+            if (body.charAt(index) == '}') {
+                depth--;
+                continue;
+            }
+            if (depth == 0 && body.charAt(index) == ':') {
+                var length = index + 1 < body.length() && body.charAt(index + 1) == '-' ? 2 : 1;
+                return new PlaceholderSplit(index, length);
+            }
+        }
+        return new PlaceholderSplit(-1, 0);
+    }
+
+    private record PlaceholderSplit(int position, int separatorLength) {
     }
 
     private static ConfigValue value(String raw) {

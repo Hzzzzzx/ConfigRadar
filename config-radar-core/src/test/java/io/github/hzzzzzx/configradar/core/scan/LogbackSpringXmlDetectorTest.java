@@ -25,6 +25,8 @@ final class LogbackSpringXmlDetectorTest {
         assertEquals(SourceKind.XML, finding(findings, "spring.application.name").source().sourceKind());
         assertEquals("./logs", finding(findings, "logging.file.path").defaultValue().raw());
         assertEquals("INFO", finding(findings, "LOG_LEVEL").defaultValue().raw());
+        assertEquals("${LOG_NESTED_INNER:-WARN}", finding(findings, "LOG_NESTED_OUTER").defaultValue().raw());
+        assertEquals("WARN", finding(findings, "LOG_NESTED_INNER").defaultValue().raw());
         assertEquals("./logs", finding(findings, "log4j2.file.path").defaultValue().raw());
         assertEquals("INFO", finding(findings, "LOG4J_LEVEL").defaultValue().raw());
     }

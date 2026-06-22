@@ -2,4 +2,5 @@
     <springProperty name="appName" source="spring.application.name" defaultValue="spring-basic"/>
     <springProperty name="logPath" source="logging.file.path" defaultValue="./logs"/>
     <property name="level" value="${LOG_LEVEL:-INFO}"/>
+    <property name="nestedLevel" value="${LOG_NESTED_OUTER:${LOG_NESTED_INNER:-WARN}}"/>
 </configuration>
