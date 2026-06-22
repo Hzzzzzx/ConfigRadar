@@ -84,6 +84,7 @@ public class DemoConfig {
         var propertyMapDefaultValue = System.getProperties().getOrDefault("map.property.default", "safe-default");
         var hasPropertyMapFlag = System.getProperties().containsKey("map.property.flag");
         System.getProperties().put("map.property.write", "enabled");
+        System.getProperties().putIfAbsent("map.property.default-write", "lazy");
         System.getProperties().setProperty("map.property.set", "ready");
         System.getProperties().remove("map.property.removed");
         var legacyPort = Integer.getInteger("legacy.port", 8081);
