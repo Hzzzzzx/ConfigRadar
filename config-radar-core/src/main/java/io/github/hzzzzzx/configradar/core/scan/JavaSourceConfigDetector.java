@@ -1,5 +1,6 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.BinaryTree;
@@ -18,6 +19,7 @@ import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
+import io.github.hzzzzzx.configradar.core.io.YamlSupport;
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
 import io.github.hzzzzzx.configradar.core.model.ConfigValue;
 import io.github.hzzzzzx.configradar.core.model.Confidence;
@@ -40,6 +42,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
@@ -48,6 +51,7 @@ import javax.tools.ToolProvider;
 
 /** Detects common Java/Spring configuration reads from source AST. */
 public final class JavaSourceConfigDetector implements ConfigDetector {
+    private static final ObjectReader YAML_READER = YamlSupport.mapper().readerFor(Object.class);
     private static final Pattern SPEL_ENVIRONMENT = Pattern.compile("environment\\[['\"]([^'\"]+)['\"]]");
     private static final Pattern SPEL_SYSTEM_ENVIRONMENT = Pattern.compile("systemEnvironment\\[['\"]([^'\"]+)['\"]]");
     private static final Pattern SPEL_SYSTEM_PROPERTIES = Pattern.compile("systemProperties\\[['\"]([^'\"]+)['\"]]");
@@ -632,6 +636,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 id(),
                 new JavaSystemPropertyDetails(defaultValue, false)
             ));
+            expandSpringApplicationJson(key, value, tree);
         }
 
         private void readSystemPropertiesReplacement(MethodInvocationTree tree) {
@@ -946,6 +951,48 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
 
         private void addSpelReferences(String text, ExpressionTree tree) {
             addSpelReferences(text, tree, FindingRole.READ, "spel-value");
+        }
+
+        private void expandSpringApplicationJson(String key, String rawValue, com.sun.source.tree.Tree tree) {
+            if (rawValue == null || !key.equals("SPRING_APPLICATION_JSON") && !key.equals("spring.application.json")) {
+                return;
+            }
+            try {
+                flattenSpringApplicationJson(YAML_READER.readValue(rawValue), "", tree);
+            } catch (Exception ignored) {
+                // ponytail: keep raw property; add detector diagnostics if malformed source JSON matters.
+            }
+        }
+
+        private void flattenSpringApplicationJson(Object node, String prefix, com.sun.source.tree.Tree tree) {
+            if (node instanceof Map<?, ?> map) {
+                for (var entry : map.entrySet()) {
+                    var key = String.valueOf(entry.getKey());
+                    flattenSpringApplicationJson(entry.getValue(), prefix.isBlank() ? key : prefix + "." + key, tree);
+                }
+                return;
+            }
+            if (node instanceof List<?> list) {
+                for (var index = 0; index < list.size(); index++) {
+                    flattenSpringApplicationJson(list.get(index), prefix + "[" + index + "]", tree);
+                }
+                return;
+            }
+            if (!prefix.isBlank() && node != null) {
+                var value = String.valueOf(node);
+                findings.add(new ConfigFinding(
+                    prefix,
+                    prefix,
+                    FindingRole.DEFINE,
+                    new ConfigValue(value, value, typeOf(value)),
+                    null,
+                    EnvironmentContext.none(),
+                    source(tree, SourceKind.JAVA),
+                    Confidence.HIGH,
+                    id(),
+                    new ExternalDetails("spring", "application-json", null)
+                ));
+            }
         }
 
         private void addSpelReferences(

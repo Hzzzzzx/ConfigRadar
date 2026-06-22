@@ -104,6 +104,7 @@ public class DemoConfig {
         var custom = ConfigCenter.get("custom.center", "fallback");
         var customDefined = ConfigCenter.set("custom.defined", "enabled");
         System.setProperty("runtime.region", "cn");
+        System.setProperty("spring.application.json", "{\"java\":{\"json\":{\"enabled\":true}}}");
         System.clearProperty("runtime.mode");
         return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + arrayProfile + cloudProfile
             + binder + createdBinder + system

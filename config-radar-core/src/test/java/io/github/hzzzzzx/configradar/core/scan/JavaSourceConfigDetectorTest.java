@@ -64,6 +64,7 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("legacy.limit")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("legacy.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("runtime.region")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("java.json.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.main.banner-mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("management.endpoints.web.exposure.include")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.lifecycle.timeout-per-shutdown-phase")));
@@ -177,6 +178,10 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(FindingRole.DEFINE, runtimeRegion.role());
         assertEquals("cn", runtimeRegion.value().raw());
         assertNull(runtimeRegion.defaultValue());
+        var javaJsonEnabled = finding(findings, "java.json.enabled");
+        assertEquals(FindingRole.DEFINE, javaJsonEnabled.role());
+        assertEquals("true", javaJsonEnabled.value().raw());
+        assertEquals(ValueType.BOOLEAN, javaJsonEnabled.value().type());
         var runtimeMode = finding(findings, "runtime.mode");
         assertEquals(FindingRole.DEFINE, runtimeMode.role());
         assertNull(runtimeMode.value());
