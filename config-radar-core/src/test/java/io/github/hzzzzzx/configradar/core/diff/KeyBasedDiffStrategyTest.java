@@ -138,6 +138,19 @@ final class KeyBasedDiffStrategyTest {
         assertEquals("apollo.app.timeout", diff.checks().getFirst().key());
     }
 
+    @Test
+    void addsCheckForNewSensitiveLookingKey() {
+        var diff = new KeyBasedDiffStrategy().diff(
+            inventory(),
+            inventory(item("redis.password", "secret", null))
+        );
+
+        assertEquals(1, diff.checks().size());
+        assertEquals(1, diff.summary().checks());
+        assertEquals("sensitive-looking-key", diff.checks().getFirst().type());
+        assertEquals("redis.password", diff.checks().getFirst().key());
+    }
+
     private static ConfigInventory inventory(ConfigFinding... items) {
         return new ConfigInventory(null, null, null, List.of(items), List.of(), List.of(), List.of());
     }

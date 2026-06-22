@@ -9,6 +9,7 @@ import io.github.hzzzzzx.configradar.core.model.ConfigValue;
 import io.github.hzzzzzx.configradar.core.model.DiagnosticSeverity;
 import io.github.hzzzzzx.configradar.core.model.InventoryCheck;
 import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
+import io.github.hzzzzzx.configradar.core.scan.RedactionPolicy;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -18,6 +19,8 @@ import java.util.Objects;
 
 /** Diffs inventories by normalized key, role, and profile. */
 public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
+    private static final RedactionPolicy SENSITIVE_KEYS = RedactionPolicy.redactSensitive();
+
     @Override
     public String id() {
         return "key";
@@ -37,6 +40,7 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
             if (before == null) {
                 added.add(entry.getValue());
                 addRemoteConfigCheck(checks, entry.getValue());
+                addSensitiveKeyCheck(checks, entry.getValue());
             } else {
                 changed.addAll(changes(before, entry.getValue()));
             }
@@ -146,6 +150,19 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
         return key.startsWith("spring.cloud.config.")
             || key.startsWith("spring.cloud.nacos.config.")
             || key.equals("spring.config.import");
+    }
+
+    private static void addSensitiveKeyCheck(List<InventoryCheck> checks, ConfigFinding item) {
+        if (!SENSITIVE_KEYS.matchesKey(item.normalizedKey() == null ? item.key() : item.normalizedKey())) {
+            return;
+        }
+        checks.add(new InventoryCheck(
+            "sensitive-looking-key",
+            DiagnosticSeverity.WARNING,
+            "New configuration key name looks sensitive: " + item.key(),
+            item.key(),
+            item.source()
+        ));
     }
 
     private static List<ConfigFinding> sorted(List<ConfigFinding> findings) {
