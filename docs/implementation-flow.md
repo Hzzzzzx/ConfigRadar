@@ -98,14 +98,14 @@ Implemented:
 - Rule-driven Java scan：通过 method-call/annotation 规则覆盖项目自定义配置入口
 - Rule-driven config file scan：通过 configFiles 规则覆盖自定义 YAML/properties 文件
 - Default rules discovery：CLI 未传 `--rules` 时自动读取项目根目录的 `config-radar-rules.yaml`
-- Basic key normalizer：归一化大小写、下划线、短横线、驼峰，支撑更稳定的 summary 和 diff
+- Basic key normalizer：归一化大小写、下划线、短横线、驼峰，支撑更稳定的 summary 和 diff；同时可用 `ScanInput.environmentHints` 为缺失的 profile/region/namespace 补默认环境上下文
 - detector registry：统一注册 detector，`ScanPipelineBuilder.detectorPack(...)` 已支持 pack 贡献 detector
 - pipeline builder：统一组合 detector、processor、normalizer、enricher 等阶段，后续新增组件不需要散落修改构造器参数
 - processor/normalizer/enricher hooks：主流程已调用
 - uncertain finding checks：动态/无法解析的配置 key 会生成高风险 check
 - YAML inventory output：默认下游消费格式
 - metrics sidecar output：记录阶段耗时和 diagnostics
-- CLI `inventory`：从项目目录生成 inventory，支持 `--include` / `--exclude` 扫描路径过滤
+- CLI `inventory`：从项目目录生成 inventory，支持 `--include` / `--exclude` 扫描路径过滤，以及 `--profile` / `--region` / `--namespace` 默认环境提示
 - CLI `diff`：读取两个 inventory，按 key-based 策略输出 `added/removed/changed/uncertainChanged`
 - optional codegraph detector：`--enable-codegraph` 可启用外部语义索引，当前只增强自定义 `@Value` meta-annotation 使用点
 - detector failure diagnostics：单 detector 失败不会拖垮整次扫描
