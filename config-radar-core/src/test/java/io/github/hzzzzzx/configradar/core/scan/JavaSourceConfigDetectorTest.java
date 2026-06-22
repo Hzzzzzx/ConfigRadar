@@ -107,6 +107,9 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("redis.host")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("redis.password")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("kafka.bootstrap-servers")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.resource.enabled")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.resource.timeout")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("named.programmatic.region")));
     }
 
     @Test
@@ -374,6 +377,10 @@ final class JavaSourceConfigDetectorTest {
             .findFirst()
             .orElseThrow();
         assertEquals("redis-secret", redisPassword.defaultValue().raw());
+
+        assertEquals(ValueType.BOOLEAN, finding(findings, "programmatic.resource.enabled").value().type());
+        assertEquals(ValueType.DURATION, finding(findings, "programmatic.resource.timeout").value().type());
+        assertEquals("cn", finding(findings, "named.programmatic.region").value().raw());
     }
 
     @Test

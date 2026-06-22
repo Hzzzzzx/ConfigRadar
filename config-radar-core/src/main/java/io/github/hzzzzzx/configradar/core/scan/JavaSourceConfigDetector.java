@@ -663,6 +663,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 id(),
                 new ExternalDetails("spring", "resource-property-source", null)
             ));
+            readLocalPropertySource(location);
         }
 
         private void readJavaConfigRead(MethodInvocationTree tree) {
