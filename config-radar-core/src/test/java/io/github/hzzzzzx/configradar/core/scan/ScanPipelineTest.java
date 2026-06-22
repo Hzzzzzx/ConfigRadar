@@ -16,6 +16,8 @@ import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -140,6 +142,66 @@ final class ScanPipelineTest {
         assertEquals(DiagnosticSeverity.WARNING, result.diagnostics().get(0).severity());
         assertEquals("failing-detector", result.diagnostics().get(0).componentId());
         assertTrue(result.metrics().stream().anyMatch(metric -> metric.phase().equals("detector-execution")));
+    }
+
+    @Test
+    void runsDetectorsWithConfiguredParallelism() throws Exception {
+        var started = new CountDownLatch(2);
+        var source = new SourceLocation("src/main/java/App.java", 1, "App", SourceKind.JAVA, Scope.MAIN);
+        var pipeline = new ScanPipeline(
+            new DefaultFileIndexer(),
+            new DetectorRegistry(List.of(
+                waitingDetector("first", "parallel.first", started, source),
+                waitingDetector("second", "parallel.second", started, source)
+            )),
+            List.of(new NoopFindingProcessor()),
+            List.of(new NoopFindingNormalizer()),
+            new DefaultInventoryBuilder(),
+            List.of(new SummaryInventoryEnricher())
+        );
+
+        var result = pipeline.scan(
+            ScanInput.of(FixturePaths.springBasic()),
+            new ScanOptions(false, true, 2, 0, null),
+            ConfigRules.empty()
+        );
+
+        assertEquals(2, result.inventory().items().size());
+    }
+
+    private static ConfigDetector waitingDetector(
+        String id,
+        String key,
+        CountDownLatch started,
+        SourceLocation source
+    ) {
+        return new ConfigDetector() {
+            @Override
+            public String id() {
+                return id;
+            }
+
+            @Override
+            public List<io.github.hzzzzzx.configradar.core.model.ScanFinding> detect(ScanContext context)
+                throws InterruptedException {
+                started.countDown();
+                if (!started.await(2, TimeUnit.SECONDS)) {
+                    return List.of();
+                }
+                return List.of(new ConfigFinding(
+                    key,
+                    key,
+                    FindingRole.READ,
+                    null,
+                    null,
+                    null,
+                    source,
+                    Confidence.HIGH,
+                    id,
+                    new JavaSystemPropertyDetails(null, false)
+                ));
+            }
+        };
     }
 
     @Test

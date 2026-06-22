@@ -7,6 +7,7 @@ import io.github.hzzzzzx.configradar.core.model.ScanFinding;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 /** Composition root for the static scan skeleton. */
@@ -123,18 +124,7 @@ public final class ScanPipeline {
         List<ScanFinding> findings = new ArrayList<>();
 
         var startDetectors = System.nanoTime();
-        for (var detector : detectorRegistry.detectors()) {
-            try {
-                findings.addAll(detector.detect(context));
-            } catch (Exception error) {
-                diagnostics.add(new Diagnostic(
-                    DiagnosticSeverity.WARNING,
-                    "detector",
-                    error.getMessage(),
-                    detector.id()
-                ));
-            }
-        }
+        findings.addAll(runDetectors(context, diagnostics));
         metrics.add(metric("detector-execution", startDetectors));
 
         var startProcessors = System.nanoTime();
@@ -163,6 +153,55 @@ public final class ScanPipeline {
         int uncertainCount = inventory.uncertain().size();
         LOG.info(() -> "Finished ConfigRadar scan: findings=" + itemCount + ", uncertain=" + uncertainCount);
         return new ScanResult(inventory, diagnostics, metrics);
+    }
+
+    private List<ScanFinding> runDetectors(ScanContext context, List<Diagnostic> diagnostics) throws InterruptedException {
+        var detectors = detectorRegistry.detectors();
+        if (detectors.size() <= 1 || context.options().parallelism() <= 1) {
+            var findings = new ArrayList<ScanFinding>();
+            for (var detector : detectors) {
+                findings.addAll(runDetector(detector, context, diagnostics));
+            }
+            return findings;
+        }
+
+        try (var executor = Executors.newFixedThreadPool(Math.min(context.options().parallelism(), detectors.size()))) {
+            var futures = new ArrayList<java.util.concurrent.Future<List<ScanFinding>>>();
+            for (var detector : detectors) {
+                futures.add(executor.submit(() -> detector.detect(context)));
+            }
+            var findings = new ArrayList<ScanFinding>();
+            for (var index = 0; index < detectors.size(); index++) {
+                try {
+                    findings.addAll(futures.get(index).get());
+                } catch (Exception error) {
+                    diagnostics.add(diagnostic(detectors.get(index), error.getCause() == null ? error : error.getCause()));
+                }
+            }
+            return findings;
+        }
+    }
+
+    private List<ScanFinding> runDetector(
+        ConfigDetector detector,
+        ScanContext context,
+        List<Diagnostic> diagnostics
+    ) {
+        try {
+            return detector.detect(context);
+        } catch (Exception error) {
+            diagnostics.add(diagnostic(detector, error));
+            return List.of();
+        }
+    }
+
+    private static Diagnostic diagnostic(ConfigDetector detector, Throwable error) {
+        return new Diagnostic(
+            DiagnosticSeverity.WARNING,
+            "detector",
+            error.getMessage(),
+            detector.id()
+        );
     }
 
     private static PerformanceMetric metric(String phase, long startNanos) {
