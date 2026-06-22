@@ -14,6 +14,15 @@ data:
   EXTRA_MODE: canary
   EXTRA_ENABLED: "true"
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+stringData:
+  secret.mode: local
+data:
+  token: dG9rZW4=
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

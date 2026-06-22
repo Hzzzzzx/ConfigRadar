@@ -27,6 +27,12 @@ final class KubernetesEnvDetectorTest {
         assertEquals(ValueType.INTEGER, finding(findings, "k8s.config.limit").value().type());
         assertEquals("canary", finding(findings, "EXTRA_MODE").value().raw());
         assertEquals(ValueType.BOOLEAN, finding(findings, "EXTRA_ENABLED").value().type());
+        assertEquals("local", finding(findings, "secret.mode").value().raw());
+        var secretData = finding(findings, "kubernetes.secret.data.app-secret.token");
+        assertEquals(FindingRole.METADATA, secretData.role());
+        assertEquals("token", secretData.value().raw());
+        var secretDataDetails = assertInstanceOf(ExternalDetails.class, secretData.details());
+        assertEquals("secret-data-key", secretDataDetails.type());
         assertEquals("prod", finding(findings, "K8S_APP_MODE").value().raw());
         assertEquals(ValueType.BOOLEAN, finding(findings, "K8S_FEATURE_ENABLED").value().type());
         assertEquals("app-config:k8s.config.limit", finding(findings, "K8S_CONFIG_LIMIT").value().raw());

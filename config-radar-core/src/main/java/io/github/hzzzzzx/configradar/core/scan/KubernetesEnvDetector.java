@@ -48,6 +48,7 @@ public final class KubernetesEnvDetector implements ConfigDetector {
         var configMaps = configMaps(documents);
         for (var document : documents) {
             readConfigMapData(context, document.file(), document.map(), findings);
+            readSecretData(context, document.file(), document.map(), findings);
             readContainers(context, document.file(), document.map(), configMaps, findings);
         }
         return findings;
@@ -92,6 +93,44 @@ public final class KubernetesEnvDetector implements ConfigDetector {
                     Confidence.HIGH,
                     findings
                 );
+            }
+        }
+    }
+
+    private static void readSecretData(
+        ScanContext context,
+        IndexedFile file,
+        Map<?, ?> document,
+        List<ScanFinding> findings
+    ) {
+        if (!"Secret".equals(String.valueOf(document.get("kind")))) {
+            return;
+        }
+        if (document.get("stringData") instanceof Map<?, ?> stringData) {
+            for (var entry : stringData.entrySet()) {
+                if (entry.getKey() != null && entry.getValue() != null) {
+                    addFinding(
+                        context,
+                        file,
+                        String.valueOf(entry.getKey()),
+                        String.valueOf(entry.getValue()),
+                        "secret-string-data",
+                        Confidence.HIGH,
+                        findings
+                    );
+                }
+            }
+        }
+        if (document.get("data") instanceof Map<?, ?> data) {
+            var secretName = metadataName(document);
+            if (secretName == null || secretName.isBlank()) {
+                return;
+            }
+            for (var entry : data.entrySet()) {
+                if (entry.getKey() != null) {
+                    var key = "kubernetes.secret.data." + secretName + "." + entry.getKey();
+                    addMetadata(context, file, key, String.valueOf(entry.getKey()), "secret-data-key", findings);
+                }
             }
         }
     }

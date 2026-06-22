@@ -744,7 +744,11 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("APP_EXTRA_ENABLED")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.env-from.secret.app-secret")));
-        assertEquals(202, result.inventory().summary().keys());
-        assertEquals(38, result.inventory().summary().checks());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("secret.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("kubernetes.secret.data.app-secret.token")));
+        assertEquals(204, result.inventory().summary().keys());
+        assertEquals(40, result.inventory().summary().checks());
     }
 }
