@@ -687,7 +687,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         ) {
             if (stringProperties) {
                 return args.stream()
-                    .map(this::literal)
+                    .flatMap(argument -> stringLiterals(argument).stream())
                     .map(this::propertyString)
                     .filter(java.util.Objects::nonNull)
                     .toList();
@@ -712,6 +712,17 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 }
             }
             return pairs;
+        }
+
+        private List<String> stringLiterals(ExpressionTree tree) {
+            if (tree instanceof NewArrayTree array) {
+                return array.getInitializers().stream()
+                    .map(this::literal)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+            }
+            var literal = literal(tree);
+            return literal == null ? List.of() : List.of(literal);
         }
 
         private List<PropertyPair> mapEntries(List<? extends ExpressionTree> entries) {

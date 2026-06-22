@@ -164,6 +164,9 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(FindingRole.DEFINE, shutdownPhase.role());
         assertEquals("20s", shutdownPhase.value().raw());
 
+        assertEquals("1", finding(findings, "spring.array.one").value().raw());
+        assertEquals("2", finding(findings, "spring.array.two").value().raw());
+
         assertEquals("on", finding(findings, "cli.mode").value().raw());
         assertEquals("30", finding(findings, "cli.timeout").value().raw());
 

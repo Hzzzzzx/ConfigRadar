@@ -107,7 +107,11 @@ public class DemoConfig {
         ));
         app.setDefaultProperties(defaultProperties);
         new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class)
-            .properties("spring.lifecycle.timeout-per-shutdown-phase=20s");
+            .properties("spring.lifecycle.timeout-per-shutdown-phase=20s")
+            .properties(new String[] {
+                "spring.array.one=1",
+                "spring.array.two=2"
+            });
     }
 
     public void springApplicationCommandLineArgs() {
