@@ -520,6 +520,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var isSystemPropertiesGetOrDefault = method.endsWith("System.getProperties().getOrDefault");
             var isSystemPropertiesContainsKey = method.endsWith("System.getProperties().containsKey");
             var isSystemPropertiesPut = method.endsWith("System.getProperties().put");
+            var isSystemPropertiesRemove = method.endsWith("System.getProperties().remove");
             var isGetenv = method.endsWith(".getenv") || method.equals("getenv");
             var isGetenvMapGet = method.endsWith("System.getenv().get");
             var isGetenvMapGetOrDefault = method.endsWith("System.getenv().getOrDefault");
@@ -530,8 +531,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var isTypedSystemProperty = isIntegerGetInteger || isLongGetLong || isBooleanGetBoolean;
             if (!isGetProperty && !isGetRequiredProperty && !isContainsProperty && !isSetProperty && !isClearProperty
                 && !isSystemPropertiesGetProperty && !isSystemPropertiesGet && !isSystemPropertiesGetOrDefault
-                && !isSystemPropertiesContainsKey && !isSystemPropertiesPut && !isGetenv && !isGetenvMapGet
-                && !isGetenvMapGetOrDefault && !isGetenvMapContainsKey && !isTypedSystemProperty) {
+                && !isSystemPropertiesContainsKey && !isSystemPropertiesPut && !isSystemPropertiesRemove
+                && !isGetenv && !isGetenvMapGet && !isGetenvMapGetOrDefault && !isGetenvMapContainsKey
+                && !isTypedSystemProperty) {
                 return;
             }
             var args = tree.getArguments();
@@ -545,6 +547,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 isGetProperty || isSystemPropertiesGetProperty,
                 isGetenv || isBooleanGetBoolean || isSetProperty || isClearProperty || isGetenvMapGet || isGetenvMapContainsKey
                     || isSystemPropertiesGet || isSystemPropertiesContainsKey || isSystemPropertiesPut
+                    || isSystemPropertiesRemove
             );
             if (key == null) {
                 findings.add(new UncertainFinding(
@@ -562,7 +565,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             findings.add(new ConfigFinding(
                 key,
                 key,
-                isSetProperty || isClearProperty || isSystemPropertiesPut ? FindingRole.DEFINE : FindingRole.READ,
+                isSetProperty || isClearProperty || isSystemPropertiesPut || isSystemPropertiesRemove
+                    ? FindingRole.DEFINE
+                    : FindingRole.READ,
                 value == null ? null : new ConfigValue(value, value, typeOf(value)),
                 defaultValue == null ? null : new ConfigValue(defaultValue, defaultValue, typeOf(defaultValue)),
                 EnvironmentContext.none(),

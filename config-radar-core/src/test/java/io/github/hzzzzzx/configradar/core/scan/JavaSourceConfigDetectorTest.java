@@ -142,6 +142,10 @@ final class JavaSourceConfigDetectorTest {
         var propertySet = finding(findings, "map.property.set");
         assertEquals(FindingRole.DEFINE, propertySet.role());
         assertEquals("ready", propertySet.value().raw());
+        var propertyRemoved = finding(findings, "map.property.removed");
+        assertEquals(FindingRole.DEFINE, propertyRemoved.role());
+        assertNull(propertyRemoved.value());
+        assertNull(propertyRemoved.defaultValue());
 
         var legacyPort = finding(findings, "legacy.port");
         assertEquals("8081", legacyPort.defaultValue().raw());
