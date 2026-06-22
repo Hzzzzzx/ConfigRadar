@@ -9,11 +9,9 @@ import io.github.hzzzzzx.configradar.core.model.EnvironmentContext;
 import io.github.hzzzzzx.configradar.core.model.ExternalDetails;
 import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.ScanFinding;
-import io.github.hzzzzzx.configradar.core.model.Scope;
 import io.github.hzzzzzx.configradar.core.model.SourceKind;
 import io.github.hzzzzzx.configradar.core.model.SourceLocation;
 import io.github.hzzzzzx.configradar.core.model.ValueType;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,11 +30,11 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
     public List<ScanFinding> detect(ScanContext context) throws Exception {
         var findings = new ArrayList<ScanFinding>();
         var root = context.input().projectRoot();
-        if (root == null || !Files.isDirectory(root)) {
+        if (root == null) {
             return findings;
         }
-        for (var file : composeFiles(root)) {
-            var document = YAML_READER.readValue(file.toFile());
+        for (var file : composeFiles(context)) {
+            var document = YAML_READER.readValue(file.path().toFile());
             if (!(document instanceof Map<?, ?> rootMap) || !(rootMap.get("services") instanceof Map<?, ?> services)) {
                 continue;
             }
@@ -49,13 +47,10 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
         return findings;
     }
 
-    private static List<Path> composeFiles(Path root) throws Exception {
-        try (var paths = Files.walk(root, 3)) {
-            return paths
-                .filter(Files::isRegularFile)
-                .filter(path -> isComposeFile(path.getFileName().toString()))
-                .toList();
-        }
+    private static List<IndexedFile> composeFiles(ScanContext context) {
+        return context.fileIndex().ofType(FileType.YAML).stream()
+            .filter(file -> isComposeFile(file.path().getFileName().toString()))
+            .toList();
     }
 
     private static boolean isComposeFile(String name) {
@@ -67,7 +62,7 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
 
     private static void addEnvironment(
         ScanContext context,
-        Path file,
+        IndexedFile file,
         Object environment,
         List<ScanFinding> findings
     ) {
@@ -99,7 +94,7 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
 
     private static void addFinding(
         ScanContext context,
-        Path file,
+        IndexedFile file,
         String key,
         String value,
         List<ScanFinding> findings
@@ -118,13 +113,13 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
         ));
     }
 
-    private static SourceLocation source(Path root, Path file) {
+    private static SourceLocation source(Path root, IndexedFile file) {
         return new SourceLocation(
-            root.toAbsolutePath().relativize(file.toAbsolutePath()).toString(),
+            root.toAbsolutePath().relativize(file.path().toAbsolutePath()).toString(),
             null,
             null,
             SourceKind.YAML,
-            Scope.MAIN
+            file.scope()
         );
     }
 

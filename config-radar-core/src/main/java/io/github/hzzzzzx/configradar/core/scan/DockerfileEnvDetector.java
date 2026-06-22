@@ -7,7 +7,6 @@ import io.github.hzzzzzx.configradar.core.model.EnvironmentContext;
 import io.github.hzzzzzx.configradar.core.model.ExternalDetails;
 import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.ScanFinding;
-import io.github.hzzzzzx.configradar.core.model.Scope;
 import io.github.hzzzzzx.configradar.core.model.SourceKind;
 import io.github.hzzzzzx.configradar.core.model.SourceLocation;
 import io.github.hzzzzzx.configradar.core.model.ValueType;
@@ -27,11 +26,11 @@ public final class DockerfileEnvDetector implements ConfigDetector {
     public List<ScanFinding> detect(ScanContext context) throws Exception {
         var findings = new ArrayList<ScanFinding>();
         var root = context.input().projectRoot();
-        if (root == null || !Files.isDirectory(root)) {
+        if (root == null) {
             return findings;
         }
-        for (var file : dockerfiles(root)) {
-            var lines = logicalLines(Files.readAllLines(file));
+        for (var file : dockerfiles(context)) {
+            var lines = logicalLines(Files.readAllLines(file.path()));
             for (var line : lines) {
                 for (var pair : envPairs(line.text())) {
                     findings.add(new ConfigFinding(
@@ -52,13 +51,10 @@ public final class DockerfileEnvDetector implements ConfigDetector {
         return findings;
     }
 
-    private static List<Path> dockerfiles(Path root) throws Exception {
-        try (var paths = Files.walk(root, 3)) {
-            return paths
-                .filter(Files::isRegularFile)
-                .filter(path -> path.getFileName().toString().startsWith("Dockerfile"))
-                .toList();
-        }
+    private static List<IndexedFile> dockerfiles(ScanContext context) {
+        return context.fileIndex().ofType(FileType.OTHER).stream()
+            .filter(file -> file.path().getFileName().toString().startsWith("Dockerfile"))
+            .toList();
     }
 
     private static List<Line> logicalLines(List<String> lines) {
@@ -153,13 +149,13 @@ public final class DockerfileEnvDetector implements ConfigDetector {
         return ValueType.STRING;
     }
 
-    private static SourceLocation source(Path root, Path file, int line) {
+    private static SourceLocation source(Path root, IndexedFile file, int line) {
         return new SourceLocation(
-            root.toAbsolutePath().relativize(file.toAbsolutePath()).toString(),
+            root.toAbsolutePath().relativize(file.path().toAbsolutePath()).toString(),
             line,
             null,
             SourceKind.UNKNOWN,
-            Scope.MAIN
+            file.scope()
         );
     }
 
