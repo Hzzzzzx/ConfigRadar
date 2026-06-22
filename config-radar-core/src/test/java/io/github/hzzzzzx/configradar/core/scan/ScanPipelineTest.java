@@ -631,9 +631,12 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("remote-config-source")
                 && item.key().equals("apollo.orders.enabled")));
         assertTrue(result.inventory().checks().stream()
+            .anyMatch(item -> item.type().equals("remote-config-source")
+                && item.key().equals("nacos.config.orders.yaml")));
+        assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("sensitive-looking-key")
                 && item.key().equals("redis.password")));
-        assertEquals(157, result.inventory().summary().keys());
-        assertEquals(29, result.inventory().summary().checks());
+        assertEquals(158, result.inventory().summary().keys());
+        assertEquals(30, result.inventory().summary().checks());
     }
 }

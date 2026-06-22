@@ -129,6 +129,11 @@ public class DemoConfig {
             .getProperty("apollo.app.timeout", "3000");
         var apolloNamespace = com.ctrip.framework.apollo.ConfigService.getConfig("orders")
             .getProperty("apollo.orders.enabled", "true");
+        var nacosConfig = com.alibaba.nacos.api.config.ConfigService.getConfig(
+            "orders.yaml",
+            "DEFAULT_GROUP",
+            3000
+        );
         System.setProperty("runtime.region", "cn");
         System.setProperty("spring.application.json", "{\"java\":{\"json\":{\"enabled\":true}}}");
         System.clearProperty("runtime.mode");
@@ -137,7 +142,7 @@ public class DemoConfig {
             + env + mapEnv + mapEnvDefault + hasEnvFlag
             + propertyMapValue + propertyMapRawValue + propertyMapDefaultValue + hasPropertyMapFlag
             + legacyPort + legacyLimit + legacyEnabled + jvmArgs + dynamic + operatorMode + custom + customDefined
-            + apolloApp + apolloNamespace;
+            + apolloApp + apolloNamespace + nacosConfig;
     }
 
     public String readResolver(PropertyResolver resolver) {

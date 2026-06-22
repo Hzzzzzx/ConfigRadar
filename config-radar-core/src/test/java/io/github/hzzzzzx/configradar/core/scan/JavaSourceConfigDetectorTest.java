@@ -262,6 +262,12 @@ final class JavaSourceConfigDetectorTest {
         var apolloNamespaceDetails = assertInstanceOf(ConfigCenterDetails.class, apolloNamespace.details());
         assertEquals("orders", apolloNamespaceDetails.namespace());
 
+        var nacosConfig = finding(findings, "nacos.config.orders.yaml");
+        assertEquals(FindingRole.METADATA, nacosConfig.role());
+        var nacosDetails = assertInstanceOf(ConfigCenterDetails.class, nacosConfig.details());
+        assertEquals("orders.yaml", nacosDetails.dataId());
+        assertEquals("DEFAULT_GROUP", nacosDetails.group());
+
         var programmaticEndpoint = finding(findings, "programmatic.endpoint");
         assertEquals(FindingRole.DEFINE, programmaticEndpoint.role());
         assertEquals("https://local", programmaticEndpoint.value().raw());

@@ -175,6 +175,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             readSpringProfilePredicate(tree);
             readSystemPropertiesReplacement(tree);
             readApolloConfigRead(tree);
+            readNacosConfigRead(tree);
             readJavaConfigRead(tree);
             readConsoleInput(tree);
             readSpringBinder(tree);
@@ -810,6 +811,47 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 return namespace == null || namespace.isBlank() ? null : namespace;
             }
             return "application";
+        }
+
+        private void readNacosConfigRead(MethodInvocationTree tree) {
+            if (!isNacosGetConfig(tree)) {
+                return;
+            }
+            var args = tree.getArguments();
+            var dataId = literal(args.get(0));
+            if (dataId == null || dataId.isBlank()) {
+                findings.add(new UncertainFinding(
+                    args.get(0).toString(),
+                    args.get(0) instanceof BinaryTree ? UncertainReason.STRING_CONCAT : UncertainReason.UNKNOWN,
+                    "nacos.getConfig",
+                    null,
+                    source(tree, SourceKind.JAVA),
+                    Confidence.LOW,
+                    id(),
+                    new DynamicKeyDetails(null, literal(args.get(1)), args.get(0).toString())
+                ));
+                return;
+            }
+            var group = literal(args.get(1));
+            var key = "nacos.config." + dataId;
+            findings.add(new ConfigFinding(
+                key,
+                key,
+                FindingRole.METADATA,
+                null,
+                null,
+                EnvironmentContext.none(),
+                source(tree, SourceKind.JAVA),
+                Confidence.HIGH,
+                id(),
+                new ConfigCenterDetails(null, group, dataId, null)
+            ));
+        }
+
+        private boolean isNacosGetConfig(MethodInvocationTree tree) {
+            var method = methodName(tree.getMethodSelect());
+            return (method.equals("ConfigService.getConfig") || method.endsWith(".ConfigService.getConfig"))
+                && tree.getArguments().size() >= 2;
         }
 
         private void readSystemPropertiesReplacement(MethodInvocationTree tree) {
