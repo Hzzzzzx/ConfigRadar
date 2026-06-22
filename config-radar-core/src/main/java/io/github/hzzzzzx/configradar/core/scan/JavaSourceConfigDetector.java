@@ -1066,13 +1066,24 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 "getBoolean",
                 "getDouble",
                 "getDuration",
+                "getStringList",
+                "getIntList",
+                "getLongList",
+                "getBooleanList",
+                "getDoubleList",
+                "getConfig",
+                "hasPath",
                 "getValue",
-                "getOptionalValue"
+                "getOptionalValue",
+                "getConfigValue"
             ).contains(getter)) {
                 return;
             }
             var receiver = select.getExpression().toString().toLowerCase(java.util.Locale.ROOT);
             if (!receiver.contains("config") && !receiver.contains("configuration") && !receiver.equals("cfg")) {
+                return;
+            }
+            if (getter.equals("getConfig") && receiver.contains("configservice")) {
                 return;
             }
             var args = tree.getArguments();
@@ -1090,7 +1101,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 ));
                 return;
             }
-            var defaultValue = args.size() > 1 && !getter.equals("getValue") && !getter.equals("getOptionalValue")
+            var defaultValue = args.size() > 1 && !List.of("getValue", "getOptionalValue", "getConfigValue").contains(getter)
                 ? literalValue(args.get(1))
                 : null;
             findings.add(new ConfigFinding(

@@ -183,8 +183,11 @@ public class DemoConfig {
         var enabled = configuration.getBoolean("commons.feature.enabled", true);
         var mpMode = org.eclipse.microprofile.config.ConfigProvider.getConfig().getValue("mp.mode", String.class);
         var mpTimeout = appConfig.getOptionalValue("mp.timeout", Integer.class);
+        var mpRaw = org.eclipse.microprofile.config.ConfigProvider.getConfig().getConfigValue("mp.raw");
+        var servers = appConfig.getStringList("typesafe.servers");
+        var hasExperimental = appConfig.hasPath("typesafe.experimental");
         var dynamic = appConfig.getString(prefix + ".typesafe");
-        return mode + enabled + mpMode + mpTimeout + dynamic;
+        return mode + enabled + mpMode + mpTimeout + mpRaw + servers + hasExperimental + dynamic;
     }
 
     public String readPreferences(String prefix) {

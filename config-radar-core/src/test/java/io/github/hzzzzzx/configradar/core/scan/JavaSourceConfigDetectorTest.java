@@ -63,6 +63,9 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("commons.feature.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("mp.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("mp.timeout")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("mp.raw")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("typesafe.servers")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("typesafe.experimental")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("preferences.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("preferences.limit")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("bundle.title")));
@@ -193,6 +196,9 @@ final class JavaSourceConfigDetectorTest {
         assertEquals("true", finding(findings, "commons.feature.enabled").defaultValue().raw());
         assertNull(finding(findings, "mp.mode").defaultValue());
         assertNull(finding(findings, "mp.timeout").defaultValue());
+        assertNull(finding(findings, "mp.raw").defaultValue());
+        assertNull(finding(findings, "typesafe.servers").defaultValue());
+        assertNull(finding(findings, "typesafe.experimental").defaultValue());
         var preferences = finding(findings, "preferences.mode");
         assertEquals("local", preferences.defaultValue().raw());
         var preferencesDetails = assertInstanceOf(ExternalDetails.class, preferences.details());

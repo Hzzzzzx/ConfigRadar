@@ -685,6 +685,12 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("mp.timeout")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("mp.raw")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("typesafe.servers")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("typesafe.experimental")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("preferences.mode")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("preferences.limit")));
@@ -698,7 +704,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("typesafe.file.enabled")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("typesafe.file.limit")));
-        assertEquals(179, result.inventory().summary().keys());
+        assertEquals(182, result.inventory().summary().keys());
         assertEquals(36, result.inventory().summary().checks());
     }
 }
