@@ -71,13 +71,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             var rawValue = unquote(stripInlineComment(line.substring(equals + 1).trim()));
             findings.add(finding(context, file, key, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES));
             addPlaceholderReads(context, file, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
-            if (key.equals("SPRING_APPLICATION_JSON")) {
-                try {
-                    flattenJsonEnv(context, file, rawValue, profileOf(file.path()), index + 1, findings);
-                } catch (Exception ignored) {
-                    // ponytail: keep raw env var; add a detector diagnostic channel before reporting malformed JSON.
-                }
-            }
+            expandSpringApplicationJson(context, file, key, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
         }
         return findings;
     }
@@ -120,46 +114,66 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             var line = lineOf(file.path(), prefix);
             findings.add(finding(context, file, prefix, rawValue, profile, line, SourceKind.YAML));
             addPlaceholderReads(context, file, rawValue, profile, line, SourceKind.YAML, findings);
+            expandSpringApplicationJson(context, file, prefix, rawValue, profile, line, SourceKind.YAML, findings);
         }
     }
 
-    private void flattenJsonEnv(
+    private void expandSpringApplicationJson(
         ScanContext context,
         IndexedFile file,
+        String key,
         String rawValue,
         String profile,
         Integer line,
+        SourceKind sourceKind,
         List<ScanFinding> findings
-    ) throws Exception {
-        flattenJsonEnv(context, file, YAML_READER.readValue(rawValue), "", profile, line, findings);
+    ) {
+        if (!key.equals("SPRING_APPLICATION_JSON") && !key.equals("spring.application.json")) {
+            return;
+        }
+        try {
+            flattenSpringApplicationJson(context, file, YAML_READER.readValue(rawValue), "", profile, line, sourceKind, findings);
+        } catch (Exception ignored) {
+            // ponytail: keep raw property; add a detector diagnostic channel before reporting malformed JSON.
+        }
     }
 
-    private void flattenJsonEnv(
+    private void flattenSpringApplicationJson(
         ScanContext context,
         IndexedFile file,
         Object node,
         String prefix,
         String profile,
         Integer line,
+        SourceKind sourceKind,
         List<ScanFinding> findings
     ) {
         if (node instanceof Map<?, ?> map) {
             for (var entry : map.entrySet()) {
                 var key = String.valueOf(entry.getKey());
-                flattenJsonEnv(context, file, entry.getValue(), prefix.isBlank() ? key : prefix + "." + key, profile, line, findings);
+                flattenSpringApplicationJson(
+                    context,
+                    file,
+                    entry.getValue(),
+                    prefix.isBlank() ? key : prefix + "." + key,
+                    profile,
+                    line,
+                    sourceKind,
+                    findings
+                );
             }
             return;
         }
         if (node instanceof List<?> list) {
             for (var index = 0; index < list.size(); index++) {
-                flattenJsonEnv(context, file, list.get(index), prefix + "[" + index + "]", profile, line, findings);
+                flattenSpringApplicationJson(context, file, list.get(index), prefix + "[" + index + "]", profile, line, sourceKind, findings);
             }
             return;
         }
         if (!prefix.isBlank() && node != null) {
             var raw = String.valueOf(node);
-            findings.add(finding(context, file, prefix, raw, profile, line, SourceKind.PROPERTIES));
-            addPlaceholderReads(context, file, raw, profile, line, SourceKind.PROPERTIES, findings);
+            findings.add(finding(context, file, prefix, raw, profile, line, sourceKind));
+            addPlaceholderReads(context, file, raw, profile, line, sourceKind, findings);
         }
     }
 
@@ -183,6 +197,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
                 SourceKind.PROPERTIES
             ));
             addPlaceholderReads(context, file, rawValue, profileOf(file.path()), line, SourceKind.PROPERTIES, findings);
+            expandSpringApplicationJson(context, file, name, rawValue, profileOf(file.path()), line, SourceKind.PROPERTIES, findings);
         }
         return findings;
     }

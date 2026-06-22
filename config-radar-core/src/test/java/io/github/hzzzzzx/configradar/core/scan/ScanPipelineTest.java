@@ -219,9 +219,13 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("SPRING_APPLICATION_JSON") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("spring.application.json") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("management.server.port") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("feature.json") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("file.json.enabled") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("INLINE_COMMENT") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
@@ -319,7 +323,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(66, result.inventory().summary().keys());
+        assertEquals(68, result.inventory().summary().keys());
         assertEquals(1, result.inventory().summary().checks());
     }
 }
