@@ -123,6 +123,7 @@ public class DemoConfig {
         ));
         app.setDefaultProperties(defaultProperties);
         new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class)
+            .profiles("builder-prod")
             .properties("spring.lifecycle.timeout-per-shutdown-phase=20s")
             .properties(new String[] {
                 "spring.array.one=1",

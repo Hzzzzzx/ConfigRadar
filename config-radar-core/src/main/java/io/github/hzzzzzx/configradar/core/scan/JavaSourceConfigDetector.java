@@ -429,7 +429,8 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
 
         private void readSpringAdditionalProfiles(MethodInvocationTree tree) {
             var method = methodName(tree.getMethodSelect());
-            if (!method.endsWith(".setAdditionalProfiles")) {
+            var isBuilderProfiles = method.endsWith(".profiles") && method.contains("SpringApplicationBuilder");
+            if (!method.endsWith(".setAdditionalProfiles") && !isBuilderProfiles) {
                 return;
             }
             for (var argument : tree.getArguments()) {
