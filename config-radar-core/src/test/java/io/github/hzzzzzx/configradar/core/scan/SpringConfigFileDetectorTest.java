@@ -7,14 +7,20 @@ import io.github.hzzzzzx.configradar.core.model.ValueType;
 import io.github.hzzzzzx.configradar.core.model.Scope;
 import io.github.hzzzzzx.configradar.core.rule.ConfigFileRule;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class SpringConfigFileDetectorTest {
+    @TempDir
+    Path tempDir;
+
     @Test
     void detectsYamlAndPropertiesDefinitions() throws Exception {
         var input = ScanInput.of(FixturePaths.springBasic());
@@ -184,6 +190,25 @@ final class SpringConfigFileDetectorTest {
         assertEquals(FindingRole.METADATA, finding(findings, "spring.config.activate.on-profile").role());
         assertEquals(FindingRole.METADATA, finding(findings, "spring.config.import").role());
         assertEquals(FindingRole.METADATA, finding(findings, "spring.profiles.include").role());
+    }
+
+    @Test
+    void keepsScanningWhenSpringApplicationJsonIsMalformed() throws Exception {
+        Files.writeString(tempDir.resolve(".env"), """
+            SPRING_APPLICATION_JSON={bad
+            PLAIN_AFTER_BAD_JSON=ok
+            """);
+        var input = ScanInput.of(tempDir);
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new SpringConfigFileDetector().detect(context).stream()
+            .map(ConfigFinding.class::cast)
+            .toList();
+
+        assertEquals("{bad", finding(findings, "SPRING_APPLICATION_JSON").value().raw());
+        assertEquals("ok", finding(findings, "PLAIN_AFTER_BAD_JSON").value().raw());
     }
 
     private static ConfigFinding finding(List<ConfigFinding> findings, String key) {

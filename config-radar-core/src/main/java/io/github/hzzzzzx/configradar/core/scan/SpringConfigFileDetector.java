@@ -72,7 +72,11 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             findings.add(finding(context, file, key, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES));
             addPlaceholderReads(context, file, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
             if (key.equals("SPRING_APPLICATION_JSON")) {
-                flattenJsonEnv(context, file, rawValue, profileOf(file.path()), index + 1, findings);
+                try {
+                    flattenJsonEnv(context, file, rawValue, profileOf(file.path()), index + 1, findings);
+                } catch (Exception ignored) {
+                    // ponytail: keep raw env var; add a detector diagnostic channel before reporting malformed JSON.
+                }
             }
         }
         return findings;
