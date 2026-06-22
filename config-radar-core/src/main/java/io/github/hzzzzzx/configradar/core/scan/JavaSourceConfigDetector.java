@@ -11,6 +11,7 @@ import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.NewArrayTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.JavacTask;
 import com.sun.source.util.SourcePositions;
@@ -155,6 +156,12 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             readSpringBinder(tree);
             readRuleMethodCall(tree);
             return super.visitMethodInvocation(tree, unused);
+        }
+
+        @Override
+        public Void visitNewClass(NewClassTree tree, Void unused) {
+            readSpringMapPropertySource(tree);
+            return super.visitNewClass(tree, unused);
         }
 
         private void readAnnotationPlaceholders(AnnotationTree annotation) {
@@ -311,6 +318,26 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     Confidence.HIGH,
                     id(),
                     new ExternalDetails("spring", "default-properties", null)
+                ));
+            }
+        }
+
+        private void readSpringMapPropertySource(NewClassTree tree) {
+            if (!tree.getIdentifier().toString().endsWith("MapPropertySource") || tree.getArguments().size() < 2) {
+                return;
+            }
+            for (var property : springDefaultProperties(List.of(tree.getArguments().get(1)), false)) {
+                findings.add(new ConfigFinding(
+                    property.key(),
+                    property.key(),
+                    FindingRole.DEFINE,
+                    property.value() == null ? null : new ConfigValue(property.value(), property.value(), typeOf(property.value())),
+                    null,
+                    EnvironmentContext.none(),
+                    source(tree, SourceKind.JAVA),
+                    Confidence.HIGH,
+                    id(),
+                    new ExternalDetails("spring", "map-property-source", null)
                 ));
             }
         }

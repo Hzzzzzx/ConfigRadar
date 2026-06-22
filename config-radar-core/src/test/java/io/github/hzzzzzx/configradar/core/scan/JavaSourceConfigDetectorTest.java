@@ -55,6 +55,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.main.banner-mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("management.endpoints.web.exposure.include")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.lifecycle.timeout-per-shutdown-phase")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.endpoint")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("jobs.cleanup.cron")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("jobs.cleanup.delay")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("custom.placeholder.default")));
@@ -141,6 +143,11 @@ final class JavaSourceConfigDetectorTest {
         var shutdownPhase = finding(findings, "spring.lifecycle.timeout-per-shutdown-phase");
         assertEquals(FindingRole.DEFINE, shutdownPhase.role());
         assertEquals("20s", shutdownPhase.value().raw());
+
+        var programmaticEndpoint = finding(findings, "programmatic.endpoint");
+        assertEquals(FindingRole.DEFINE, programmaticEndpoint.role());
+        assertEquals("https://local", programmaticEndpoint.value().raw());
+        assertEquals("5s", finding(findings, "programmatic.timeout").value().raw());
 
         assertEquals("0 0 * * * *", finding(findings, "jobs.cleanup.cron").defaultValue().raw());
         assertEquals("60000", finding(findings, "jobs.cleanup.delay").defaultValue().raw());
