@@ -84,6 +84,7 @@ public final class ScanPipeline {
         detectors.add(new SpringConfigurationMetadataDetector());
         detectors.add(new LogbackSpringXmlDetector());
         detectors.add(new HoconConfigFileDetector());
+        detectors.add(new DockerfileEnvDetector());
         detectors.add(new JavaSourceConfigDetector());
         if (enableCodegraph) {
             detectors.add(new CodegraphConfigUsageDetector());
