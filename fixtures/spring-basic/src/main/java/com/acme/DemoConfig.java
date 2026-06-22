@@ -119,6 +119,7 @@ public class DemoConfig {
         var app = new org.springframework.boot.SpringApplication(DemoConfig.class);
         var defaultProperties = new java.util.Properties();
         app.setAdditionalProfiles("blue", "canary");
+        app.setAdditionalProfiles(new String[] {"green", "gold"});
         app.setDefaultProperties(java.util.Map.of(
             "spring.main.banner-mode", "off",
             "management.endpoints.web.exposure.include", "health,info"
@@ -126,6 +127,7 @@ public class DemoConfig {
         app.setDefaultProperties(defaultProperties);
         new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class)
             .profiles("builder-prod")
+            .profiles(new String[] {"builder-blue", "builder-green"})
             .properties(java.util.Map.of("spring.builder.map", "on"))
             .properties(java.util.Map.ofEntries(java.util.Map.entry("spring.builder.entry", "yes")))
             .properties("spring.lifecycle.timeout-per-shutdown-phase=20s")

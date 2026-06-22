@@ -252,12 +252,16 @@ final class JavaSourceConfigDetectorTest {
             .toList();
 
         var metadata = profiles.stream().filter(item -> item.role() == FindingRole.METADATA).toList();
-        assertEquals(5, metadata.size());
+        assertEquals(9, metadata.size());
         assertTrue(profiles.stream().anyMatch(item -> "prod".equals(item.environment().profile())));
         assertTrue(profiles.stream().anyMatch(item -> "staging".equals(item.environment().profile())));
         assertTrue(profiles.stream().anyMatch(item -> "blue".equals(item.environment().profile())));
         assertTrue(profiles.stream().anyMatch(item -> "canary".equals(item.environment().profile())));
+        assertTrue(profiles.stream().anyMatch(item -> "green".equals(item.environment().profile())));
+        assertTrue(profiles.stream().anyMatch(item -> "gold".equals(item.environment().profile())));
         assertTrue(profiles.stream().anyMatch(item -> "builder-prod".equals(item.environment().profile())));
+        assertTrue(profiles.stream().anyMatch(item -> "builder-blue".equals(item.environment().profile())));
+        assertTrue(profiles.stream().anyMatch(item -> "builder-green".equals(item.environment().profile())));
     }
 
     @Test

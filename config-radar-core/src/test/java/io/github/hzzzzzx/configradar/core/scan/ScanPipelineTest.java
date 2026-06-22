@@ -466,7 +466,13 @@ final class ScanPipelineTest {
                 && "blue".equals(item.value().raw())));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.METADATA
+                && "green".equals(item.value().raw())));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.METADATA
                 && "builder-prod".equals(item.value().raw())));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.METADATA
+                && "builder-blue".equals(item.value().raw())));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.CONDITION));
         assertTrue(result.inventory().items().stream()
