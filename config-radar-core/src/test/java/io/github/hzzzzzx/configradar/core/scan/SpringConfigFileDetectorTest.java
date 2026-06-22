@@ -39,6 +39,8 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.cloud.nacos.config.server-addr")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_PROFILES_ACTIVE")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("REDIS_PASSWORD")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("FEATURE_FLAG")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("QUOTED_NAME")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("LOG_LEVEL")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("API_TOKEN")));
     }
@@ -103,6 +105,9 @@ final class SpringConfigFileDetectorTest {
             .orElseThrow();
         assertEquals("local-secret", envPlaceholder.defaultValue().raw());
         assertEquals(SourceKind.PROPERTIES, envPlaceholder.source().sourceKind());
+        assertEquals("true", finding(findings, "FEATURE_FLAG").value().raw());
+        assertEquals(ValueType.BOOLEAN, finding(findings, "FEATURE_FLAG").value().type());
+        assertEquals("config radar", finding(findings, "QUOTED_NAME").value().raw());
 
         assertEquals("prod", finding(findings, "LOG_LEVEL").environment().profile());
 

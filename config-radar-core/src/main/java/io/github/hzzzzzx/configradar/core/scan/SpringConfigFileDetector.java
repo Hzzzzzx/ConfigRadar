@@ -43,9 +43,34 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             }
             if (type == FileType.YAML) {
                 findings.addAll(readYaml(context, file));
-            } else if (type == FileType.PROPERTIES || isDotEnv(file.path())) {
+            } else if (isDotEnv(file.path())) {
+                findings.addAll(readDotEnv(context, file));
+            } else if (type == FileType.PROPERTIES) {
                 findings.addAll(readProperties(context, file));
             }
+        }
+        return findings;
+    }
+
+    private List<ScanFinding> readDotEnv(ScanContext context, IndexedFile file) throws Exception {
+        var findings = new ArrayList<ScanFinding>();
+        var lines = Files.readAllLines(file.path());
+        for (var index = 0; index < lines.size(); index++) {
+            var line = lines.get(index).trim();
+            if (line.isBlank() || line.startsWith("#")) {
+                continue;
+            }
+            if (line.startsWith("export ")) {
+                line = line.substring("export ".length()).trim();
+            }
+            var equals = line.indexOf('=');
+            if (equals <= 0) {
+                continue;
+            }
+            var key = line.substring(0, equals).trim();
+            var rawValue = unquote(line.substring(equals + 1).trim());
+            findings.add(finding(context, file, key, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES));
+            addPlaceholderReads(context, file, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
         }
         return findings;
     }
@@ -254,6 +279,14 @@ public final class SpringConfigFileDetector implements ConfigDetector {
     private static boolean isDotEnv(Path path) {
         var name = path.getFileName().toString();
         return name.equals(".env") || name.startsWith(".env.");
+    }
+
+    private static String unquote(String value) {
+        if (value.length() >= 2
+            && (value.startsWith("\"") && value.endsWith("\"") || value.startsWith("'") && value.endsWith("'"))) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
     }
 
     private static String profileOf(Path path, Object document) {
