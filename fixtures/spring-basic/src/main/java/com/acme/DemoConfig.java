@@ -185,6 +185,14 @@ public class DemoConfig {
         return mode + limit + dynamic;
     }
 
+    public Object readResourceBundle(String prefix) {
+        var bundle = java.util.ResourceBundle.getBundle("application");
+        var title = bundle.getString("bundle.title");
+        var logo = bundle.getObject("bundle.logo");
+        var dynamic = bundle.getString(prefix + ".bundle");
+        return title + ":" + logo + ":" + dynamic;
+    }
+
     public void springApplicationDefaults() {
         var app = new org.springframework.boot.SpringApplication(DemoConfig.class);
         var defaultProperties = new java.util.Properties();

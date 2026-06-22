@@ -63,6 +63,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("mp.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("preferences.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("preferences.limit")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("bundle.title")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("bundle.logo")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.name")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
@@ -188,6 +190,10 @@ final class JavaSourceConfigDetectorTest {
         var preferencesDetails = assertInstanceOf(ExternalDetails.class, preferences.details());
         assertEquals("preferences", preferencesDetails.type());
         assertEquals("10", finding(findings, "preferences.limit").defaultValue().raw());
+        var bundle = finding(findings, "bundle.title");
+        var bundleDetails = assertInstanceOf(ExternalDetails.class, bundle.details());
+        assertEquals("resource-bundle", bundleDetails.type());
+        assertNull(bundle.defaultValue());
         assertEquals("inventory", finding(findings, "inventory.client.name").defaultValue().raw());
         assertEquals("http://localhost", finding(findings, "inventory.client.url").defaultValue().raw());
 
@@ -587,6 +593,23 @@ final class JavaSourceConfigDetectorTest {
             .anyMatch(item -> item.expression().equals("prefix + \".preference\"")
                 && item.reason() == UncertainReason.STRING_CONCAT
                 && item.rootSink().endsWith("get")));
+    }
+
+    @Test
+    void exposesDynamicResourceBundleGetterAsUncertain() throws Exception {
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context);
+
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("prefix + \".bundle\"")
+                && item.reason() == UncertainReason.STRING_CONCAT
+                && item.rootSink().endsWith("getString")));
     }
 
     @Test

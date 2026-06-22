@@ -685,12 +685,16 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("preferences.limit")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("bundle.title")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("bundle.logo")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("typesafe.file.mode")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("typesafe.file.enabled")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("typesafe.file.limit")));
-        assertEquals(175, result.inventory().summary().keys());
-        assertEquals(35, result.inventory().summary().checks());
+        assertEquals(177, result.inventory().summary().keys());
+        assertEquals(36, result.inventory().summary().checks());
     }
 }

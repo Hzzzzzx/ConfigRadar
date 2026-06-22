@@ -183,6 +183,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             readJndiLookup(tree);
             readSpringBinder(tree);
             readJavaPreferences(tree);
+            readResourceBundle(tree);
             readGenericConfigGetter(tree);
             readRuleMethodCall(tree);
             return super.visitMethodInvocation(tree, unused);
@@ -1124,6 +1125,47 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 Confidence.MEDIUM,
                 id(),
                 new ExternalDetails("java", "preferences", null)
+            ));
+        }
+
+        private void readResourceBundle(MethodInvocationTree tree) {
+            if (!(tree.getMethodSelect() instanceof MemberSelectTree select) || tree.getArguments().isEmpty()) {
+                return;
+            }
+            var getter = select.getIdentifier().toString();
+            if (!List.of("getString", "getObject", "containsKey").contains(getter)) {
+                return;
+            }
+            var receiver = select.getExpression().toString().toLowerCase(java.util.Locale.ROOT);
+            if (!receiver.contains("resourcebundle") && !receiver.equals("bundle") && !receiver.endsWith(".bundle")) {
+                return;
+            }
+            var args = tree.getArguments();
+            var key = literal(args.getFirst());
+            if (key == null || key.isBlank()) {
+                findings.add(new UncertainFinding(
+                    args.getFirst().toString(),
+                    args.getFirst() instanceof BinaryTree ? UncertainReason.STRING_CONCAT : UncertainReason.UNKNOWN,
+                    methodName(tree.getMethodSelect()),
+                    null,
+                    source(tree, SourceKind.JAVA),
+                    Confidence.LOW,
+                    id(),
+                    new DynamicKeyDetails(null, null, args.getFirst().toString())
+                ));
+                return;
+            }
+            findings.add(new ConfigFinding(
+                key,
+                key,
+                FindingRole.READ,
+                null,
+                null,
+                EnvironmentContext.none(),
+                source(tree, SourceKind.JAVA),
+                Confidence.MEDIUM,
+                id(),
+                new ExternalDetails("java", "resource-bundle", null)
             ));
         }
 
