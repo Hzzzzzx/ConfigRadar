@@ -95,7 +95,7 @@ Implemented:
 - Rule-driven config file scan：通过 configFiles 规则覆盖自定义 YAML/properties 文件
 - Default rules discovery：CLI 未传 `--rules` 时自动读取项目根目录的 `config-radar-rules.yaml`
 - Basic key normalizer：归一化大小写、下划线、短横线、驼峰，支撑更稳定的 summary 和 diff
-- detector registry：统一注册 detector，后续可扩展成 pack
+- detector registry：统一注册 detector，`ScanPipelineBuilder.detectorPack(...)` 已支持 pack 贡献 detector
 - pipeline builder：统一组合 detector、processor、normalizer、enricher 等阶段，后续新增组件不需要散落修改构造器参数
 - processor/normalizer/enricher hooks：主流程已调用
 - uncertain finding checks：动态/无法解析的配置 key 会生成高风险 check

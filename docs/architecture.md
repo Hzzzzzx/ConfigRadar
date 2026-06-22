@@ -458,6 +458,7 @@ interface DetectorPack {
 ```
 
 Phase 1 can hard-code the default component list. Later, CLI config or rule packs can assemble the same pipeline with additional components.
+`ScanPipelineBuilder.detectorPack(...)` already accepts pack-contributed detectors; pack rule merging should stay as a separate explicit rule-loading step so scan data flow remains auditable.
 
 ## Extension Points
 
@@ -529,7 +530,7 @@ Hook principles:
 - agent hooks only produce suggestions; user-reviewed rules change scan behavior
 - detector hooks can run in parallel, but normalize/enrich hooks should be ordered
 - hook outputs must include `detectorId` or `hookId` for auditability
-- hook inputs and outputs should leave an extension map for future fields
+- new fields should be added as typed value objects or typed detail records, not as catch-all extension maps
 
 First implementation should expose:
 
