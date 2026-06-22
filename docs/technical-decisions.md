@@ -249,6 +249,13 @@ methodCalls:
     defaultArg: 1
     confidence: MEDIUM
     role: READ
+  - id: acme-config-set
+    owner: com.acme.ConfigCenter
+    method: set
+    keyArg: 0
+    valueArg: 1
+    confidence: MEDIUM
+    role: DEFINE
 
 annotations:
   - id: acme-value
@@ -268,6 +275,7 @@ configFiles:
 Boundary:
 
 - No CEL in the MVP rule schema.
+- `keyArg`, `defaultArg`, and `valueArg` are literal argument indexes only; deeper data flow remains a later tracing capability.
 - No plugin classpath loading in MVP.
 
 ### Use OpenRewrite as the Main Static Scanner

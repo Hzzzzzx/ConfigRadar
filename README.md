@@ -62,6 +62,13 @@ methodCalls:
     defaultArg: 1
     confidence: HIGH
     role: READ
+  - id: acme-config-set
+    owner: ConfigCenter
+    method: set
+    keyArg: 0
+    valueArg: 1
+    confidence: HIGH
+    role: DEFINE
 
 annotations:
   - id: acme-value
@@ -78,4 +85,4 @@ configFiles:
     scope: RUNTIME
 ```
 
-`role` can be `DEFINE`, `READ`, `CONDITION`, or `METADATA`; it defaults to `READ` for Java rules.
+`keyArg`, `defaultArg`, and `valueArg` are zero-based method argument indexes. `role` can be `DEFINE`, `READ`, `CONDITION`, or `METADATA`; it defaults to `READ` for Java rules.

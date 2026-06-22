@@ -22,11 +22,21 @@ methodCalls:
     owner: com.acme.Configs
     method: get
     keyArg: 0
+    defaultArg: 1
     confidence: HIGH
     role: READ
+  - id: acme-config-set
+    owner: com.acme.Configs
+    method: set
+    keyArg: 0
+    valueArg: 1
+    confidence: HIGH
+    role: DEFINE
 ```
 
 Agent assistance should suggest rules, not silently mutate inventory.
+
+`keyArg`, `defaultArg`, and `valueArg` are zero-based method argument indexes. Use `defaultArg` for read APIs with fallback values, and `valueArg` for APIs that define or override a config value.
 
 ## Rule Template
 
@@ -50,8 +60,16 @@ methodCalls:
     owner: com.acme.Configs
     method: get
     keyArg: 0
+    defaultArg: 1
     confidence: HIGH
     role: READ
+  - id: acme-config-set
+    owner: com.acme.Configs
+    method: set
+    keyArg: 0
+    valueArg: 1
+    confidence: HIGH
+    role: DEFINE
 
 annotations:
   - id: acme-value
