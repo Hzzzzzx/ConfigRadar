@@ -163,6 +163,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             readSpringPlaceholderResolver(tree);
             readSpringProfilePredicate(tree);
             readJavaConfigRead(tree);
+            readConsoleInput(tree);
             readSpringBinder(tree);
             readRuleMethodCall(tree);
             return super.visitMethodInvocation(tree, unused);
@@ -563,6 +564,28 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 Confidence.HIGH,
                 id(),
                 new JavaSystemPropertyDetails(defaultValue, false)
+            ));
+        }
+
+        private void readConsoleInput(MethodInvocationTree tree) {
+            var method = methodName(tree.getMethodSelect());
+            var isConsoleInput = method.endsWith("System.console().readLine")
+                || method.endsWith("System.console().readPassword");
+            if (!isConsoleInput) {
+                return;
+            }
+            var args = tree.getArguments();
+            var prompt = args.isEmpty() ? null : literalValue(args.getFirst());
+            var expression = prompt == null || prompt.isBlank() ? tree.toString() : prompt;
+            findings.add(new UncertainFinding(
+                expression,
+                UncertainReason.USER_INPUT,
+                method,
+                null,
+                source(tree, SourceKind.JAVA),
+                Confidence.LOW,
+                id(),
+                new DynamicKeyDetails(null, null, tree.toString())
             ));
         }
 

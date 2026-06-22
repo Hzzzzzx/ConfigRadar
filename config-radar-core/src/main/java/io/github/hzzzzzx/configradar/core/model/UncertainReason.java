@@ -9,6 +9,7 @@ public enum UncertainReason {
     ENUM_DRIVEN_KEY,
     TENANT_OR_REGION_KEY,
     COMMAND_LINE_ARGS,
+    USER_INPUT,
     UNKNOWN_WRAPPER,
     REMOTE_CONFIG_ACCESS,
     UNKNOWN

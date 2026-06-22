@@ -85,13 +85,14 @@ public class DemoConfig {
         var legacyEnabled = Boolean.getBoolean("legacy.enabled");
         var jvmArgs = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
         var dynamic = environment.getProperty(prefix + ".url");
+        var operatorMode = System.console().readLine("operator.mode");
         var custom = ConfigCenter.get("custom.center", "fallback");
         var customDefined = ConfigCenter.set("custom.defined", "enabled");
         System.setProperty("runtime.region", "cn");
         return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + binder + createdBinder + system
             + env + mapEnv + mapEnvDefault + hasEnvFlag
             + propertyMapValue + hasPropertyMapFlag
-            + legacyPort + legacyLimit + legacyEnabled + jvmArgs + dynamic + custom + customDefined;
+            + legacyPort + legacyLimit + legacyEnabled + jvmArgs + dynamic + operatorMode + custom + customDefined;
     }
 
     public String readResolver(PropertyResolver resolver) {

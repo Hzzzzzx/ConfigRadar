@@ -301,6 +301,23 @@ final class JavaSourceConfigDetectorTest {
     }
 
     @Test
+    void exposesConsoleInputAsUncertain() throws Exception {
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context);
+
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("operator.mode")
+                && item.reason() == UncertainReason.USER_INPUT
+                && item.rootSink().endsWith("System.console().readLine")));
+    }
+
+    @Test
     void exposesPropertiesPropertySourceAsUncertain() throws Exception {
         var input = ScanInput.of(FixturePaths.springBasic());
         var options = ScanOptions.defaults();
