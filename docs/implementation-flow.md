@@ -87,6 +87,7 @@ Implemented:
   - `.env` 支持 `KEY=value`、`export KEY=value` 和简单引号值
   - 占位符支持 `${KEY:default}` 和 `${KEY:-default}` 默认值
   - `spring.config.import` 支持一跳本地 `classpath:` / `file:` 配置导入；远程配置中心只保留 import 元数据
+  - `spring.config.location` / `spring.config.additional-location` 支持一跳本地文件；目录展开后续再做
 - Spring configuration metadata detector：扫描 `spring-configuration-metadata.json` / `additional-spring-configuration-metadata.json` 中的 `properties[].name`
 - Logging XML detector：扫描 `logback-spring.xml` / `logback.xml` / `log4j2-spring.xml` / `log4j2.xml` 中的 `<springProperty source="...">` 和 `${...}` 占位符
 - Spring YAML profile support：识别多文档 YAML 中的 `spring.config.activate.on-profile`
