@@ -159,6 +159,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         public Void visitMethodInvocation(MethodInvocationTree tree, Void unused) {
             readSpringDefaultProperties(tree);
             readSpringCommandLineArgs(tree);
+            readJvmInputArguments(tree);
             readSpringPlaceholderResolver(tree);
             readSpringProfilePredicate(tree);
             readJavaConfigRead(tree);
@@ -392,6 +393,23 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     new ExternalDetails("spring", "command-line-args", null)
                 ));
             }
+        }
+
+        private void readJvmInputArguments(MethodInvocationTree tree) {
+            var method = methodName(tree.getMethodSelect());
+            if (!method.endsWith(".getInputArguments") || !method.contains("ManagementFactory.getRuntimeMXBean()")) {
+                return;
+            }
+            findings.add(new UncertainFinding(
+                tree.toString(),
+                UncertainReason.COMMAND_LINE_ARGS,
+                method,
+                null,
+                source(tree, SourceKind.JAVA),
+                Confidence.LOW,
+                id(),
+                new DynamicKeyDetails("-D", null, tree.toString())
+            ));
         }
 
         private void readSpringPlaceholderResolver(MethodInvocationTree tree) {

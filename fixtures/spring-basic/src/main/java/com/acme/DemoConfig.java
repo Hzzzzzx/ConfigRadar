@@ -83,13 +83,14 @@ public class DemoConfig {
         var legacyPort = Integer.getInteger("legacy.port", 8081);
         var legacyLimit = Long.getLong("legacy.limit", 10L);
         var legacyEnabled = Boolean.getBoolean("legacy.enabled");
+        var jvmArgs = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
         var dynamic = environment.getProperty(prefix + ".url");
         var custom = ConfigCenter.get("custom.center", "fallback");
         System.setProperty("runtime.region", "cn");
         return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + binder + createdBinder + system
             + env + mapEnv + mapEnvDefault + hasEnvFlag
             + propertyMapValue + hasPropertyMapFlag
-            + legacyPort + legacyLimit + legacyEnabled + dynamic + custom;
+            + legacyPort + legacyLimit + legacyEnabled + jvmArgs + dynamic + custom;
     }
 
     public String readResolver(PropertyResolver resolver) {
