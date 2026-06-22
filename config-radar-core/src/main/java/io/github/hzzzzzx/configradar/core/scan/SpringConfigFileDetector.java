@@ -74,6 +74,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             addPlaceholderReads(context, file, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
             expandSpringApplicationJson(context, file, key, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
             expandJvmToolOptions(context, file, key, rawValue, profileOf(file.path()), index + 1, findings);
+            addImportedConfig(context, file, key, rawValue, findings);
         }
         return findings;
     }
@@ -119,7 +120,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         String prefix,
         String profile,
         List<ScanFinding> findings
-    ) {
+    ) throws Exception {
         if (node instanceof Map<?, ?> map) {
             for (var entry : map.entrySet()) {
                 var key = String.valueOf(entry.getKey());
@@ -140,6 +141,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             findings.add(finding(context, file, prefix, rawValue, profile, line, SourceKind.YAML));
             addPlaceholderReads(context, file, rawValue, profile, line, SourceKind.YAML, findings);
             expandSpringApplicationJson(context, file, prefix, rawValue, profile, line, SourceKind.YAML, findings);
+            addImportedConfig(context, file, prefix, rawValue, findings);
         }
     }
 
@@ -224,8 +226,65 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             addPlaceholderReads(context, file, rawValue, profileOf(file.path()), line, SourceKind.PROPERTIES, findings);
             expandSpringApplicationJson(context, file, name, rawValue, profileOf(file.path()), line, SourceKind.PROPERTIES, findings);
             expandJvmToolOptions(context, file, name, rawValue, profileOf(file.path()), line, findings);
+            addImportedConfig(context, file, name, rawValue, findings);
         }
         return findings;
+    }
+
+    private void addImportedConfig(
+        ScanContext context,
+        IndexedFile sourceFile,
+        String key,
+        String rawValue,
+        List<ScanFinding> findings
+    ) throws Exception {
+        if (!isSpringConfigImport(key)) {
+            return;
+        }
+        // ponytail: one-hop local imports only; add recursion/remote clients when users need them.
+        for (var location : rawValue.split(",")) {
+            var imported = importedFile(context, sourceFile, location.trim());
+            if (imported == null) {
+                continue;
+            }
+            if (imported.type() == FileType.YAML) {
+                findings.addAll(readYaml(context, imported));
+            } else if (imported.type() == FileType.PROPERTIES) {
+                findings.addAll(readProperties(context, imported));
+            }
+        }
+    }
+
+    private static IndexedFile importedFile(ScanContext context, IndexedFile sourceFile, String location) {
+        var text = location.startsWith("optional:") ? location.substring("optional:".length()) : location;
+        var root = context.input().projectRoot();
+        Path path;
+        if (text.startsWith("classpath:")) {
+            if (root == null) {
+                return null;
+            }
+            var resource = text.substring("classpath:".length());
+            path = root.resolve("src/main/resources").resolve(resource.startsWith("/") ? resource.substring(1) : resource);
+        } else if (text.startsWith("file:")) {
+            if (root == null) {
+                return null;
+            }
+            var value = text.substring("file:".length());
+            path = Path.of(value);
+            if (!path.isAbsolute()) {
+                path = root.resolve(value);
+            }
+        } else {
+            return null;
+        }
+        if (!Files.isRegularFile(path)) {
+            return null;
+        }
+        return new IndexedFile(path, typeOf(path), sourceFile.scope());
+    }
+
+    private static boolean isSpringConfigImport(String key) {
+        return key.toLowerCase().replace('_', '.').equals("spring.config.import");
     }
 
     private ConfigFinding finding(
@@ -328,6 +387,17 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             || name.equals("bootstrap.yaml")
             || name.equals("bootstrap.properties")
             || name.matches("(application|bootstrap)-[^.]+\\.(yml|yaml|properties)");
+    }
+
+    private static FileType typeOf(Path path) {
+        var name = path.getFileName().toString().toLowerCase();
+        if (name.endsWith(".yml") || name.endsWith(".yaml")) {
+            return FileType.YAML;
+        }
+        if (name.endsWith(".properties")) {
+            return FileType.PROPERTIES;
+        }
+        return FileType.UNKNOWN;
     }
 
     private static ConfiguredFile configuredFile(ScanContext context, IndexedFile file) {

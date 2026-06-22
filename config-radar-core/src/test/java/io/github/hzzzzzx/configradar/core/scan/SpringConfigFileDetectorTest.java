@@ -46,6 +46,9 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("feature.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.cloud.config.uri")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("CONFIG_SERVER_URL")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("imported.enabled")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("imported.secret")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("IMPORTED_SECRET")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.cloud.nacos.config.server-addr")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_PROFILES_ACTIVE")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_CONFIG_LOCATION")));
@@ -124,6 +127,14 @@ final class SpringConfigFileDetectorTest {
         assertEquals(FindingRole.READ, bootstrapPlaceholder.role());
         assertEquals("http://localhost:8888", bootstrapPlaceholder.defaultValue().raw());
         assertEquals(SourceKind.YAML, bootstrapPlaceholder.source().sourceKind());
+
+        assertEquals(FindingRole.DEFINE, finding(findings, "imported.enabled").role());
+        assertEquals(ValueType.BOOLEAN, finding(findings, "imported.enabled").value().type());
+        assertEquals(FindingRole.DEFINE, finding(findings, "imported.secret").role());
+        var importedPlaceholder = finding(findings, "IMPORTED_SECRET");
+        assertEquals(FindingRole.READ, importedPlaceholder.role());
+        assertEquals("secret", importedPlaceholder.defaultValue().raw());
+        assertEquals(SourceKind.PROPERTIES, importedPlaceholder.source().sourceKind());
 
         assertTrue(findings.stream()
             .anyMatch(item -> item.key().equals("REDIS_PASSWORD") && item.role() == FindingRole.DEFINE));

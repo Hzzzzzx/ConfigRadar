@@ -2,7 +2,7 @@ spring:
   application:
     name: spring-basic
   config:
-    import: optional:configserver:http://localhost:8888
+    import: optional:configserver:http://localhost:8888,optional:classpath:imported.properties
   profiles:
     include: shared
 server:
