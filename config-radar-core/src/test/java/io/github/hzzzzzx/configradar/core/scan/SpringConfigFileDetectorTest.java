@@ -164,7 +164,7 @@ final class SpringConfigFileDetectorTest {
         var rules = new ConfigRules(
             List.of(),
             List.of(),
-            List.of(new ConfigFileRule("custom-file", "src/main/resources/custom-config.properties", FileType.PROPERTIES, Scope.MAIN))
+            List.of(new ConfigFileRule("custom-file", "src/main/resources/custom-config.properties", FileType.PROPERTIES, Scope.RUNTIME))
         );
         var context = new ScanContext(input, options, rules, index);
 
@@ -174,6 +174,7 @@ final class SpringConfigFileDetectorTest {
 
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("custom.file.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("custom.file.timeout")));
+        assertEquals(Scope.RUNTIME, finding(findings, "custom.file.enabled").source().scope());
     }
 
     @Test

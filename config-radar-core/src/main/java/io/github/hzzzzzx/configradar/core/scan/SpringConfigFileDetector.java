@@ -37,16 +37,17 @@ public final class SpringConfigFileDetector implements ConfigDetector {
     public List<ScanFinding> detect(ScanContext context) throws Exception {
         var findings = new ArrayList<ScanFinding>();
         for (var file : context.fileIndex().files()) {
-            var type = configuredType(context, file);
-            if (type == FileType.UNKNOWN) {
+            var configured = configuredFile(context, file);
+            if (configured.type() == FileType.UNKNOWN) {
                 continue;
             }
-            if (type == FileType.YAML) {
-                findings.addAll(readYaml(context, file));
+            var effectiveFile = new IndexedFile(file.path(), configured.type(), configured.scope());
+            if (configured.type() == FileType.YAML) {
+                findings.addAll(readYaml(context, effectiveFile));
             } else if (isDotEnv(file.path())) {
-                findings.addAll(readDotEnv(context, file));
-            } else if (type == FileType.PROPERTIES) {
-                findings.addAll(readProperties(context, file));
+                findings.addAll(readDotEnv(context, effectiveFile));
+            } else if (configured.type() == FileType.PROPERTIES) {
+                findings.addAll(readProperties(context, effectiveFile));
             }
         }
         return findings;
@@ -326,12 +327,12 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             || name.matches("(application|bootstrap)-[^.]+\\.(yml|yaml|properties)");
     }
 
-    private static FileType configuredType(ScanContext context, IndexedFile file) {
+    private static ConfiguredFile configuredFile(ScanContext context, IndexedFile file) {
         if (isSpringConfig(file.path())) {
-            return file.type();
+            return new ConfiguredFile(file.type(), file.scope());
         }
         if (isDotEnv(file.path())) {
-            return FileType.PROPERTIES;
+            return new ConfiguredFile(FileType.PROPERTIES, file.scope());
         }
         var root = context.input().projectRoot();
         var relative = root == null ? file.path() : root.toAbsolutePath().relativize(file.path().toAbsolutePath());
@@ -341,10 +342,12 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             }
             var matcher = FileSystems.getDefault().getPathMatcher("glob:" + rule.pattern());
             if (matcher.matches(relative)) {
-                return rule.format() == FileType.UNKNOWN ? file.type() : rule.format();
+                var type = rule.format() == FileType.UNKNOWN ? file.type() : rule.format();
+                var scope = rule.scope() == Scope.UNKNOWN ? file.scope() : rule.scope();
+                return new ConfiguredFile(type, scope);
             }
         }
-        return FileType.UNKNOWN;
+        return new ConfiguredFile(FileType.UNKNOWN, file.scope());
     }
 
     private static String profileOf(Path path) {
@@ -460,5 +463,8 @@ public final class SpringConfigFileDetector implements ConfigDetector {
     }
 
     private record PropertyPair(String key, String value) {
+    }
+
+    private record ConfiguredFile(FileType type, Scope scope) {
     }
 }
