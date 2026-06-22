@@ -94,6 +94,7 @@ public class DemoConfig {
         var custom = ConfigCenter.get("custom.center", "fallback");
         var customDefined = ConfigCenter.set("custom.defined", "enabled");
         System.setProperty("runtime.region", "cn");
+        System.clearProperty("runtime.mode");
         return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + binder + createdBinder + system
             + env + mapEnv + mapEnvDefault + hasEnvFlag
             + propertyMapValue + propertyMapRawValue + propertyMapDefaultValue + hasPropertyMapFlag

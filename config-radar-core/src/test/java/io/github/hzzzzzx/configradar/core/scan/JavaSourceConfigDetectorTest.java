@@ -158,6 +158,10 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(FindingRole.DEFINE, runtimeRegion.role());
         assertEquals("cn", runtimeRegion.value().raw());
         assertNull(runtimeRegion.defaultValue());
+        var runtimeMode = finding(findings, "runtime.mode");
+        assertEquals(FindingRole.DEFINE, runtimeMode.role());
+        assertNull(runtimeMode.value());
+        assertNull(runtimeMode.defaultValue());
 
         var bannerMode = finding(findings, "spring.main.banner-mode");
         assertEquals(FindingRole.DEFINE, bannerMode.role());
