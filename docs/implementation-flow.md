@@ -105,7 +105,7 @@ Implemented:
 - uncertain finding checks：动态/无法解析的配置 key 会生成高风险 check
 - YAML inventory output：默认下游消费格式
 - metrics sidecar output：记录阶段耗时和 diagnostics
-- CLI `inventory`：从项目目录生成 inventory
+- CLI `inventory`：从项目目录生成 inventory，支持 `--include` / `--exclude` 扫描路径过滤
 - CLI `diff`：读取两个 inventory，按 key-based 策略输出 `added/removed/changed/uncertainChanged`
 - optional codegraph detector：`--enable-codegraph` 可启用外部语义索引，当前只增强自定义 `@Value` meta-annotation 使用点
 - detector failure diagnostics：单 detector 失败不会拖垮整次扫描
