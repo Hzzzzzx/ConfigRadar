@@ -71,6 +71,29 @@ final class RemoteConfigCenterCheckEnricherTest {
         assertEquals("apollo.app.timeout", enriched.checks().getFirst().key());
     }
 
+    @Test
+    void addsWarningForKnownRemoteConfigKeyPrefixes() {
+        var source = new SourceLocation("application.yml", 1, null, SourceKind.YAML, Scope.MAIN);
+        var inventory = new ConfigInventory(
+            null,
+            ProjectInfo.unknown(),
+            null,
+            List.of(
+                item("spring.cloud.consul.config.enabled", "true", source),
+                item("spring.cloud.zookeeper.config.root", "/config", source),
+                item("spring.cloud.etcd.config.enabled", "true", source),
+                item("apollo.bootstrap.enabled", "true", source)
+            ),
+            List.of(),
+            List.of(),
+            List.of()
+        );
+
+        var enriched = new RemoteConfigCenterCheckEnricher().enrich(inventory, null);
+
+        assertEquals(4, enriched.checks().size());
+    }
+
     private static ConfigFinding item(String key, String value, SourceLocation source) {
         return new ConfigFinding(
             key,

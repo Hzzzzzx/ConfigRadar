@@ -19,6 +19,14 @@ public final class RemoteConfigCenterCheckEnricher implements InventoryEnricher 
         "etcd:",
         "apollo:"
     );
+    private static final Set<String> REMOTE_KEY_PREFIXES = Set.of(
+        "spring.cloud.config.",
+        "spring.cloud.nacos.config.",
+        "spring.cloud.consul.config.",
+        "spring.cloud.zookeeper.config.",
+        "spring.cloud.etcd.config.",
+        "apollo."
+    );
 
     @Override
     public String id() {
@@ -58,7 +66,7 @@ public final class RemoteConfigCenterCheckEnricher implements InventoryEnricher 
             return true;
         }
         var key = item.normalizedKey().toLowerCase(Locale.ROOT);
-        if (key.startsWith("spring.cloud.config.") || key.startsWith("spring.cloud.nacos.config.")) {
+        if (REMOTE_KEY_PREFIXES.stream().anyMatch(key::startsWith)) {
             return true;
         }
         if (!key.equals("spring.config.import") || item.value() == null) {
