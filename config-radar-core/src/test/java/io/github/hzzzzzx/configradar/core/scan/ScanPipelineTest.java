@@ -725,6 +725,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("k8s.config.limit")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("EXTRA_MODE")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("EXTRA_ENABLED")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("K8S_APP_MODE")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("K8S_FEATURE_ENABLED")));
@@ -735,8 +739,12 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.env-from.config-map.app-extra-config")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("APP_EXTRA_MODE")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("APP_EXTRA_ENABLED")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.env-from.secret.app-secret")));
-        assertEquals(198, result.inventory().summary().keys());
+        assertEquals(202, result.inventory().summary().keys());
         assertEquals(38, result.inventory().summary().checks());
     }
 }

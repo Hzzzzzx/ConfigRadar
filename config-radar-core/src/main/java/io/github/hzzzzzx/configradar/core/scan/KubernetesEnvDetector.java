@@ -15,6 +15,7 @@ import io.github.hzzzzzx.configradar.core.model.ValueType;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,21 +35,41 @@ public final class KubernetesEnvDetector implements ConfigDetector {
         if (root == null) {
             return findings;
         }
+        var documents = new ArrayList<Document>();
         for (var file : context.fileIndex().ofType(FileType.YAML)) {
             var docs = YAML_READER.readValues(new StringReader(java.nio.file.Files.readString(file.path())));
             while (docs.hasNext()) {
                 var document = docs.next();
                 if (document instanceof Map<?, ?> map && isKubernetes(map)) {
-                    readConfigMapData(context, file, map, findings);
-                    readContainers(context, file, map, findings);
+                    documents.add(new Document(file, map));
                 }
             }
+        }
+        var configMaps = configMaps(documents);
+        for (var document : documents) {
+            readConfigMapData(context, document.file(), document.map(), findings);
+            readContainers(context, document.file(), document.map(), configMaps, findings);
         }
         return findings;
     }
 
     private static boolean isKubernetes(Map<?, ?> map) {
         return map.containsKey("kind") && map.containsKey("apiVersion");
+    }
+
+    private static Map<String, Map<String, String>> configMaps(List<Document> documents) {
+        var result = new LinkedHashMap<String, Map<String, String>>();
+        for (var document : documents) {
+            var map = document.map();
+            if (!"ConfigMap".equals(String.valueOf(map.get("kind"))) || !(map.get("data") instanceof Map<?, ?> data)) {
+                continue;
+            }
+            var name = metadataName(map);
+            if (name != null && !name.isBlank()) {
+                result.put(name, stringMap(data));
+            }
+        }
+        return result;
     }
 
     private static void readConfigMapData(
@@ -79,19 +100,20 @@ public final class KubernetesEnvDetector implements ConfigDetector {
         ScanContext context,
         IndexedFile file,
         Object node,
+        Map<String, Map<String, String>> configMaps,
         List<ScanFinding> findings
     ) {
         if (node instanceof Map<?, ?> map) {
-            readEnv(context, file, map.get("containers"), findings);
-            readEnv(context, file, map.get("initContainers"), findings);
+            readEnv(context, file, map.get("containers"), configMaps, findings);
+            readEnv(context, file, map.get("initContainers"), configMaps, findings);
             for (var value : map.values()) {
-                readContainers(context, file, value, findings);
+                readContainers(context, file, value, configMaps, findings);
             }
             return;
         }
         if (node instanceof List<?> list) {
             for (var value : list) {
-                readContainers(context, file, value, findings);
+                readContainers(context, file, value, configMaps, findings);
             }
         }
     }
@@ -100,6 +122,7 @@ public final class KubernetesEnvDetector implements ConfigDetector {
         ScanContext context,
         IndexedFile file,
         Object containers,
+        Map<String, Map<String, String>> configMaps,
         List<ScanFinding> findings
     ) {
         if (!(containers instanceof List<?> list)) {
@@ -119,7 +142,7 @@ public final class KubernetesEnvDetector implements ConfigDetector {
             if (map.get("envFrom") instanceof List<?> envFrom) {
                 for (var item : envFrom) {
                     if (item instanceof Map<?, ?> envFromMap) {
-                        readEnvFromItem(context, file, envFromMap, findings);
+                        readEnvFromItem(context, file, envFromMap, configMaps, findings);
                     }
                 }
             }
@@ -151,12 +174,14 @@ public final class KubernetesEnvDetector implements ConfigDetector {
         ScanContext context,
         IndexedFile file,
         Map<?, ?> envFrom,
+        Map<String, Map<String, String>> configMaps,
         List<ScanFinding> findings
     ) {
         if (envFrom.get("configMapRef") instanceof Map<?, ?> configMap) {
             var name = string(configMap.get("name"));
             if (name != null && !name.isBlank()) {
                 addMetadata(context, file, "kubernetes.env-from.config-map." + name, name, "env-from-config-map-ref", findings);
+                addConfigMapEnvFrom(context, file, name, string(envFrom.get("prefix")), configMaps, findings);
             }
         }
         if (envFrom.get("secretRef") instanceof Map<?, ?> secret) {
@@ -164,6 +189,32 @@ public final class KubernetesEnvDetector implements ConfigDetector {
             if (name != null && !name.isBlank()) {
                 addMetadata(context, file, "kubernetes.env-from.secret." + name, name, "env-from-secret-ref", findings);
             }
+        }
+    }
+
+    private static void addConfigMapEnvFrom(
+        ScanContext context,
+        IndexedFile file,
+        String name,
+        String prefix,
+        Map<String, Map<String, String>> configMaps,
+        List<ScanFinding> findings
+    ) {
+        var data = configMaps.get(name);
+        if (data == null) {
+            return;
+        }
+        var actualPrefix = prefix == null ? "" : prefix;
+        for (var entry : data.entrySet()) {
+            addFinding(
+                context,
+                file,
+                actualPrefix + entry.getKey(),
+                entry.getValue(),
+                "env-from-config-map-data",
+                Confidence.MEDIUM,
+                findings
+            );
         }
     }
 
@@ -191,6 +242,23 @@ public final class KubernetesEnvDetector implements ConfigDetector {
 
     private static String string(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    private static String metadataName(Map<?, ?> document) {
+        if (document.get("metadata") instanceof Map<?, ?> metadata) {
+            return string(metadata.get("name"));
+        }
+        return null;
+    }
+
+    private static Map<String, String> stringMap(Map<?, ?> data) {
+        var result = new LinkedHashMap<String, String>();
+        for (var entry : data.entrySet()) {
+            if (entry.getKey() != null && entry.getValue() != null) {
+                result.put(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
+            }
+        }
+        return result;
     }
 
     private static void addMetadata(
@@ -259,5 +327,8 @@ public final class KubernetesEnvDetector implements ConfigDetector {
     }
 
     private record Ref(String type, String value) {
+    }
+
+    private record Document(IndexedFile file, Map<?, ?> map) {
     }
 }

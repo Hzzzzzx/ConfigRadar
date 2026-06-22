@@ -25,6 +25,8 @@ final class KubernetesEnvDetectorTest {
         assertEquals(FindingRole.DEFINE, finding(findings, "k8s.config.mode").role());
         assertEquals("prod", finding(findings, "k8s.config.mode").value().raw());
         assertEquals(ValueType.INTEGER, finding(findings, "k8s.config.limit").value().type());
+        assertEquals("canary", finding(findings, "EXTRA_MODE").value().raw());
+        assertEquals(ValueType.BOOLEAN, finding(findings, "EXTRA_ENABLED").value().type());
         assertEquals("prod", finding(findings, "K8S_APP_MODE").value().raw());
         assertEquals(ValueType.BOOLEAN, finding(findings, "K8S_FEATURE_ENABLED").value().type());
         assertEquals("app-config:k8s.config.limit", finding(findings, "K8S_CONFIG_LIMIT").value().raw());
@@ -38,6 +40,10 @@ final class KubernetesEnvDetectorTest {
         assertEquals("app-extra-config", envFromConfigMap.value().raw());
         var envFromConfigMapDetails = assertInstanceOf(ExternalDetails.class, envFromConfigMap.details());
         assertEquals("env-from-config-map-ref", envFromConfigMapDetails.type());
+        assertEquals("canary", finding(findings, "APP_EXTRA_MODE").value().raw());
+        var expanded = assertInstanceOf(ExternalDetails.class, finding(findings, "APP_EXTRA_MODE").details());
+        assertEquals("env-from-config-map-data", expanded.type());
+        assertEquals(ValueType.BOOLEAN, finding(findings, "APP_EXTRA_ENABLED").value().type());
         var envFromSecret = finding(findings, "kubernetes.env-from.secret.app-secret");
         assertEquals(FindingRole.METADATA, envFromSecret.role());
         assertEquals("app-secret", envFromSecret.value().raw());
