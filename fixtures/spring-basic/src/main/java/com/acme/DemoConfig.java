@@ -95,6 +95,9 @@ public class DemoConfig {
                 java.util.Map.entry("programmatic.timeout", "5s")
             )
         ));
+        environment.getPropertySources().addLast(
+            new org.springframework.core.io.support.ResourcePropertySource("classpath:programmatic.properties")
+        );
     }
 
     @Profile({"prod", "staging"})
