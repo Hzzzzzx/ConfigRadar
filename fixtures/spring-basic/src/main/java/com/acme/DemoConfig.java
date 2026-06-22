@@ -140,6 +140,10 @@ public class DemoConfig {
             "--cli.mode=on",
             "--cli.timeout=30"
         );
+        new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class).run(
+            "--builder.cli.mode=on",
+            "--builder.cli.timeout=45"
+        );
     }
 
     public void programmaticPropertySource(org.springframework.core.env.ConfigurableEnvironment environment) {

@@ -446,6 +446,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("cli.timeout") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("builder.cli.mode") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("builder.cli.timeout") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("programmatic.endpoint") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("programmatic.timeout") && item.role() == FindingRole.DEFINE));
@@ -497,7 +501,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(103, result.inventory().summary().keys());
+        assertEquals(105, result.inventory().summary().keys());
         assertEquals(8, result.inventory().summary().checks());
     }
 }
