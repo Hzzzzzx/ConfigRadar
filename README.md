@@ -74,6 +74,7 @@ annotations:
   - id: acme-value
     type: CustomConfigValue
     keyAttribute: key
+    valueAttribute: configuredValue
     defaultAttribute: defaultValue
     confidence: MEDIUM
     role: READ
@@ -85,4 +86,4 @@ configFiles:
     scope: RUNTIME
 ```
 
-`keyArg`, `defaultArg`, and `valueArg` are zero-based method argument indexes. `role` can be `DEFINE`, `READ`, `CONDITION`, or `METADATA`; it defaults to `READ` for Java rules.
+`keyArg`, `defaultArg`, and `valueArg` are zero-based method argument indexes. `keyAttribute`, `valueAttribute`, and `defaultAttribute` are annotation attribute names. `role` can be `DEFINE`, `READ`, `CONDITION`, or `METADATA`; it defaults to `READ` for Java rules.

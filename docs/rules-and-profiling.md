@@ -36,7 +36,7 @@ methodCalls:
 
 Agent assistance should suggest rules, not silently mutate inventory.
 
-`keyArg`, `defaultArg`, and `valueArg` are zero-based method argument indexes. Use `defaultArg` for read APIs with fallback values, and `valueArg` for APIs that define or override a config value.
+`keyArg`, `defaultArg`, and `valueArg` are zero-based method argument indexes. Use `defaultArg` for read APIs with fallback values, and `valueArg` for APIs that define or override a config value. Annotation rules use `keyAttribute`, `valueAttribute`, and `defaultAttribute` for the same shape.
 
 ## Rule Template
 
@@ -75,6 +75,7 @@ annotations:
   - id: acme-value
     type: com.acme.config.AcmeValue
     keyAttribute: value
+    valueAttribute: configuredValue
     confidence: high
 
 configFiles:

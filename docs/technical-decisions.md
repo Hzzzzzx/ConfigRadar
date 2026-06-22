@@ -261,6 +261,7 @@ annotations:
   - id: acme-value
     type: com.acme.ConfigValue
     keyAttribute: value
+    valueAttribute: configuredValue
     defaultAttribute: defaultValue
     confidence: HIGH
     role: READ
