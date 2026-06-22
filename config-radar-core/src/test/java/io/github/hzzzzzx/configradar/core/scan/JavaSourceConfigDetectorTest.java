@@ -187,6 +187,7 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(ValueType.DURATION, shutdownPhase.value().type());
 
         assertEquals("on", finding(findings, "spring.builder.map").value().raw());
+        assertEquals("yes", finding(findings, "spring.builder.entry").value().raw());
         assertEquals("1", finding(findings, "spring.array.one").value().raw());
         assertEquals("2", finding(findings, "spring.array.two").value().raw());
 

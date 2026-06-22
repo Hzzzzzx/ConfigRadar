@@ -125,6 +125,7 @@ public class DemoConfig {
         new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class)
             .profiles("builder-prod")
             .properties(java.util.Map.of("spring.builder.map", "on"))
+            .properties(java.util.Map.ofEntries(java.util.Map.entry("spring.builder.entry", "yes")))
             .properties("spring.lifecycle.timeout-per-shutdown-phase=20s")
             .properties(new String[] {
                 "spring.array.one=1",
