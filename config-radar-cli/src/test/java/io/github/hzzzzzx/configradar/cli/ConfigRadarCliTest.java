@@ -235,6 +235,33 @@ final class ConfigRadarCliTest {
         assertTrue(yaml.contains("dynamic-config-key"));
     }
 
+    @Test
+    void diffCommandCanRedactSensitiveValues() throws Exception {
+        var base = tempDir.resolve("base-secret.yaml");
+        var head = tempDir.resolve("head-secret.yaml");
+        var output = tempDir.resolve("diff-secret.yaml");
+        var mapper = YamlSupport.mapper();
+        mapper.writeValue(base.toFile(), inventory(item("redis.password", "old-secret")));
+        mapper.writeValue(head.toFile(), inventory(item("redis.password", "new-secret")));
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "diff",
+            "--base",
+            base.toString(),
+            "--head",
+            head.toString(),
+            "-o",
+            output.toString(),
+            "--redact-sensitive"
+        );
+
+        assertEquals(0, exitCode);
+        var yaml = Files.readString(output);
+        assertTrue(yaml.contains("config-diff/v1"));
+        assertFalse(yaml.contains("old-secret"));
+        assertFalse(yaml.contains("new-secret"));
+    }
+
     private static Path springBasic() {
         var root = Path.of("fixtures/spring-basic");
         return Files.exists(root) ? root : Path.of("../fixtures/spring-basic");

@@ -10,6 +10,7 @@ import io.github.hzzzzzx.configradar.core.scan.RedactionPolicy;
 import io.github.hzzzzzx.configradar.core.scan.ScanInput;
 import io.github.hzzzzzx.configradar.core.scan.ScanOptions;
 import io.github.hzzzzzx.configradar.core.scan.ScanPipeline;
+import io.github.hzzzzzx.configradar.core.scan.SensitiveValueRedactionEnricher;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -155,6 +156,9 @@ public final class ConfigRadarCli implements Runnable {
         @Option(names = {"-o", "--output"}, required = true, description = "Diff YAML output path.")
         private Path output;
 
+        @Option(names = "--redact-sensitive", description = "Mask sensitive-looking values before diffing.")
+        private boolean redactSensitive;
+
         /**
          * Runs the diff command shell by loading two inventories and writing a diff artifact.
          *
@@ -166,6 +170,12 @@ public final class ConfigRadarCli implements Runnable {
             var mapper = YamlSupport.mapper();
             var baseInventory = mapper.readValue(base.toFile(), ConfigInventory.class);
             var headInventory = mapper.readValue(head.toFile(), ConfigInventory.class);
+            if (redactSensitive) {
+                var redactor = new SensitiveValueRedactionEnricher();
+                var policy = RedactionPolicy.redactSensitive();
+                baseInventory = redactor.redact(baseInventory, policy);
+                headInventory = redactor.redact(headInventory, policy);
+            }
             var diff = new KeyBasedDiffStrategy().diff(baseInventory, headInventory);
             writeParent(output);
             mapper.writeValue(output.toFile(), diff);

@@ -22,6 +22,10 @@ public final class SensitiveValueRedactionEnricher implements InventoryEnricher 
     @Override
     public ConfigInventory enrich(ConfigInventory inventory, ScanContext context) {
         var policy = context.options().redactionPolicy();
+        return redact(inventory, policy);
+    }
+
+    public ConfigInventory redact(ConfigInventory inventory, RedactionPolicy policy) {
         if (!policy.enabled()) {
             return inventory;
         }
