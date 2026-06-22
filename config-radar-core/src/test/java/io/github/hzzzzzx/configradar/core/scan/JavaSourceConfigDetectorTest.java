@@ -81,6 +81,10 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("jobs.cleanup.cron")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("jobs.cleanup.delay")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("kafka.orders.topic")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("kafka.orders.group")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("rabbit.orders.queue")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("jms.orders.destination")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("custom.placeholder.default")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.profiles")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.property-source")));
@@ -228,6 +232,10 @@ final class JavaSourceConfigDetectorTest {
 
         assertEquals("0 0 * * * *", finding(findings, "jobs.cleanup.cron").defaultValue().raw());
         assertEquals("60000", finding(findings, "jobs.cleanup.delay").defaultValue().raw());
+        assertEquals("orders", finding(findings, "kafka.orders.topic").defaultValue().raw());
+        assertEquals("config-radar", finding(findings, "kafka.orders.group").defaultValue().raw());
+        assertEquals("orders.queue", finding(findings, "rabbit.orders.queue").defaultValue().raw());
+        assertEquals("orders.destination", finding(findings, "jms.orders.destination").defaultValue().raw());
         assertEquals("no", finding(findings, "custom.placeholder.default").defaultValue().raw());
     }
 

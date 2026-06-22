@@ -472,6 +472,14 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("jobs.cleanup.delay")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("kafka.orders.topic") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("kafka.orders.group") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("rabbit.orders.queue") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("jms.orders.destination") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.METADATA
@@ -530,7 +538,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(112, result.inventory().summary().keys());
+        assertEquals(116, result.inventory().summary().keys());
         assertEquals(8, result.inventory().summary().checks());
     }
 }

@@ -10,6 +10,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.PropertySources;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertyResolver;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @ConfigurationProperties(prefix = "client")
@@ -208,5 +211,17 @@ public class DemoConfig {
 
     @Scheduled(cron = "${jobs.cleanup.cron:0 0 * * * *}", fixedDelayString = "${jobs.cleanup.delay:60000}")
     public void cleanup() {
+    }
+
+    @KafkaListener(topics = "${kafka.orders.topic:orders}", groupId = "${kafka.orders.group:config-radar}")
+    public void consumeKafka(String message) {
+    }
+
+    @RabbitListener(queues = "${rabbit.orders.queue:orders.queue}")
+    public void consumeRabbit(String message) {
+    }
+
+    @JmsListener(destination = "${jms.orders.destination:orders.destination}")
+    public void consumeJms(String message) {
     }
 }
