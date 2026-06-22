@@ -53,6 +53,9 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_PROFILES_ACTIVE")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_CONFIG_LOCATION")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_CONFIG_ADDITIONAL_LOCATION")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("location.extra.enabled")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("location.extra.secret")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("LOCATION_EXTRA_SECRET")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("REDIS_PASSWORD")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("FEATURE_FLAG")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("QUOTED_NAME")));
@@ -135,6 +138,12 @@ final class SpringConfigFileDetectorTest {
         assertEquals(FindingRole.READ, importedPlaceholder.role());
         assertEquals("secret", importedPlaceholder.defaultValue().raw());
         assertEquals(SourceKind.PROPERTIES, importedPlaceholder.source().sourceKind());
+
+        assertEquals(ValueType.BOOLEAN, finding(findings, "location.extra.enabled").value().type());
+        assertEquals(FindingRole.DEFINE, finding(findings, "location.extra.secret").role());
+        var locationPlaceholder = finding(findings, "LOCATION_EXTRA_SECRET");
+        assertEquals(FindingRole.READ, locationPlaceholder.role());
+        assertEquals("extra-secret", locationPlaceholder.defaultValue().raw());
 
         assertTrue(findings.stream()
             .anyMatch(item -> item.key().equals("REDIS_PASSWORD") && item.role() == FindingRole.DEFINE));

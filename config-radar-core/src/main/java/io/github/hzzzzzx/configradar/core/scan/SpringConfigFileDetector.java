@@ -238,10 +238,10 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         String rawValue,
         List<ScanFinding> findings
     ) throws Exception {
-        if (!isSpringConfigImport(key)) {
+        if (!isSpringConfigReference(key)) {
             return;
         }
-        // ponytail: one-hop local imports only; add recursion/remote clients when users need them.
+        // ponytail: one-hop local files only; add directory expansion/remote clients when users need them.
         for (var location : rawValue.split(",")) {
             var imported = importedFile(context, sourceFile, location.trim());
             if (imported == null) {
@@ -283,8 +283,11 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         return new IndexedFile(path, typeOf(path), sourceFile.scope());
     }
 
-    private static boolean isSpringConfigImport(String key) {
-        return key.toLowerCase().replace('_', '.').equals("spring.config.import");
+    private static boolean isSpringConfigReference(String key) {
+        var normalized = key.toLowerCase().replace('_', '.');
+        return normalized.equals("spring.config.import")
+            || normalized.equals("spring.config.location")
+            || normalized.equals("spring.config.additional.location");
     }
 
     private ConfigFinding finding(
