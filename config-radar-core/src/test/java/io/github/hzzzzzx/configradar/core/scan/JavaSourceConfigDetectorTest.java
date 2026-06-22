@@ -177,7 +177,9 @@ final class JavaSourceConfigDetectorTest {
         var programmaticEndpoint = finding(findings, "programmatic.endpoint");
         assertEquals(FindingRole.DEFINE, programmaticEndpoint.role());
         assertEquals("https://local", programmaticEndpoint.value().raw());
-        assertEquals("5s", finding(findings, "programmatic.timeout").value().raw());
+        var programmaticTimeout = finding(findings, "programmatic.timeout");
+        assertEquals("PT5S", programmaticTimeout.value().raw());
+        assertEquals(ValueType.DURATION, programmaticTimeout.value().type());
 
         assertEquals("0 0 * * * *", finding(findings, "jobs.cleanup.cron").defaultValue().raw());
         assertEquals("60000", finding(findings, "jobs.cleanup.delay").defaultValue().raw());

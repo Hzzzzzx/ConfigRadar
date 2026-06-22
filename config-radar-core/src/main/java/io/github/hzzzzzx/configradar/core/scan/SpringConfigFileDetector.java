@@ -429,7 +429,8 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         if (text.matches("-?\\d+")) {
             return ValueType.INTEGER;
         }
-        if (text.matches("-?\\d+(ns|us|ms|s|m|h|d)")) {
+        if (text.matches("(?i)-?\\d+(ns|us|ms|s|m|h|d)")
+            || text.matches("(?i)(P\\d+D|P(?:\\d+D)?T(?=.*\\d)(?:\\d+H)?(?:\\d+M)?(?:\\d+(?:\\.\\d+)?S)?)")) {
             return ValueType.DURATION;
         }
         if (text.startsWith("${") && text.endsWith("}")) {

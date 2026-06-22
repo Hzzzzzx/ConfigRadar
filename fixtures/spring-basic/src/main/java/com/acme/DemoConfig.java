@@ -130,7 +130,7 @@ public class DemoConfig {
             "programmatic",
             java.util.Map.ofEntries(
                 java.util.Map.entry("programmatic.endpoint", "https://local"),
-                java.util.Map.entry("programmatic.timeout", "5s")
+                java.util.Map.entry("programmatic.timeout", "PT5S")
             )
         ));
         environment.getPropertySources().addLast(

@@ -133,7 +133,7 @@ final class SpringConfigFileDetectorTest {
         assertEquals("true", finding(findings, "file.json.enabled").value().raw());
         assertEquals(ValueType.BOOLEAN, finding(findings, "file.json.enabled").value().type());
         assertEquals("worker", finding(findings, "tool.mode").value().raw());
-        assertEquals("5s", finding(findings, "tool.timeout").value().raw());
+        assertEquals("PT5S", finding(findings, "tool.timeout").value().raw());
         assertEquals(ValueType.DURATION, finding(findings, "tool.timeout").value().type());
         assertEquals("true", finding(findings, "dev.tool.enabled").value().raw());
         assertEquals(ValueType.BOOLEAN, finding(findings, "dev.tool.enabled").value().type());
