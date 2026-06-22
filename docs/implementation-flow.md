@@ -90,6 +90,7 @@ Implemented:
   - `spring.config.import=configtree:` 支持一跳本地目录文件，文件名作为 key、文件内容作为 value
   - `spring.config.location` / `spring.config.additional-location` 支持一跳本地文件和本地目录；目录内展开常见 `application*` / `bootstrap*` 配置文件
   - 上述 Spring config 引用支持 YAML list 形式，例如 `spring.config.additional-location[0]`
+- HOCON config file detector：保守扫描 `application.conf` / `reference.conf` 中简单单行 `key = value` / `key: value` 定义；复杂对象块暂不展开
 - Spring configuration metadata detector：扫描 `spring-configuration-metadata.json` / `additional-spring-configuration-metadata.json` 中的 `properties[].name`
 - Runtime XML detector：扫描 `src/main/resources` 运行时 XML 中的 `${...}` 占位符，扫描 `web.xml` 中的 `context-param` / `init-param`；日志 XML 额外扫描 `<springProperty source="...">`
 - Spring YAML profile support：识别多文档 YAML 中的 `spring.config.activate.on-profile`
