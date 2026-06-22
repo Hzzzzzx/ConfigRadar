@@ -82,7 +82,7 @@ Rules:
 Implemented:
 
 - empty pipeline：即使没有真实 detector，也能产出合法空 inventory
-- file indexing：扫描项目文件并按类型分类
+- file indexing：扫描项目文件并按类型分类，支持 `ScanInput.includePaths` / `excludePaths` 前缀过滤
 - Spring config file detector：扫描 `application*.yml/yaml/properties`、`bootstrap*.yml/yaml/properties`、`.env`、`.env.*` 定义项和 `${...}` 占位符依赖
   - `.env` 支持 `KEY=value`、`export KEY=value` 和简单引号值
   - 占位符支持 `${KEY:default}` 和 `${KEY:-default}` 默认值
