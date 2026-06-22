@@ -930,6 +930,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         if (text.matches("-?\\d+")) {
             return ValueType.INTEGER;
         }
+        if (text.matches("-?\\d+(ns|us|ms|s|m|h|d)")) {
+            return ValueType.DURATION;
+        }
         return ValueType.STRING;
     }
 

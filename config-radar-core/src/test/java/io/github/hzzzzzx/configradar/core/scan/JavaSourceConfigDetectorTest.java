@@ -7,6 +7,7 @@ import io.github.hzzzzzx.configradar.core.model.SpringConfigurationPropertiesDet
 import io.github.hzzzzzx.configradar.core.model.SpringPlaceholderDetails;
 import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
 import io.github.hzzzzzx.configradar.core.model.UncertainReason;
+import io.github.hzzzzzx.configradar.core.model.ValueType;
 import io.github.hzzzzzx.configradar.core.rule.AnnotationRule;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import io.github.hzzzzzx.configradar.core.rule.MethodCallRule;
@@ -165,6 +166,7 @@ final class JavaSourceConfigDetectorTest {
         var shutdownPhase = finding(findings, "spring.lifecycle.timeout-per-shutdown-phase");
         assertEquals(FindingRole.DEFINE, shutdownPhase.role());
         assertEquals("20s", shutdownPhase.value().raw());
+        assertEquals(ValueType.DURATION, shutdownPhase.value().type());
 
         assertEquals("1", finding(findings, "spring.array.one").value().raw());
         assertEquals("2", finding(findings, "spring.array.two").value().raw());
