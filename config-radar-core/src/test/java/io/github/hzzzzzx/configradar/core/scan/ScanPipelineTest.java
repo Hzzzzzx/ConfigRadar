@@ -613,7 +613,14 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
+        assertTrue(result.inventory().checks().stream()
+            .anyMatch(item -> item.type().equals("remote-config-source")
+                && item.severity() == DiagnosticSeverity.WARNING
+                && item.key().equals("spring.config.import")));
+        assertTrue(result.inventory().checks().stream()
+            .anyMatch(item -> item.type().equals("remote-config-source")
+                && item.key().equals("spring.cloud.nacos.config.server-addr")));
         assertEquals(155, result.inventory().summary().keys());
-        assertEquals(8, result.inventory().summary().checks());
+        assertEquals(11, result.inventory().summary().checks());
     }
 }
