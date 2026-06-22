@@ -33,6 +33,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("redisson.client")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("feature.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("feature.beta")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("feature.expression.enabled")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("expression.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("db.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPEL_SECRET")));
@@ -196,6 +198,20 @@ final class JavaSourceConfigDetectorTest {
             .orElseThrow();
 
         assertEquals("true", secondCondition.defaultValue().raw());
+    }
+
+    @Test
+    void detectsConditionalOnExpressionAsCondition() throws Exception {
+        var findings = detect();
+
+        var expressionFlag = findings.stream()
+            .filter(item -> item.key().equals("feature.expression.enabled") && item.role() == FindingRole.CONDITION)
+            .findFirst()
+            .orElseThrow();
+        assertEquals("false", expressionFlag.defaultValue().raw());
+
+        assertTrue(findings.stream()
+            .anyMatch(item -> item.key().equals("expression.mode") && item.role() == FindingRole.CONDITION));
     }
 
     @Test

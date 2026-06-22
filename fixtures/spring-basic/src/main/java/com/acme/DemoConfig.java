@@ -1,6 +1,7 @@
 package com.acme;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -142,6 +143,11 @@ public class DemoConfig {
     @Profile({"prod", "staging"})
     @ConditionalOnProperty(prefix = "feature", name = {"enabled", "beta"}, havingValue = "true")
     public Object conditionalBean() {
+        return new Object();
+    }
+
+    @ConditionalOnExpression("'${feature.expression.enabled:false}' == 'true' && environment['expression.mode'] == 'blue'")
+    public Object expressionConditionalBean() {
         return new Object();
     }
 

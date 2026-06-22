@@ -176,9 +176,20 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         }
 
         private void readAnnotationPlaceholders(AnnotationTree annotation) {
+            if (annotationName(annotation).endsWith("ConditionalOnExpression")) {
+                readConditionalOnExpression(annotation);
+                return;
+            }
             for (var argument : annotation.getArguments()) {
                 var value = argument instanceof AssignmentTree assignment ? assignment.getExpression() : argument;
                 readPlaceholders(value);
+            }
+        }
+
+        private void readConditionalOnExpression(AnnotationTree annotation) {
+            for (var expression : annotationValues(annotation, "value")) {
+                addPlaceholders(expression, annotation, FindingRole.CONDITION);
+                addSpelReferences(expression, annotation, FindingRole.CONDITION, "conditional-on-expression");
             }
         }
 
@@ -608,18 +619,31 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         }
 
         private void addPlaceholder(String raw, ExpressionTree tree) {
+            addPlaceholders(raw, tree, FindingRole.READ);
+        }
+
+        private void addPlaceholders(
+            String raw,
+            com.sun.source.tree.Tree tree,
+            FindingRole role
+        ) {
             var start = raw.indexOf("${");
             while (start >= 0) {
                 var end = raw.indexOf('}', start + 2);
                 if (end < 0) {
                     return;
                 }
-                addPlaceholderBody(raw.substring(start + 2, end), raw, tree);
+                addPlaceholderBody(raw.substring(start + 2, end), raw, tree, role);
                 start = raw.indexOf("${", end + 1);
             }
         }
 
-        private void addPlaceholderBody(String body, String raw, ExpressionTree tree) {
+        private void addPlaceholderBody(
+            String body,
+            String raw,
+            com.sun.source.tree.Tree tree,
+            FindingRole role
+        ) {
             var split = placeholderSplit(body);
             var key = split < 0 ? body : body.substring(0, split);
             var defaultValue = split < 0 ? null : body.substring(split + (body.startsWith(":-", split) ? 2 : 1));
@@ -629,7 +653,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             findings.add(new ConfigFinding(
                 key,
                 key,
-                FindingRole.READ,
+                role,
                 null,
                 defaultValue == null ? null : new ConfigValue(defaultValue, defaultValue, typeOf(defaultValue)),
                 EnvironmentContext.none(),
@@ -789,29 +813,44 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         }
 
         private void addSpelReferences(String text, ExpressionTree tree) {
-            addSpelReferences(text, tree, SPEL_ENVIRONMENT);
-            addSpelReferences(text, tree, SPEL_SYSTEM_ENVIRONMENT);
-            addSpelReferences(text, tree, SPEL_SYSTEM_PROPERTIES);
-            addSpelReferences(text, tree, SPEL_ENVIRONMENT_GET_PROPERTY);
-            addSpelReferences(text, tree, SPEL_SYSTEM_ENVIRONMENT_GET);
-            addSpelReferences(text, tree, SPEL_SYSTEM_PROPERTIES_GET_PROPERTY);
+            addSpelReferences(text, tree, FindingRole.READ, "spel-value");
         }
 
-        private void addSpelReferences(String text, ExpressionTree tree, Pattern pattern) {
+        private void addSpelReferences(
+            String text,
+            com.sun.source.tree.Tree tree,
+            FindingRole role,
+            String detailSource
+        ) {
+            addSpelReferences(text, tree, SPEL_ENVIRONMENT, role, detailSource);
+            addSpelReferences(text, tree, SPEL_SYSTEM_ENVIRONMENT, role, detailSource);
+            addSpelReferences(text, tree, SPEL_SYSTEM_PROPERTIES, role, detailSource);
+            addSpelReferences(text, tree, SPEL_ENVIRONMENT_GET_PROPERTY, role, detailSource);
+            addSpelReferences(text, tree, SPEL_SYSTEM_ENVIRONMENT_GET, role, detailSource);
+            addSpelReferences(text, tree, SPEL_SYSTEM_PROPERTIES_GET_PROPERTY, role, detailSource);
+        }
+
+        private void addSpelReferences(
+            String text,
+            com.sun.source.tree.Tree tree,
+            Pattern pattern,
+            FindingRole role,
+            String detailSource
+        ) {
             var matcher = pattern.matcher(text);
             while (matcher.find()) {
                 var key = matcher.group(1);
                 findings.add(new ConfigFinding(
                     key,
                     key,
-                    FindingRole.READ,
+                    role,
                     null,
                     null,
                     EnvironmentContext.none(),
                     source(tree, SourceKind.JAVA),
                     Confidence.HIGH,
                     id(),
-                    new ExternalDetails("spring", "spel-value", null)
+                    new ExternalDetails("spring", detailSource, null)
                 ));
             }
         }
