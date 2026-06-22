@@ -1,6 +1,7 @@
 package io.github.hzzzzzx.configradar.core.rule;
 
 import io.github.hzzzzzx.configradar.core.model.Confidence;
+import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.Scope;
 import io.github.hzzzzzx.configradar.core.scan.FileType;
 import java.nio.file.Files;
@@ -34,6 +35,12 @@ final class RuleLoaderTest {
                 method: get
                 keyArg: 0
                 confidence: HIGH
+                role: CONDITION
+            annotations:
+              - id: custom-annotation
+                type: CustomConfigValue
+                keyAttribute: key
+                role: METADATA
             configFiles:
               - id: custom-file
                 pattern: src/main/resources/custom-config.properties
@@ -46,6 +53,9 @@ final class RuleLoaderTest {
         assertEquals(1, rules.methodCalls().size());
         assertEquals("custom-config", rules.methodCalls().getFirst().id());
         assertEquals(Confidence.HIGH, rules.methodCalls().getFirst().confidence());
+        assertEquals(FindingRole.CONDITION, rules.methodCalls().getFirst().role());
+        assertEquals(1, rules.annotations().size());
+        assertEquals(FindingRole.METADATA, rules.annotations().getFirst().role());
         assertEquals(1, rules.configFiles().size());
         assertEquals(FileType.PROPERTIES, rules.configFiles().getFirst().format());
         assertEquals(Scope.MAIN, rules.configFiles().getFirst().scope());

@@ -618,7 +618,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     ));
                     continue;
                 }
-                findings.add(externalFinding(rule.id(), key, defaultValue, rule.confidence(), tree));
+                findings.add(externalFinding(rule.id(), key, defaultValue, rule.confidence(), rule.role(), tree));
             }
         }
 
@@ -632,7 +632,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     continue;
                 }
                 var defaultValue = annotationValue(annotation, rule.defaultAttribute());
-                findings.add(externalFinding(rule.id(), key, defaultValue, rule.confidence(), annotation));
+                findings.add(externalFinding(rule.id(), key, defaultValue, rule.confidence(), rule.role(), annotation));
             }
         }
 
@@ -878,12 +878,13 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             String key,
             String defaultValue,
             Confidence confidence,
+            FindingRole role,
             com.sun.source.tree.Tree tree
         ) {
             return new ConfigFinding(
                 key,
                 key,
-                FindingRole.READ,
+                role,
                 null,
                 defaultValue == null ? null : new ConfigValue(defaultValue, defaultValue, typeOf(defaultValue)),
                 EnvironmentContext.none(),
