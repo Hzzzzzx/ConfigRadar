@@ -5,6 +5,7 @@ import io.github.hzzzzzx.configradar.core.io.YamlSupport;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.output.YamlInventoryConsumer;
 import io.github.hzzzzzx.configradar.core.rule.RuleLoader;
+import io.github.hzzzzzx.configradar.core.scan.EnvironmentHints;
 import io.github.hzzzzzx.configradar.core.scan.ScanInput;
 import io.github.hzzzzzx.configradar.core.scan.ScanOptions;
 import io.github.hzzzzzx.configradar.core.scan.ScanPipeline;
@@ -73,6 +74,15 @@ public final class ConfigRadarCli implements Runnable {
         @Option(names = "--parallelism", description = "Detector worker count. Defaults to CPU count capped at 8.")
         private int parallelism;
 
+        @Option(names = "--profile", description = "Default profile hint for findings without a profile.")
+        private String profile;
+
+        @Option(names = "--region", description = "Default region hint for findings without a region.")
+        private String region;
+
+        @Option(names = "--namespace", description = "Default namespace hint for findings without a namespace.")
+        private String namespace;
+
         /**
          * Runs the inventory skeleton: build input, load rules, scan, then write YAML outputs.
          *
@@ -87,7 +97,7 @@ public final class ConfigRadarCli implements Runnable {
                 includePaths,
                 excludePaths,
                 null,
-                null,
+                new EnvironmentHints(profile, region, namespace),
                 null
             );
             if (resolvedRulesFile != null) {

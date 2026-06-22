@@ -158,6 +158,30 @@ final class ConfigRadarCliTest {
     }
 
     @Test
+    void inventoryCommandAppliesEnvironmentHints() throws Exception {
+        var inventory = tempDir.resolve("inventory-env.yaml");
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "inventory",
+            springBasic().toString(),
+            "-o",
+            inventory.toString(),
+            "--profile",
+            "dev",
+            "--region",
+            "cn",
+            "--namespace",
+            "blue"
+        );
+
+        assertEquals(0, exitCode);
+        var yaml = Files.readString(inventory);
+        assertTrue(yaml.contains("profile: \"dev\""));
+        assertTrue(yaml.contains("region: \"cn\""));
+        assertTrue(yaml.contains("namespace: \"blue\""));
+    }
+
+    @Test
     void diffCommandWritesKeyBasedDiff() throws Exception {
         var base = tempDir.resolve("base.yaml");
         var head = tempDir.resolve("head.yaml");
