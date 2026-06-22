@@ -434,6 +434,8 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("spring.lifecycle.timeout-per-shutdown-phase")
                 && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("spring.builder.map") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.array.one") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.array.two") && item.role() == FindingRole.DEFINE));
@@ -489,7 +491,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(101, result.inventory().summary().keys());
+        assertEquals(102, result.inventory().summary().keys());
         assertEquals(7, result.inventory().summary().checks());
     }
 }

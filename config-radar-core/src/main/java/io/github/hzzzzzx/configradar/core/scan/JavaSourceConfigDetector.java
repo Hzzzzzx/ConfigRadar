@@ -819,11 +819,14 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             boolean stringProperties
         ) {
             if (stringProperties) {
-                return args.stream()
+                var pairs = args.stream()
                     .flatMap(argument -> stringLiterals(argument).stream())
                     .map(this::propertyString)
                     .filter(java.util.Objects::nonNull)
                     .toList();
+                if (!pairs.isEmpty()) {
+                    return pairs;
+                }
             }
             if (args.size() != 1 || !(args.getFirst() instanceof MethodInvocationTree mapFactory)) {
                 return List.of();
