@@ -1,12 +1,14 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
+import io.github.hzzzzzx.configradar.core.model.ExternalDetails;
 import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.ValueType;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 final class DockerfileEnvDetectorTest {
     @Test
@@ -29,6 +31,11 @@ final class DockerfileEnvDetectorTest {
             "-XX:MaxRAMPercentage=75 -Dfile.encoding=UTF-8",
             finding(findings, "DOCKER_JAVA_OPTS").value().raw()
         );
+        assertEquals("prod", finding(findings, "docker.jvm.mode").value().raw());
+        var jvmArg = assertInstanceOf(ExternalDetails.class, finding(findings, "docker.jvm.mode").details());
+        assertEquals("command", jvmArg.type());
+        assertEquals("worker", finding(findings, "docker.cli.mode").value().raw());
+        assertEquals(ValueType.INTEGER, finding(findings, "docker.cli.limit").value().type());
     }
 
     private static ConfigFinding finding(java.util.List<ConfigFinding> findings, String key) {

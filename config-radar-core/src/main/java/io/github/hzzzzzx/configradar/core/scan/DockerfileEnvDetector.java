@@ -33,22 +33,36 @@ public final class DockerfileEnvDetector implements ConfigDetector {
             var lines = logicalLines(Files.readAllLines(file.path()));
             for (var line : lines) {
                 for (var pair : envPairs(line.text())) {
-                    findings.add(new ConfigFinding(
-                        pair.key(),
-                        pair.key(),
-                        FindingRole.DEFINE,
-                        new ConfigValue(pair.value(), pair.value(), typeOf(pair.value())),
-                        null,
-                        EnvironmentContext.none(),
-                        source(root, file, line.number()),
-                        Confidence.MEDIUM,
-                        id(),
-                        new ExternalDetails("docker", "env", null)
-                    ));
+                    addFinding(findings, root, file, line.number(), pair, "env");
+                }
+                for (var pair : commandPairs(line.text())) {
+                    addFinding(findings, root, file, line.number(), pair, "command");
                 }
             }
         }
         return findings;
+    }
+
+    private void addFinding(
+        List<ScanFinding> findings,
+        Path root,
+        IndexedFile file,
+        int line,
+        Pair pair,
+        String type
+    ) {
+        findings.add(new ConfigFinding(
+            pair.key(),
+            pair.key(),
+            FindingRole.DEFINE,
+            new ConfigValue(pair.value(), pair.value(), typeOf(pair.value())),
+            null,
+            EnvironmentContext.none(),
+            source(root, file, line),
+            Confidence.MEDIUM,
+            id(),
+            new ExternalDetails("docker", type, null)
+        ));
     }
 
     private static List<IndexedFile> dockerfiles(ScanContext context) {
@@ -100,6 +114,30 @@ public final class DockerfileEnvDetector implements ConfigDetector {
             return List.of();
         }
         return List.of(new Pair(tokens.get(0), tokens.get(1)));
+    }
+
+    private static List<Pair> commandPairs(String line) {
+        if (!line.startsWith("CMD ") && !line.startsWith("ENTRYPOINT ")) {
+            return List.of();
+        }
+        var split = line.indexOf(' ');
+        if (split < 0) {
+            return List.of();
+        }
+        return tokens(line.substring(split + 1).replace('[', ' ').replace(']', ' ').replace(',', ' ')).stream()
+            .map(DockerfileEnvDetector::argumentPair)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+    }
+
+    private static Pair argumentPair(String token) {
+        if (token.startsWith("--")) {
+            return equalsPair(token.substring(2));
+        }
+        if (token.startsWith("-D")) {
+            return equalsPair(token.substring(2));
+        }
+        return null;
     }
 
     private static Pair equalsPair(String token) {
