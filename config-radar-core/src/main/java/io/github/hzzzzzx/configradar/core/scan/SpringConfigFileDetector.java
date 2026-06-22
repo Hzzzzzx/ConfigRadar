@@ -193,9 +193,9 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         SourceKind sourceKind,
         List<ScanFinding> findings
     ) {
-        var colon = body.indexOf(':');
-        var key = colon < 0 ? body : body.substring(0, colon);
-        var defaultValue = colon < 0 ? null : body.substring(colon + 1);
+        var split = placeholderSplit(body);
+        var key = split < 0 ? body : body.substring(0, split);
+        var defaultValue = split < 0 ? null : body.substring(split + (body.startsWith(":-", split) ? 2 : 1));
         if (key.isBlank()) {
             return;
         }
@@ -287,6 +287,11 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             return value.substring(1, value.length() - 1);
         }
         return value;
+    }
+
+    private static int placeholderSplit(String body) {
+        var shellDefault = body.indexOf(":-");
+        return shellDefault >= 0 ? shellDefault : body.indexOf(':');
     }
 
     private static String profileOf(Path path, Object document) {

@@ -41,6 +41,7 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("REDIS_PASSWORD")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("FEATURE_FLAG")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("QUOTED_NAME")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("SHELL_DEFAULT")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("LOG_LEVEL")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("API_TOKEN")));
     }
@@ -108,6 +109,11 @@ final class SpringConfigFileDetectorTest {
         assertEquals("true", finding(findings, "FEATURE_FLAG").value().raw());
         assertEquals(ValueType.BOOLEAN, finding(findings, "FEATURE_FLAG").value().type());
         assertEquals("config radar", finding(findings, "QUOTED_NAME").value().raw());
+        var shellDefault = findings.stream()
+            .filter(item -> item.key().equals("SHELL_DEFAULT") && item.role() == FindingRole.READ)
+            .findFirst()
+            .orElseThrow();
+        assertEquals("fallback", shellDefault.defaultValue().raw());
 
         assertEquals("prod", finding(findings, "LOG_LEVEL").environment().profile());
 
