@@ -36,6 +36,16 @@ public class DemoConfig {
     interface InventoryClient {
     }
 
+    @jakarta.servlet.annotation.WebServlet(
+        urlPatterns = "/orders",
+        initParams = {
+            @jakarta.servlet.annotation.WebInitParam(name = "web.annotation.mode", value = "prod"),
+            @jakarta.servlet.annotation.WebInitParam(name = "web.annotation.timeout", value = "30")
+        }
+    )
+    static class OrdersServlet {
+    }
+
     public static void main(String[] args) {
         org.springframework.boot.SpringApplication.run(DemoConfig.class, args);
         new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class).run(args);

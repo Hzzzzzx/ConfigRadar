@@ -673,6 +673,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("web.servlet.timeout")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("web.annotation.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("web.annotation.timeout")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("typesafe.app.mode")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("commons.feature.enabled")));
@@ -694,7 +698,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("typesafe.file.enabled")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("typesafe.file.limit")));
-        assertEquals(177, result.inventory().summary().keys());
+        assertEquals(179, result.inventory().summary().keys());
         assertEquals(36, result.inventory().summary().checks());
     }
 }

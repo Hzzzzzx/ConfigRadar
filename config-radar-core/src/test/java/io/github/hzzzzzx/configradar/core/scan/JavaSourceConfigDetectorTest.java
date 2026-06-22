@@ -56,6 +56,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolved.placeholder")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.placeholder.required")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("servlet.feature.enabled")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("web.annotation.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("web.annotation.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("java:comp/env/jdbc/orders")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("typesafe.app.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("commons.feature.enabled")));
@@ -174,6 +176,12 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(FindingRole.READ, servletInitParam.role());
         var servletDetails = assertInstanceOf(ExternalDetails.class, servletInitParam.details());
         assertEquals("servlet-init-parameter", servletDetails.type());
+        var webInitParam = finding(findings, "web.annotation.mode");
+        assertEquals(FindingRole.DEFINE, webInitParam.role());
+        assertEquals("prod", webInitParam.value().raw());
+        var webInitParamDetails = assertInstanceOf(ExternalDetails.class, webInitParam.details());
+        assertEquals("web-init-param", webInitParamDetails.type());
+        assertEquals("30", finding(findings, "web.annotation.timeout").value().raw());
         var jndiLookup = finding(findings, "java:comp/env/jdbc/orders");
         assertEquals(FindingRole.READ, jndiLookup.role());
         var jndiDetails = assertInstanceOf(ExternalDetails.class, jndiLookup.details());

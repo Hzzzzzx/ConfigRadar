@@ -167,6 +167,12 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         }
 
         @Override
+        public Void visitAnnotation(AnnotationTree tree, Void unused) {
+            readWebInitParamAnnotation(tree);
+            return super.visitAnnotation(tree, unused);
+        }
+
+        @Override
         public Void visitMethodInvocation(MethodInvocationTree tree, Void unused) {
             readSpringDefaultProperties(tree);
             readSpringCommandLineArgs(tree);
@@ -242,6 +248,29 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     ));
                 }
             }
+        }
+
+        private void readWebInitParamAnnotation(AnnotationTree annotation) {
+            if (!annotationName(annotation).endsWith("WebInitParam")) {
+                return;
+            }
+            var key = annotationValue(annotation, "name");
+            if (key == null || key.isBlank()) {
+                return;
+            }
+            var value = annotationValue(annotation, "value");
+            findings.add(new ConfigFinding(
+                key,
+                key,
+                FindingRole.DEFINE,
+                value == null ? null : new ConfigValue(value, value, typeOf(value)),
+                null,
+                EnvironmentContext.none(),
+                source(annotation, SourceKind.JAVA),
+                Confidence.HIGH,
+                id(),
+                new ExternalDetails("java", "web-init-param", null)
+            ));
         }
 
         private void readConditionalOnProperty(AnnotationTree annotation, com.sun.source.tree.Tree sourceTree) {
