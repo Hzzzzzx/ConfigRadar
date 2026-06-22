@@ -34,6 +34,7 @@ final class SpringConfigFileDetectorTest {
 
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.application.name")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("server.port")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("server.shutdown-grace-period")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("datasource.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("DB_URL")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("payment.timeout")));
@@ -123,6 +124,7 @@ final class SpringConfigFileDetectorTest {
         assertEquals("config radar", finding(findings, "QUOTED_NAME").value().raw());
         assertEquals("9090", finding(findings, "management.server.port").value().raw());
         assertEquals(ValueType.INTEGER, finding(findings, "management.server.port").value().type());
+        assertEquals(ValueType.DURATION, finding(findings, "server.shutdown-grace-period").value().type());
         assertEquals("true", finding(findings, "feature.json").value().raw());
         assertEquals(ValueType.BOOLEAN, finding(findings, "feature.json").value().type());
         assertEquals("true", finding(findings, "file.json.enabled").value().raw());

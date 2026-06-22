@@ -11,6 +11,7 @@ import io.github.hzzzzzx.configradar.core.model.SourceLocation;
 import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
 import io.github.hzzzzzx.configradar.core.model.UncertainReason;
 import io.github.hzzzzzx.configradar.core.model.UnknownUncertainDetails;
+import io.github.hzzzzzx.configradar.core.model.ValueType;
 import io.github.hzzzzzx.configradar.core.output.YamlInventoryConsumer;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import java.io.ByteArrayOutputStream;
@@ -285,6 +286,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("management.server.port") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("server.shutdown-grace-period")
+                && item.role() == FindingRole.DEFINE
+                && item.value().type() == ValueType.DURATION));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("feature.json") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("file.json.enabled") && item.role() == FindingRole.DEFINE));
@@ -432,7 +437,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(86, result.inventory().summary().keys());
+        assertEquals(87, result.inventory().summary().keys());
         assertEquals(4, result.inventory().summary().checks());
     }
 }
