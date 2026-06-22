@@ -1028,7 +1028,16 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 return;
             }
             var getter = select.getIdentifier().toString();
-            if (!List.of("getString", "getInt", "getLong", "getBoolean", "getDouble", "getDuration").contains(getter)) {
+            if (!List.of(
+                "getString",
+                "getInt",
+                "getLong",
+                "getBoolean",
+                "getDouble",
+                "getDuration",
+                "getValue",
+                "getOptionalValue"
+            ).contains(getter)) {
                 return;
             }
             var receiver = select.getExpression().toString().toLowerCase(java.util.Locale.ROOT);
@@ -1050,7 +1059,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 ));
                 return;
             }
-            var defaultValue = args.size() > 1 ? literalValue(args.get(1)) : null;
+            var defaultValue = args.size() > 1 && !getter.equals("getValue") && !getter.equals("getOptionalValue")
+                ? literalValue(args.get(1))
+                : null;
             findings.add(new ConfigFinding(
                 key,
                 key,

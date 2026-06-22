@@ -59,6 +59,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("java:comp/env/jdbc/orders")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("typesafe.app.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("commons.feature.enabled")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("mp.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("mp.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.name")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
@@ -177,6 +179,8 @@ final class JavaSourceConfigDetectorTest {
         var genericDetails = assertInstanceOf(ExternalDetails.class, genericConfig.details());
         assertEquals("generic-config-getter", genericDetails.type());
         assertEquals("true", finding(findings, "commons.feature.enabled").defaultValue().raw());
+        assertNull(finding(findings, "mp.mode").defaultValue());
+        assertNull(finding(findings, "mp.timeout").defaultValue());
         assertEquals("inventory", finding(findings, "inventory.client.name").defaultValue().raw());
         assertEquals("http://localhost", finding(findings, "inventory.client.url").defaultValue().raw());
 

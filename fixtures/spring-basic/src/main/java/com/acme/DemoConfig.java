@@ -171,8 +171,10 @@ public class DemoConfig {
     public String readGenericConfig(com.typesafe.config.Config appConfig, org.apache.commons.configuration2.Configuration configuration, String prefix) {
         var mode = appConfig.getString("typesafe.app.mode");
         var enabled = configuration.getBoolean("commons.feature.enabled", true);
+        var mpMode = org.eclipse.microprofile.config.ConfigProvider.getConfig().getValue("mp.mode", String.class);
+        var mpTimeout = appConfig.getOptionalValue("mp.timeout", Integer.class);
         var dynamic = appConfig.getString(prefix + ".typesafe");
-        return mode + enabled + dynamic;
+        return mode + enabled + mpMode + mpTimeout + dynamic;
     }
 
     public void springApplicationDefaults() {
