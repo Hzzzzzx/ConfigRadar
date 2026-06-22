@@ -87,7 +87,7 @@ Implemented:
   - `.env` 支持 `KEY=value`、`export KEY=value` 和简单引号值
   - 占位符支持 `${KEY:default}` 和 `${KEY:-default}` 默认值
 - Spring configuration metadata detector：扫描 `spring-configuration-metadata.json` / `additional-spring-configuration-metadata.json` 中的 `properties[].name`
-- Logback Spring XML detector：扫描 `logback-spring.xml` / `logback.xml` 中的 `<springProperty source="...">` 和 `${...}` 占位符
+- Logging XML detector：扫描 `logback-spring.xml` / `logback.xml` / `log4j2-spring.xml` / `log4j2.xml` 中的 `<springProperty source="...">` 和 `${...}` 占位符
 - Spring YAML profile support：识别多文档 YAML 中的 `spring.config.activate.on-profile`
 - Spring metadata role：`spring.config.import` / `spring.config.activate.*` / `spring.profiles*` / `@Profile` / `@PropertySource` 标记为 `METADATA`
 - Java source detector：扫描注解占位符、`@Value` SpEL `environment['key']` / `environment.getProperty('key')` / `systemEnvironment['KEY']` / `systemEnvironment.get('KEY')` / `systemProperties['key']` / `systemProperties.getProperty('key')`、类/方法级 `@ConfigurationProperties`、`@ConditionalOnProperty`、`@Profile`、profile predicate calls、`@PropertySource`/`@PropertySources`、`SpringApplication.setDefaultProperties`、`SpringApplicationBuilder.properties`、`SpringApplication.run(..., "--key=value")`、动态启动参数入口、programmatic `MapPropertySource` / `ResourcePropertySource`、动态 `PropertiesPropertySource`、`Environment.getProperty`、`Environment.getRequiredProperty`、`Environment.containsProperty`、`Binder.get(...).bind`、`System.getProperty`、`System.setProperty`、`System.getenv`、`System.getProperties()` map 读写、`Integer.getInteger`、`Long.getLong`、`Boolean.getBoolean`
