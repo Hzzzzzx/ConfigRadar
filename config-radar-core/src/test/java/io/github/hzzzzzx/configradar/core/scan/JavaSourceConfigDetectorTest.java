@@ -55,6 +55,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.main.banner-mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("management.endpoints.web.exposure.include")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.lifecycle.timeout-per-shutdown-phase")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("cli.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("cli.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.endpoint")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("jobs.cleanup.cron")));
@@ -143,6 +145,9 @@ final class JavaSourceConfigDetectorTest {
         var shutdownPhase = finding(findings, "spring.lifecycle.timeout-per-shutdown-phase");
         assertEquals(FindingRole.DEFINE, shutdownPhase.role());
         assertEquals("20s", shutdownPhase.value().raw());
+
+        assertEquals("on", finding(findings, "cli.mode").value().raw());
+        assertEquals("30", finding(findings, "cli.timeout").value().raw());
 
         var programmaticEndpoint = finding(findings, "programmatic.endpoint");
         assertEquals(FindingRole.DEFINE, programmaticEndpoint.role());

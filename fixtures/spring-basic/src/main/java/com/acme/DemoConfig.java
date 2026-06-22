@@ -87,6 +87,14 @@ public class DemoConfig {
             .properties("spring.lifecycle.timeout-per-shutdown-phase=20s");
     }
 
+    public void springApplicationCommandLineArgs() {
+        org.springframework.boot.SpringApplication.run(
+            DemoConfig.class,
+            "--cli.mode=on",
+            "--cli.timeout=30"
+        );
+    }
+
     public void programmaticPropertySource(org.springframework.core.env.ConfigurableEnvironment environment) {
         environment.getPropertySources().addFirst(new org.springframework.core.env.MapPropertySource(
             "programmatic",

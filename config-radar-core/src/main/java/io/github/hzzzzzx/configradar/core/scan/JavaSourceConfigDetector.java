@@ -152,6 +152,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         @Override
         public Void visitMethodInvocation(MethodInvocationTree tree, Void unused) {
             readSpringDefaultProperties(tree);
+            readSpringCommandLineArgs(tree);
             readJavaConfigRead(tree);
             readSpringBinder(tree);
             readRuleMethodCall(tree);
@@ -319,6 +320,31 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     Confidence.HIGH,
                     id(),
                     new ExternalDetails("spring", "default-properties", null)
+                ));
+            }
+        }
+
+        private void readSpringCommandLineArgs(MethodInvocationTree tree) {
+            var method = methodName(tree.getMethodSelect());
+            if (!method.endsWith(".run") || !method.contains("SpringApplication")) {
+                return;
+            }
+            for (var argument : tree.getArguments()) {
+                var property = commandLineProperty(literal(argument));
+                if (property == null) {
+                    continue;
+                }
+                findings.add(new ConfigFinding(
+                    property.key(),
+                    property.key(),
+                    FindingRole.DEFINE,
+                    property.value() == null ? null : new ConfigValue(property.value(), property.value(), typeOf(property.value())),
+                    null,
+                    EnvironmentContext.none(),
+                    source(tree, SourceKind.JAVA),
+                    Confidence.HIGH,
+                    id(),
+                    new ExternalDetails("spring", "command-line-args", null)
                 ));
             }
         }
@@ -641,6 +667,10 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 return null;
             }
             return new PropertyPair(key, text.substring(split + 1).trim());
+        }
+
+        private PropertyPair commandLineProperty(String text) {
+            return text == null || !text.startsWith("--") ? null : propertyString(text.substring(2));
         }
 
         private String defaultValue(List<? extends ExpressionTree> args, boolean isGetProperty, boolean hasNoDefault) {
