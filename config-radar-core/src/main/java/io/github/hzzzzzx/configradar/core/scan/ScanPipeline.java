@@ -90,6 +90,7 @@ public final class ScanPipeline {
         var builder = new ScanPipelineBuilder()
             .processor(new NoopFindingProcessor())
             .normalizer(new BasicFindingNormalizer())
+            .enricher(new SensitiveValueRedactionEnricher())
             .enricher(new UncertainFindingCheckEnricher())
             .enricher(new SummaryInventoryEnricher());
         for (var detector : detectors) {

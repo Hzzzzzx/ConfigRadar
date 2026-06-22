@@ -8,16 +8,28 @@ public record ScanOptions(
     boolean includeUncertain,
     int parallelism,
     int javaParallelism,
-    ScanMode scanMode
+    ScanMode scanMode,
+    RedactionPolicy redactionPolicy
 ) {
     public ScanOptions {
         int cpu = Runtime.getRuntime().availableProcessors();
         parallelism = parallelism <= 0 ? Math.min(cpu, 8) : parallelism;
         javaParallelism = javaParallelism <= 0 ? Math.min(2, parallelism) : javaParallelism;
         scanMode = scanMode == null ? ScanMode.STATIC_SOURCE : scanMode;
+        redactionPolicy = redactionPolicy == null ? RedactionPolicy.disabled() : redactionPolicy;
+    }
+
+    public ScanOptions(
+        boolean includeTests,
+        boolean includeUncertain,
+        int parallelism,
+        int javaParallelism,
+        ScanMode scanMode
+    ) {
+        this(includeTests, includeUncertain, parallelism, javaParallelism, scanMode, RedactionPolicy.disabled());
     }
 
     public static ScanOptions defaults() {
-        return new ScanOptions(false, true, 0, 0, ScanMode.STATIC_SOURCE);
+        return new ScanOptions(false, true, 0, 0, ScanMode.STATIC_SOURCE, RedactionPolicy.disabled());
     }
 }

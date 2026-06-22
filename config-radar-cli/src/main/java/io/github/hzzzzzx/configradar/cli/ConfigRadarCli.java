@@ -6,6 +6,7 @@ import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.output.YamlInventoryConsumer;
 import io.github.hzzzzzx.configradar.core.rule.RuleLoader;
 import io.github.hzzzzzx.configradar.core.scan.EnvironmentHints;
+import io.github.hzzzzzx.configradar.core.scan.RedactionPolicy;
 import io.github.hzzzzzx.configradar.core.scan.ScanInput;
 import io.github.hzzzzzx.configradar.core.scan.ScanOptions;
 import io.github.hzzzzzx.configradar.core.scan.ScanPipeline;
@@ -83,6 +84,9 @@ public final class ConfigRadarCli implements Runnable {
         @Option(names = "--namespace", description = "Default namespace hint for findings without a namespace.")
         private String namespace;
 
+        @Option(names = "--redact-sensitive", description = "Mask values for sensitive-looking keys.")
+        private boolean redactSensitive;
+
         /**
          * Runs the inventory skeleton: build input, load rules, scan, then write YAML outputs.
          *
@@ -110,7 +114,14 @@ public final class ConfigRadarCli implements Runnable {
                     input.buildHints()
                 );
             }
-            var options = new ScanOptions(includeTests, true, parallelism, 0, null);
+            var options = new ScanOptions(
+                includeTests,
+                true,
+                parallelism,
+                0,
+                null,
+                redactSensitive ? RedactionPolicy.redactSensitive() : RedactionPolicy.disabled()
+            );
             var rules = new RuleLoader().load(resolvedRulesFile);
             var result = ScanPipeline.defaults(enableCodegraph).scan(input, options, rules);
             writeParent(output);

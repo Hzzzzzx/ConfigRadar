@@ -182,6 +182,25 @@ final class ConfigRadarCliTest {
     }
 
     @Test
+    void inventoryCommandCanRedactSensitiveValues() throws Exception {
+        var inventory = tempDir.resolve("inventory-redacted.yaml");
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "inventory",
+            springBasic().toString(),
+            "-o",
+            inventory.toString(),
+            "--redact-sensitive"
+        );
+
+        assertEquals(0, exitCode);
+        var yaml = Files.readString(inventory);
+        assertTrue(yaml.contains("redis.password"));
+        assertTrue(yaml.contains("******"));
+        assertFalse(yaml.contains("redis-secret"));
+    }
+
+    @Test
     void diffCommandWritesKeyBasedDiff() throws Exception {
         var base = tempDir.resolve("base.yaml");
         var head = tempDir.resolve("head.yaml");
