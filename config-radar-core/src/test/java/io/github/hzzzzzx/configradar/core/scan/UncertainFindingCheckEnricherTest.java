@@ -43,6 +43,11 @@ final class UncertainFindingCheckEnricherTest {
         assertEquals(1, enriched.checks().size());
         assertEquals("dynamic-config-key", enriched.checks().getFirst().type());
         assertEquals(DiagnosticSeverity.ERROR, enriched.checks().getFirst().severity());
+        assertEquals(
+            "Dynamic configuration key requires review: STRING_CONCAT via Environment.getProperty: "
+                + "environment.getProperty(prefix + \".url\")",
+            enriched.checks().getFirst().message()
+        );
         assertEquals(source, enriched.checks().getFirst().source());
     }
 }
