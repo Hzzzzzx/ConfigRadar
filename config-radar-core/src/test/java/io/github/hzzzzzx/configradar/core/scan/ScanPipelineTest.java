@@ -567,6 +567,9 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.config.import") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("spring.config.additional-location[0]")
+                && item.role() == FindingRole.METADATA));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("imported.enabled") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("IMPORTED_SECRET") && item.role() == FindingRole.READ));
@@ -574,6 +577,12 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("configtree.username") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("configtree.timeout") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("list.extra.enabled") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("list.extra.secret") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("LIST_EXTRA_SECRET") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.profiles.include") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().uncertain().stream()
@@ -604,7 +613,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(151, result.inventory().summary().keys());
+        assertEquals(155, result.inventory().summary().keys());
         assertEquals(8, result.inventory().summary().checks());
     }
 }

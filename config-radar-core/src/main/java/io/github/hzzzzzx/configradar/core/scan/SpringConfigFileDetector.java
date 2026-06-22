@@ -327,7 +327,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
     }
 
     private static boolean isSpringConfigReference(String key) {
-        var normalized = key.toLowerCase().replace('_', '.');
+        var normalized = key.toLowerCase().replace('_', '.').replace('-', '.').replaceAll("\\[\\d+]", "");
         return normalized.equals("spring.config.import")
             || normalized.equals("spring.config.location")
             || normalized.equals("spring.config.additional.location");

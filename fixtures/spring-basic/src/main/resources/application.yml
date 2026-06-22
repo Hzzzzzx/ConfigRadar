@@ -3,6 +3,8 @@ spring:
     name: spring-basic
   config:
     import: optional:configserver:http://localhost:8888,optional:classpath:imported.properties,optional:configtree:src/main/resources/configtree/
+    additional-location:
+      - optional:classpath:list-extra.properties
   profiles:
     include: shared
 server:
