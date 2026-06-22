@@ -31,6 +31,10 @@ final class SpringConfigurationMetadataDetectorTest {
         var enabled = finding(findings, "metadata.client.enabled");
         assertEquals("true", enabled.defaultValue().raw());
         assertEquals(ValueType.BOOLEAN, enabled.defaultValue().type());
+
+        var ttl = finding(findings, "metadata.client.ttl");
+        assertEquals("30s", ttl.defaultValue().raw());
+        assertEquals(ValueType.DURATION, ttl.defaultValue().type());
     }
 
     private static ConfigFinding finding(List<ConfigFinding> findings, String key) {

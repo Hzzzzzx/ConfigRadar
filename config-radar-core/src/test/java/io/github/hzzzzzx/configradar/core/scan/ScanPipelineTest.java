@@ -252,6 +252,8 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("metadata.client.enabled") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("metadata.client.ttl") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("redisson.client")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("db.url")));
@@ -364,7 +366,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(83, result.inventory().summary().keys());
+        assertEquals(84, result.inventory().summary().keys());
         assertEquals(4, result.inventory().summary().checks());
     }
 }

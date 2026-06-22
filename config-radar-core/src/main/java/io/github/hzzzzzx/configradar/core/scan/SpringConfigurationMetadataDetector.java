@@ -81,6 +81,9 @@ public final class SpringConfigurationMetadataDetector implements ConfigDetector
         if (value.isBoolean() || "java.lang.Boolean".equals(declaredType) || "boolean".equals(declaredType)) {
             return ValueType.BOOLEAN;
         }
+        if ("java.time.Duration".equals(declaredType)) {
+            return ValueType.DURATION;
+        }
         if (value.isIntegralNumber() || "java.lang.Integer".equals(declaredType) || "int".equals(declaredType)
             || "java.lang.Long".equals(declaredType) || "long".equals(declaredType)) {
             return ValueType.INTEGER;

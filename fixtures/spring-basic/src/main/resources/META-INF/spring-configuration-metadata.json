@@ -9,6 +9,11 @@
       "name": "metadata.client.enabled",
       "type": "java.lang.Boolean",
       "defaultValue": true
+    },
+    {
+      "name": "metadata.client.ttl",
+      "type": "java.time.Duration",
+      "defaultValue": "30s"
     }
   ]
 }
