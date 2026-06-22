@@ -49,6 +49,8 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("imported.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("imported.secret")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("IMPORTED_SECRET")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("configtree.username")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("configtree.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.cloud.nacos.config.server-addr")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_PROFILES_ACTIVE")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_CONFIG_LOCATION")));
@@ -138,6 +140,10 @@ final class SpringConfigFileDetectorTest {
         assertEquals(FindingRole.READ, importedPlaceholder.role());
         assertEquals("secret", importedPlaceholder.defaultValue().raw());
         assertEquals(SourceKind.PROPERTIES, importedPlaceholder.source().sourceKind());
+
+        assertEquals("alice", finding(findings, "configtree.username").value().raw());
+        assertEquals("PT7S", finding(findings, "configtree.timeout").value().raw());
+        assertEquals(ValueType.DURATION, finding(findings, "configtree.timeout").value().type());
 
         assertEquals(ValueType.BOOLEAN, finding(findings, "location.extra.enabled").value().type());
         assertEquals(FindingRole.DEFINE, finding(findings, "location.extra.secret").role());

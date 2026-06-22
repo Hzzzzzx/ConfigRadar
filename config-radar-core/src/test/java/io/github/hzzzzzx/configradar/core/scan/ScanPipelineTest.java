@@ -571,6 +571,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("IMPORTED_SECRET") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("configtree.username") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("configtree.timeout") && item.role() == FindingRole.DEFINE));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.profiles.include") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().uncertain().stream()
             .anyMatch(item -> item.expression().contains("prefix + \".url\"")));
@@ -600,7 +604,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(149, result.inventory().summary().keys());
+        assertEquals(151, result.inventory().summary().keys());
         assertEquals(8, result.inventory().summary().checks());
     }
 }

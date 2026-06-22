@@ -243,6 +243,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         }
         // ponytail: one-hop local files only; add directory expansion/remote clients when users need them.
         for (var location : rawValue.split(",")) {
+            addConfigTree(context, sourceFile, location.trim(), findings);
             var imported = importedFile(context, sourceFile, location.trim());
             if (imported == null) {
                 continue;
@@ -251,6 +252,31 @@ public final class SpringConfigFileDetector implements ConfigDetector {
                 findings.addAll(readYaml(context, imported));
             } else if (imported.type() == FileType.PROPERTIES) {
                 findings.addAll(readProperties(context, imported));
+            }
+        }
+    }
+
+    private void addConfigTree(
+        ScanContext context,
+        IndexedFile sourceFile,
+        String location,
+        List<ScanFinding> findings
+    ) throws Exception {
+        var directory = configTreeDirectory(context, location);
+        if (directory == null) {
+            return;
+        }
+        try (var paths = Files.list(directory)) {
+            for (var path : paths.filter(Files::isRegularFile).toList()) {
+                findings.add(finding(
+                    context,
+                    new IndexedFile(path, FileType.PROPERTIES, sourceFile.scope()),
+                    path.getFileName().toString(),
+                    Files.readString(path).trim(),
+                    null,
+                    1,
+                    SourceKind.PROPERTIES
+                ));
             }
         }
     }
@@ -281,6 +307,23 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             return null;
         }
         return new IndexedFile(path, typeOf(path), sourceFile.scope());
+    }
+
+    private static Path configTreeDirectory(ScanContext context, String location) {
+        var text = location.startsWith("optional:") ? location.substring("optional:".length()) : location;
+        if (!text.startsWith("configtree:")) {
+            return null;
+        }
+        var root = context.input().projectRoot();
+        if (root == null) {
+            return null;
+        }
+        var value = text.substring("configtree:".length());
+        var path = Path.of(value);
+        if (!path.isAbsolute()) {
+            path = root.resolve(value);
+        }
+        return Files.isDirectory(path) ? path : null;
     }
 
     private static boolean isSpringConfigReference(String key) {
