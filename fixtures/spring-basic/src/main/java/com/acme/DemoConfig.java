@@ -57,6 +57,8 @@ public class DemoConfig {
         var mapEnv = System.getenv().get("MAP_SECRET");
         var mapEnvDefault = System.getenv().getOrDefault("MAP_REGION", "cn");
         var hasEnvFlag = System.getenv().containsKey("ENV_FEATURE_FLAG");
+        var propertyMapValue = System.getProperties().getProperty("map.property.mode", "safe");
+        var hasPropertyMapFlag = System.getProperties().containsKey("map.property.flag");
         var legacyPort = Integer.getInteger("legacy.port", 8081);
         var legacyLimit = Long.getLong("legacy.limit", 10L);
         var legacyEnabled = Boolean.getBoolean("legacy.enabled");
@@ -64,6 +66,7 @@ public class DemoConfig {
         var custom = ConfigCenter.get("custom.center", "fallback");
         System.setProperty("runtime.region", "cn");
         return direct + required + typed + hasCache + binder + system + env + mapEnv + mapEnvDefault + hasEnvFlag
+            + propertyMapValue + hasPropertyMapFlag
             + legacyPort + legacyLimit + legacyEnabled + dynamic + custom;
     }
 

@@ -268,6 +268,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("ENV_FEATURE_FLAG")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("map.property.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("map.property.flag")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("legacy.port")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("legacy.limit")));
@@ -301,7 +305,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(57, result.inventory().summary().keys());
+        assertEquals(59, result.inventory().summary().keys());
         assertEquals(1, result.inventory().summary().checks());
     }
 }

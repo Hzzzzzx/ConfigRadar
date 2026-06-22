@@ -45,6 +45,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("MAP_SECRET")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("MAP_REGION")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("ENV_FEATURE_FLAG")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("map.property.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("map.property.flag")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("legacy.port")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("legacy.limit")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("legacy.enabled")));
@@ -105,6 +107,8 @@ final class JavaSourceConfigDetectorTest {
         assertNull(finding(findings, "MAP_SECRET").defaultValue());
         assertEquals("cn", finding(findings, "MAP_REGION").defaultValue().raw());
         assertNull(finding(findings, "ENV_FEATURE_FLAG").defaultValue());
+        assertEquals("safe", finding(findings, "map.property.mode").defaultValue().raw());
+        assertNull(finding(findings, "map.property.flag").defaultValue());
 
         var legacyPort = finding(findings, "legacy.port");
         assertEquals("8081", legacyPort.defaultValue().raw());
