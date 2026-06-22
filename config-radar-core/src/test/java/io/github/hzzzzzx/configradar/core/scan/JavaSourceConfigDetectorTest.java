@@ -69,8 +69,12 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.lifecycle.timeout-per-shutdown-phase")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cli.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cli.timeout")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("cli.array.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("cli.array.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("builder.cli.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("builder.cli.timeout")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("builder.cli.array.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("builder.cli.array.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.endpoint")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("jobs.cleanup.cron")));
@@ -198,8 +202,12 @@ final class JavaSourceConfigDetectorTest {
 
         assertEquals("on", finding(findings, "cli.mode").value().raw());
         assertEquals("30", finding(findings, "cli.timeout").value().raw());
+        assertEquals("on", finding(findings, "cli.array.mode").value().raw());
+        assertEquals("60", finding(findings, "cli.array.timeout").value().raw());
         assertEquals("on", finding(findings, "builder.cli.mode").value().raw());
         assertEquals("45", finding(findings, "builder.cli.timeout").value().raw());
+        assertEquals("on", finding(findings, "builder.cli.array.mode").value().raw());
+        assertEquals("75", finding(findings, "builder.cli.array.timeout").value().raw());
 
         var programmaticEndpoint = finding(findings, "programmatic.endpoint");
         assertEquals(FindingRole.DEFINE, programmaticEndpoint.role());

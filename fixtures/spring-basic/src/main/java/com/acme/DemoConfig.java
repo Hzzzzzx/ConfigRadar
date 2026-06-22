@@ -146,10 +146,21 @@ public class DemoConfig {
             "--cli.mode=on",
             "--cli.timeout=30"
         );
+        org.springframework.boot.SpringApplication.run(
+            DemoConfig.class,
+            new String[] {
+                "--cli.array.mode=on",
+                "--cli.array.timeout=60"
+            }
+        );
         new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class).run(
             "--builder.cli.mode=on",
             "--builder.cli.timeout=45"
         );
+        new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class).run(new String[] {
+            "--builder.cli.array.mode=on",
+            "--builder.cli.array.timeout=75"
+        });
     }
 
     public void programmaticPropertySource(org.springframework.core.env.ConfigurableEnvironment environment) {

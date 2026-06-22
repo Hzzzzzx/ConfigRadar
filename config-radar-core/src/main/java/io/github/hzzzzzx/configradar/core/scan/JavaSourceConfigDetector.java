@@ -372,8 +372,8 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var firstConfigArgument = method.contains("SpringApplicationBuilder") ? 0 : 1;
             for (var index = firstConfigArgument; index < arguments.size(); index++) {
                 var argument = arguments.get(index);
-                var property = commandLineProperty(literal(argument));
-                if (property == null) {
+                var values = stringLiterals(argument);
+                if (values.isEmpty()) {
                     findings.add(new UncertainFinding(
                         argument.toString(),
                         UncertainReason.COMMAND_LINE_ARGS,
@@ -386,18 +386,34 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     ));
                     continue;
                 }
-                findings.add(new ConfigFinding(
-                    property.key(),
-                    property.key(),
-                    FindingRole.DEFINE,
-                    property.value() == null ? null : new ConfigValue(property.value(), property.value(), typeOf(property.value())),
-                    null,
-                    EnvironmentContext.none(),
-                    source(tree, SourceKind.JAVA),
-                    Confidence.HIGH,
-                    id(),
-                    new ExternalDetails("spring", "command-line-args", null)
-                ));
+                for (var value : values) {
+                    var property = commandLineProperty(value);
+                    if (property == null) {
+                        findings.add(new UncertainFinding(
+                            value,
+                            UncertainReason.COMMAND_LINE_ARGS,
+                            method,
+                            null,
+                            source(tree, SourceKind.JAVA),
+                            Confidence.LOW,
+                            id(),
+                            new DynamicKeyDetails(null, null, value)
+                        ));
+                        continue;
+                    }
+                    findings.add(new ConfigFinding(
+                        property.key(),
+                        property.key(),
+                        FindingRole.DEFINE,
+                        property.value() == null ? null : new ConfigValue(property.value(), property.value(), typeOf(property.value())),
+                        null,
+                        EnvironmentContext.none(),
+                        source(tree, SourceKind.JAVA),
+                        Confidence.HIGH,
+                        id(),
+                        new ExternalDetails("spring", "command-line-args", null)
+                    ));
+                }
             }
         }
 
