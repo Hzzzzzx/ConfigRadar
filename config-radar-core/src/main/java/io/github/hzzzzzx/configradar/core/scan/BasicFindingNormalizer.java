@@ -1,6 +1,7 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
+import io.github.hzzzzzx.configradar.core.model.EnvironmentContext;
 import io.github.hzzzzzx.configradar.core.model.ScanFinding;
 import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
 import java.util.Comparator;
@@ -17,26 +18,46 @@ public final class BasicFindingNormalizer implements FindingNormalizer {
     @Override
     public List<ScanFinding> normalize(List<ScanFinding> findings, ScanContext context) {
         return findings.stream()
-            .map(BasicFindingNormalizer::normalizeFinding)
+            .map(finding -> normalizeFinding(finding, context.input().environmentHints()))
             .sorted(stableOrder())
             .toList();
     }
 
-    private static ScanFinding normalizeFinding(ScanFinding finding) {
-        if (!(finding instanceof ConfigFinding config)) {
-            return finding;
+    private static ScanFinding normalizeFinding(ScanFinding finding, EnvironmentHints hints) {
+        if (finding instanceof ConfigFinding config) {
+            return new ConfigFinding(
+                config.key(),
+                normalizeKey(config.normalizedKey()),
+                config.role(),
+                config.value(),
+                config.defaultValue(),
+                environment(config.environment(), hints),
+                config.source(),
+                config.confidence(),
+                config.detectorId(),
+                config.details()
+            );
         }
-        return new ConfigFinding(
-            config.key(),
-            normalizeKey(config.normalizedKey()),
-            config.role(),
-            config.value(),
-            config.defaultValue(),
-            config.environment(),
-            config.source(),
-            config.confidence(),
-            config.detectorId(),
-            config.details()
+        if (finding instanceof UncertainFinding uncertain) {
+            return new UncertainFinding(
+                uncertain.expression(),
+                uncertain.reason(),
+                uncertain.rootSink(),
+                environment(uncertain.environment(), hints),
+                uncertain.source(),
+                uncertain.confidence(),
+                uncertain.detectorId(),
+                uncertain.details()
+            );
+        }
+        return finding;
+    }
+
+    private static EnvironmentContext environment(EnvironmentContext current, EnvironmentHints hints) {
+        return new EnvironmentContext(
+            current.profile() == null ? hints.activeProfile() : current.profile(),
+            current.region() == null ? hints.region() : current.region(),
+            current.namespace() == null ? hints.namespace() : current.namespace()
         );
     }
 
