@@ -53,7 +53,7 @@ public class DemoConfig {
     @Value("#{systemProperties.getProperty('spel.method.mode')}")
     private String spelMethodMode;
 
-    @CustomConfigValue(key = "custom.annotated", defaultValue = "yes")
+    @CustomConfigValue(key = "custom.annotated", configuredValue = "live", defaultValue = "yes")
     private String annotated;
 
     @CustomConfigValue(key = "custom.placeholder", defaultValue = "${custom.placeholder.default:no}")

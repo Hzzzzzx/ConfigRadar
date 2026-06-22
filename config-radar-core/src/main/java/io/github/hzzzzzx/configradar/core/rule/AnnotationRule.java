@@ -10,7 +10,8 @@ public record AnnotationRule(
     String keyAttribute,
     String defaultAttribute,
     Confidence confidence,
-    FindingRole role
+    FindingRole role,
+    String valueAttribute
 ) implements ConfigRule {
     public AnnotationRule {
         confidence = confidence == null ? Confidence.MEDIUM : confidence;
@@ -18,6 +19,17 @@ public record AnnotationRule(
     }
 
     public AnnotationRule(String id, String type, String keyAttribute, String defaultAttribute, Confidence confidence) {
-        this(id, type, keyAttribute, defaultAttribute, confidence, FindingRole.READ);
+        this(id, type, keyAttribute, defaultAttribute, confidence, FindingRole.READ, null);
+    }
+
+    public AnnotationRule(
+        String id,
+        String type,
+        String keyAttribute,
+        String defaultAttribute,
+        Confidence confidence,
+        FindingRole role
+    ) {
+        this(id, type, keyAttribute, defaultAttribute, confidence, role, null);
     }
 }

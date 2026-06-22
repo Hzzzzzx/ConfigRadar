@@ -398,6 +398,37 @@ final class JavaSourceConfigDetectorTest {
         assertEquals("enabled", customDefined.value().raw());
     }
 
+    @Test
+    void appliesProjectAnnotationRuleValueAttribute() throws Exception {
+        var rules = new ConfigRules(
+            List.of(),
+            List.of(new AnnotationRule(
+                "custom-annotation",
+                "CustomConfigValue",
+                "key",
+                "defaultValue",
+                null,
+                FindingRole.DEFINE,
+                "configuredValue"
+            )),
+            List.of()
+        );
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, rules, index);
+
+        var findings = new JavaSourceConfigDetector().detect(context).stream()
+            .filter(ConfigFinding.class::isInstance)
+            .map(ConfigFinding.class::cast)
+            .toList();
+
+        var customAnnotated = finding(findings, "custom.annotated");
+        assertEquals(FindingRole.DEFINE, customAnnotated.role());
+        assertEquals("live", customAnnotated.value().raw());
+        assertEquals("yes", customAnnotated.defaultValue().raw());
+    }
+
     private static java.util.List<ConfigFinding> detect() throws Exception {
         var input = ScanInput.of(FixturePaths.springBasic());
         var options = ScanOptions.defaults();

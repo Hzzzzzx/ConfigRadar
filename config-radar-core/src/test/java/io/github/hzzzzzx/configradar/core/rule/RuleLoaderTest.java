@@ -41,6 +41,7 @@ final class RuleLoaderTest {
               - id: custom-annotation
                 type: CustomConfigValue
                 keyAttribute: key
+                valueAttribute: configuredValue
                 role: METADATA
             configFiles:
               - id: custom-file
@@ -58,6 +59,7 @@ final class RuleLoaderTest {
         assertEquals(FindingRole.CONDITION, rules.methodCalls().getFirst().role());
         assertEquals(1, rules.annotations().size());
         assertEquals(FindingRole.METADATA, rules.annotations().getFirst().role());
+        assertEquals("configuredValue", rules.annotations().getFirst().valueAttribute());
         assertEquals(1, rules.configFiles().size());
         assertEquals(FileType.PROPERTIES, rules.configFiles().getFirst().format());
         assertEquals(Scope.MAIN, rules.configFiles().getFirst().scope());

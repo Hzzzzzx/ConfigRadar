@@ -634,8 +634,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 if (key == null || key.isBlank()) {
                     continue;
                 }
+                var value = annotationValue(annotation, rule.valueAttribute());
                 var defaultValue = annotationValue(annotation, rule.defaultAttribute());
-                findings.add(externalFinding(rule.id(), key, null, defaultValue, rule.confidence(), rule.role(), annotation));
+                findings.add(externalFinding(rule.id(), key, value, defaultValue, rule.confidence(), rule.role(), annotation));
             }
         }
 
