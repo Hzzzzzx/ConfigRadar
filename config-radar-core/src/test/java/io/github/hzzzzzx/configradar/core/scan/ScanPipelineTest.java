@@ -749,6 +749,14 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.secret.data.app-secret.token")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("k8s.jvm.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("k8s.cli.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("k8s.cli.timeout")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("k8s.jvm.timeout")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.volume.config-map.app-config")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.volume.config-map.app-config.k8s.config.mode")));
@@ -756,7 +764,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("kubernetes.volume.secret.app-secret")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.volume.secret.app-secret.token")));
-        assertEquals(208, result.inventory().summary().keys());
+        assertEquals(212, result.inventory().summary().keys());
         assertEquals(42, result.inventory().summary().checks());
     }
 }

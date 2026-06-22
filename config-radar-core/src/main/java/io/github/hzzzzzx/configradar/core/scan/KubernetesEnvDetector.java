@@ -186,7 +186,53 @@ public final class KubernetesEnvDetector implements ConfigDetector {
                     }
                 }
             }
+            readArgs(context, file, map.get("command"), "container-command", findings);
+            readArgs(context, file, map.get("args"), "container-arg", findings);
         }
+    }
+
+    private static void readArgs(
+        ScanContext context,
+        IndexedFile file,
+        Object args,
+        String type,
+        List<ScanFinding> findings
+    ) {
+        if (!(args instanceof List<?> list)) {
+            return;
+        }
+        for (var item : list) {
+            var pair = argumentPair(string(item));
+            if (pair != null) {
+                addFinding(context, file, pair.key(), pair.value(), type, Confidence.MEDIUM, findings);
+            }
+        }
+    }
+
+    private static Pair argumentPair(String text) {
+        if (text == null) {
+            return null;
+        }
+        if (text.startsWith("--")) {
+            return propertyPair(text.substring(2));
+        }
+        if (text.startsWith("-D")) {
+            return propertyPair(text.substring(2));
+        }
+        return null;
+    }
+
+    private static Pair propertyPair(String text) {
+        var split = text.indexOf('=');
+        if (split <= 0) {
+            return null;
+        }
+        var key = text.substring(0, split);
+        var value = text.substring(split + 1);
+        if (key.isBlank()) {
+            return null;
+        }
+        return new Pair(key, value);
     }
 
     private static void readVolumes(
@@ -417,6 +463,9 @@ public final class KubernetesEnvDetector implements ConfigDetector {
     }
 
     private record Ref(String type, String value) {
+    }
+
+    private record Pair(String key, String value) {
     }
 
     private record Document(IndexedFile file, Map<?, ?> map) {

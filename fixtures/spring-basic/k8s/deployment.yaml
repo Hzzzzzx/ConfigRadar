@@ -33,6 +33,13 @@ spec:
       containers:
         - name: app
           image: config-radar-demo
+          command:
+            - java
+            - -Dk8s.jvm.mode=prod
+          args:
+            - --k8s.cli.mode=worker
+            - --k8s.cli.timeout=30
+            - -Dk8s.jvm.timeout=PT30S
           volumeMounts:
             - name: app-config-volume
               mountPath: /etc/config
