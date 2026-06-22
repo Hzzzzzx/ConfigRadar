@@ -77,6 +77,7 @@ public class DemoConfig {
         var mapEnvDefault = System.getenv().getOrDefault("MAP_REGION", "cn");
         var hasEnvFlag = System.getenv().containsKey("ENV_FEATURE_FLAG");
         var propertyMapValue = System.getProperties().getProperty("map.property.mode", "safe");
+        var propertyMapRawValue = System.getProperties().get("map.property.raw");
         var hasPropertyMapFlag = System.getProperties().containsKey("map.property.flag");
         System.getProperties().put("map.property.write", "enabled");
         System.getProperties().setProperty("map.property.set", "ready");
@@ -91,7 +92,7 @@ public class DemoConfig {
         System.setProperty("runtime.region", "cn");
         return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + binder + createdBinder + system
             + env + mapEnv + mapEnvDefault + hasEnvFlag
-            + propertyMapValue + hasPropertyMapFlag
+            + propertyMapValue + propertyMapRawValue + hasPropertyMapFlag
             + legacyPort + legacyLimit + legacyEnabled + jvmArgs + dynamic + operatorMode + custom + customDefined;
     }
 

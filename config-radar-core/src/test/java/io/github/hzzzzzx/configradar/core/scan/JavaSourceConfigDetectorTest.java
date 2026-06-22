@@ -131,6 +131,8 @@ final class JavaSourceConfigDetectorTest {
         assertEquals("cn", finding(findings, "MAP_REGION").defaultValue().raw());
         assertNull(finding(findings, "ENV_FEATURE_FLAG").defaultValue());
         assertEquals("safe", finding(findings, "map.property.mode").defaultValue().raw());
+        assertEquals(FindingRole.READ, finding(findings, "map.property.raw").role());
+        assertNull(finding(findings, "map.property.raw").defaultValue());
         assertNull(finding(findings, "map.property.flag").defaultValue());
         var propertyWrite = finding(findings, "map.property.write");
         assertEquals(FindingRole.DEFINE, propertyWrite.role());
