@@ -68,7 +68,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
                 continue;
             }
             var key = line.substring(0, equals).trim();
-            var rawValue = unquote(line.substring(equals + 1).trim());
+            var rawValue = unquote(stripInlineComment(line.substring(equals + 1).trim()));
             findings.add(finding(context, file, key, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES));
             addPlaceholderReads(context, file, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
             if (key.equals("SPRING_APPLICATION_JSON")) {
@@ -330,6 +330,14 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             return value.substring(1, value.length() - 1);
         }
         return value;
+    }
+
+    private static String stripInlineComment(String value) {
+        if (value.startsWith("\"") || value.startsWith("'")) {
+            return value;
+        }
+        var comment = value.indexOf(" #");
+        return comment < 0 ? value : value.substring(0, comment).trim();
     }
 
     private static int placeholderSplit(String body) {
