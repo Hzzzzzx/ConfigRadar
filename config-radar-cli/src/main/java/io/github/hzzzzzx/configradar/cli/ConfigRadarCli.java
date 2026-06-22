@@ -11,6 +11,7 @@ import io.github.hzzzzzx.configradar.core.scan.ScanPipeline;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -57,6 +58,12 @@ public final class ConfigRadarCli implements Runnable {
         @Option(names = "--include-tests", description = "Include test sources. Off by default.")
         private boolean includeTests;
 
+        @Option(names = "--include", description = "Path prefix to include. Can be repeated.")
+        private List<Path> includePaths = List.of();
+
+        @Option(names = "--exclude", description = "Path prefix to exclude. Can be repeated.")
+        private List<Path> excludePaths = List.of();
+
         @Option(names = "--metrics", description = "Optional metrics/diagnostics sidecar YAML.")
         private Path metrics;
 
@@ -75,7 +82,14 @@ public final class ConfigRadarCli implements Runnable {
         @Override
         public Integer call() throws Exception {
             var resolvedRulesFile = resolveRulesFile(projectRoot, rulesFile);
-            var input = ScanInput.of(projectRoot);
+            var input = new ScanInput(
+                projectRoot,
+                includePaths,
+                excludePaths,
+                null,
+                null,
+                null
+            );
             if (resolvedRulesFile != null) {
                 input = new ScanInput(
                     input.projectRoot(),

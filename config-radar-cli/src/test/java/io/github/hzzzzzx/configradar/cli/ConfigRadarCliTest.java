@@ -20,6 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ConfigRadarCliTest {
@@ -131,6 +132,29 @@ final class ConfigRadarCliTest {
 
         assertEquals(0, exitCode);
         assertTrue(Files.readString(inventory).contains("config-inventory/v1"));
+    }
+
+    @Test
+    void inventoryCommandAppliesIncludeAndExcludePaths() throws Exception {
+        var inventory = tempDir.resolve("inventory-filtered.yaml");
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "inventory",
+            springBasic().toString(),
+            "-o",
+            inventory.toString(),
+            "--include",
+            "src/main/resources",
+            "--exclude",
+            "src/main/resources/logback-spring.xml"
+        );
+
+        assertEquals(0, exitCode);
+        var yaml = Files.readString(inventory);
+        assertTrue(yaml.contains("spring.application.name"));
+        assertTrue(yaml.contains("log4j2.file.path"));
+        assertFalse(yaml.contains("app.mode"));
+        assertFalse(yaml.contains("LOG_LEVEL"));
     }
 
     @Test
