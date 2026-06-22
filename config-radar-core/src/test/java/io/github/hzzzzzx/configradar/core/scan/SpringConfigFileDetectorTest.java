@@ -45,6 +45,8 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("CONFIG_SERVER_URL")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.cloud.nacos.config.server-addr")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_PROFILES_ACTIVE")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_CONFIG_LOCATION")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPRING_CONFIG_ADDITIONAL_LOCATION")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("REDIS_PASSWORD")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("FEATURE_FLAG")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("QUOTED_NAME")));
@@ -205,6 +207,8 @@ final class SpringConfigFileDetectorTest {
         assertEquals(FindingRole.METADATA, finding(findings, "spring.config.import").role());
         assertEquals(FindingRole.METADATA, finding(findings, "spring.profiles.include").role());
         assertEquals(FindingRole.METADATA, finding(findings, "SPRING_PROFILES_ACTIVE").role());
+        assertEquals(FindingRole.METADATA, finding(findings, "SPRING_CONFIG_LOCATION").role());
+        assertEquals(FindingRole.METADATA, finding(findings, "SPRING_CONFIG_ADDITIONAL_LOCATION").role());
     }
 
     @Test

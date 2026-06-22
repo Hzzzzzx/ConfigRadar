@@ -270,6 +270,11 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("SPRING_PROFILES_ACTIVE") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("SPRING_CONFIG_LOCATION") && item.role() == FindingRole.METADATA));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("SPRING_CONFIG_ADDITIONAL_LOCATION")
+                && item.role() == FindingRole.METADATA));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("REDIS_PASSWORD") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("REDIS_PASSWORD") && item.role() == FindingRole.READ));
@@ -454,7 +459,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(92, result.inventory().summary().keys());
+        assertEquals(94, result.inventory().summary().keys());
         assertEquals(5, result.inventory().summary().checks());
     }
 }
