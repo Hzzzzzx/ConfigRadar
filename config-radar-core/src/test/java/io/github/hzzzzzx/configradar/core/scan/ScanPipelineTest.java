@@ -404,6 +404,8 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("map.property.raw") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("map.property.default") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("map.property.write") && item.role() == FindingRole.DEFINE));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("map.property.set") && item.role() == FindingRole.DEFINE));
@@ -470,7 +472,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(96, result.inventory().summary().keys());
+        assertEquals(97, result.inventory().summary().keys());
         assertEquals(6, result.inventory().summary().checks());
     }
 }

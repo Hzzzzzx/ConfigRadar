@@ -516,6 +516,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var isSetProperty = method.endsWith(".setProperty") || method.equals("setProperty");
             var isSystemPropertiesGetProperty = method.endsWith("System.getProperties().getProperty");
             var isSystemPropertiesGet = method.endsWith("System.getProperties().get");
+            var isSystemPropertiesGetOrDefault = method.endsWith("System.getProperties().getOrDefault");
             var isSystemPropertiesContainsKey = method.endsWith("System.getProperties().containsKey");
             var isSystemPropertiesPut = method.endsWith("System.getProperties().put");
             var isGetenv = method.endsWith(".getenv") || method.equals("getenv");
@@ -527,9 +528,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             var isBooleanGetBoolean = method.equals("Boolean.getBoolean") || method.endsWith(".Boolean.getBoolean");
             var isTypedSystemProperty = isIntegerGetInteger || isLongGetLong || isBooleanGetBoolean;
             if (!isGetProperty && !isGetRequiredProperty && !isContainsProperty && !isSetProperty
-                && !isSystemPropertiesGetProperty && !isSystemPropertiesGet && !isSystemPropertiesContainsKey
-                && !isSystemPropertiesPut && !isGetenv && !isGetenvMapGet && !isGetenvMapGetOrDefault
-                && !isGetenvMapContainsKey && !isTypedSystemProperty) {
+                && !isSystemPropertiesGetProperty && !isSystemPropertiesGet && !isSystemPropertiesGetOrDefault
+                && !isSystemPropertiesContainsKey && !isSystemPropertiesPut && !isGetenv && !isGetenvMapGet
+                && !isGetenvMapGetOrDefault && !isGetenvMapContainsKey && !isTypedSystemProperty) {
                 return;
             }
             var args = tree.getArguments();
