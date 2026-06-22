@@ -52,6 +52,9 @@ public class DemoConfig {
     @Value("${nested.outer:${nested.inner:42}}")
     private String nestedDefault;
 
+    @Value("${nested.shell.outer:${nested.shell.inner:-fallback}}")
+    private String nestedShellDefault;
+
     @Value("jdbc://${db.host:localhost}:${db.port:5432}/main")
     private String jdbcUrl;
 

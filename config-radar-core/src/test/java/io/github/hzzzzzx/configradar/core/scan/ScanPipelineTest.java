@@ -263,6 +263,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("nested.inner") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("nested.shell.outer") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("nested.shell.inner") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("payment.client.timeout")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("payment.endpoint") && item.role() == FindingRole.DEFINE));
@@ -562,7 +566,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(128, result.inventory().summary().keys());
+        assertEquals(130, result.inventory().summary().keys());
         assertEquals(8, result.inventory().summary().checks());
     }
 }

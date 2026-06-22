@@ -820,8 +820,23 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         }
 
         private int placeholderSplit(String body) {
-            var shellDefault = body.indexOf(":-");
-            return shellDefault >= 0 ? shellDefault : body.indexOf(':');
+            var depth = 0;
+            for (var index = 0; index < body.length(); index++) {
+                if (body.startsWith("${", index)) {
+                    depth++;
+                    index++;
+                    continue;
+                }
+                var character = body.charAt(index);
+                if (character == '}') {
+                    depth--;
+                    continue;
+                }
+                if (character == ':' && depth == 0) {
+                    return index;
+                }
+            }
+            return -1;
         }
 
         private SourceLocation source(com.sun.source.tree.Tree tree, SourceKind sourceKind) {
