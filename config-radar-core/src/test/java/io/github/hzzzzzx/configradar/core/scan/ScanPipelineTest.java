@@ -661,7 +661,11 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("servlet.feature.enabled")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("java:comp/env/jdbc/orders")));
-        assertEquals(164, result.inventory().summary().keys());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("web.context.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("web.servlet.timeout")));
+        assertEquals(166, result.inventory().summary().keys());
         assertEquals(33, result.inventory().summary().checks());
     }
 }

@@ -32,39 +32,102 @@ public final class LogbackSpringXmlDetector implements ConfigDetector {
             if (!isScannableXml(context, file)) {
                 continue;
             }
+            var document = isLoggingXml(file) || isWebXml(file) ? document(file) : null;
             if (isLoggingXml(file)) {
-                var factory = DocumentBuilderFactory.newInstance();
-                factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-                factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-                var document = factory.newDocumentBuilder().parse(file.path().toFile());
-                var springProperties = document.getElementsByTagName("springProperty");
-                for (var index = 0; index < springProperties.getLength(); index++) {
-                    var element = (Element) springProperties.item(index);
-                    var key = element.getAttribute("source");
-                    if (!key.isBlank()) {
-                        findings.add(new ConfigFinding(
-                            key,
-                            key,
-                            FindingRole.READ,
-                            null,
-                            value(element.getAttribute("defaultValue")),
-                            EnvironmentContext.none(),
-                            source(context, file),
-                            Confidence.HIGH,
-                            id(),
-                            new ExternalDetails("spring", "logback-spring-property", null)
-                        ));
-                    }
-                }
+                addLoggingSpringProperties(context, file, document, findings);
+            }
+            if (isWebXml(file)) {
+                addWebXmlParams(context, file, document, findings);
             }
             addPlaceholders(context, file, Files.readString(file.path()), findings);
         }
         return findings;
     }
 
+    private static org.w3c.dom.Document document(IndexedFile file) throws Exception {
+        var factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        return factory.newDocumentBuilder().parse(file.path().toFile());
+    }
+
+    private void addLoggingSpringProperties(
+        ScanContext context,
+        IndexedFile file,
+        org.w3c.dom.Document document,
+        List<ScanFinding> findings
+    ) {
+        var springProperties = document.getElementsByTagName("springProperty");
+        for (var index = 0; index < springProperties.getLength(); index++) {
+            var element = (Element) springProperties.item(index);
+            var key = element.getAttribute("source");
+            if (!key.isBlank()) {
+                findings.add(new ConfigFinding(
+                    key,
+                    key,
+                    FindingRole.READ,
+                    null,
+                    value(element.getAttribute("defaultValue")),
+                    EnvironmentContext.none(),
+                    source(context, file),
+                    Confidence.HIGH,
+                    id(),
+                    new ExternalDetails("spring", "logback-spring-property", null)
+                ));
+            }
+        }
+    }
+
+    private void addWebXmlParams(
+        ScanContext context,
+        IndexedFile file,
+        org.w3c.dom.Document document,
+        List<ScanFinding> findings
+    ) {
+        addWebXmlParamElements(context, file, document.getElementsByTagName("context-param"), findings);
+        addWebXmlParamElements(context, file, document.getElementsByTagName("init-param"), findings);
+    }
+
+    private void addWebXmlParamElements(
+        ScanContext context,
+        IndexedFile file,
+        org.w3c.dom.NodeList params,
+        List<ScanFinding> findings
+    ) {
+        for (var index = 0; index < params.getLength(); index++) {
+            var element = (Element) params.item(index);
+            var key = childText(element, "param-name");
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            var rawValue = childText(element, "param-value");
+            findings.add(new ConfigFinding(
+                key,
+                key,
+                FindingRole.DEFINE,
+                value(rawValue),
+                null,
+                EnvironmentContext.none(),
+                source(context, file),
+                Confidence.HIGH,
+                id(),
+                new ExternalDetails("java", "web-xml-param", null)
+            ));
+        }
+    }
+
+    private static String childText(Element element, String tagName) {
+        var nodes = element.getElementsByTagName(tagName);
+        if (nodes.getLength() == 0) {
+            return null;
+        }
+        var text = nodes.item(0).getTextContent();
+        return text == null ? null : text.trim();
+    }
+
     private static boolean isScannableXml(ScanContext context, IndexedFile file) {
-        if (isLoggingXml(file)) {
+        if (isLoggingXml(file) || isWebXml(file)) {
             return true;
         }
         var root = context.input().projectRoot();
@@ -78,6 +141,10 @@ public final class LogbackSpringXmlDetector implements ConfigDetector {
             || name.equals("logback.xml")
             || name.equals("log4j2-spring.xml")
             || name.equals("log4j2.xml");
+    }
+
+    private static boolean isWebXml(IndexedFile file) {
+        return file.path().getFileName().toString().equals("web.xml");
     }
 
     private void addPlaceholders(ScanContext context, IndexedFile file, String text, List<ScanFinding> findings) {

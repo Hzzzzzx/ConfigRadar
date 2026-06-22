@@ -32,6 +32,9 @@ final class LogbackSpringXmlDetectorTest {
         assertEquals("org.postgresql.Driver", finding(findings, "mybatis.datasource.driver").defaultValue().raw());
         assertEquals("${DB_URL:jdbc:postgresql://localhost:5432/app}", finding(findings, "mybatis.datasource.url").defaultValue().raw());
         assertEquals("jdbc:postgresql://localhost:5432/app", finding(findings, "DB_URL").defaultValue().raw());
+        assertEquals(FindingRole.DEFINE, finding(findings, "web.context.mode").role());
+        assertEquals("prod", finding(findings, "web.context.mode").value().raw());
+        assertEquals("30", finding(findings, "web.servlet.timeout").value().raw());
     }
 
     private static ConfigFinding finding(java.util.List<ConfigFinding> findings, String key) {

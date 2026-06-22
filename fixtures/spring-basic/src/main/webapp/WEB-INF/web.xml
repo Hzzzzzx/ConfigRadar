@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee" version="6.0">
+  <context-param>
+    <param-name>web.context.mode</param-name>
+    <param-value>prod</param-value>
+  </context-param>
+  <servlet>
+    <servlet-name>demo</servlet-name>
+    <servlet-class>com.acme.DemoServlet</servlet-class>
+    <init-param>
+      <param-name>web.servlet.timeout</param-name>
+      <param-value>30</param-value>
+    </init-param>
+  </servlet>
+</web-app>
