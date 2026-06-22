@@ -64,6 +64,8 @@ public class DemoConfig {
         var typed = environment.getProperty("http.timeout", Integer.class, 2500);
         var hasCache = environment.containsProperty("cache.enabled");
         var resolved = environment.resolvePlaceholders("${resolved.placeholder:ok}");
+        var prodProfile = environment.acceptsProfiles("prod");
+        var regionProfile = environment.matchesProfiles("region-cn");
         var binder = org.springframework.boot.context.properties.bind.Binder.get(environment)
             .bind("client.pool", String.class);
         var system = System.getProperty("app.mode", "local");
@@ -81,7 +83,8 @@ public class DemoConfig {
         var dynamic = environment.getProperty(prefix + ".url");
         var custom = ConfigCenter.get("custom.center", "fallback");
         System.setProperty("runtime.region", "cn");
-        return direct + required + typed + hasCache + resolved + binder + system + env + mapEnv + mapEnvDefault + hasEnvFlag
+        return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + binder + system + env + mapEnv
+            + mapEnvDefault + hasEnvFlag
             + propertyMapValue + hasPropertyMapFlag
             + legacyPort + legacyLimit + legacyEnabled + dynamic + custom;
     }

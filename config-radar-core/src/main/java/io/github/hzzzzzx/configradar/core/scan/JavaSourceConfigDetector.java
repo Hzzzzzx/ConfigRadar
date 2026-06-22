@@ -160,6 +160,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             readSpringDefaultProperties(tree);
             readSpringCommandLineArgs(tree);
             readSpringPlaceholderResolver(tree);
+            readSpringProfilePredicate(tree);
             readJavaConfigRead(tree);
             readSpringBinder(tree);
             readRuleMethodCall(tree);
@@ -375,6 +376,31 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             }
             if (!tree.getArguments().isEmpty()) {
                 readPlaceholders(tree.getArguments().getFirst());
+            }
+        }
+
+        private void readSpringProfilePredicate(MethodInvocationTree tree) {
+            var method = methodName(tree.getMethodSelect());
+            if (!method.endsWith(".acceptsProfiles") && !method.endsWith(".matchesProfiles")) {
+                return;
+            }
+            for (var argument : tree.getArguments()) {
+                var profile = literal(argument);
+                if (profile == null || profile.isBlank()) {
+                    continue;
+                }
+                findings.add(new ConfigFinding(
+                    "spring.profiles",
+                    "spring.profiles",
+                    FindingRole.CONDITION,
+                    new ConfigValue(profile, profile, ValueType.STRING),
+                    null,
+                    new EnvironmentContext(profile, null, null),
+                    source(tree, SourceKind.JAVA),
+                    Confidence.HIGH,
+                    id(),
+                    new ExternalDetails("spring", "profile-condition", null)
+                ));
             }
         }
 

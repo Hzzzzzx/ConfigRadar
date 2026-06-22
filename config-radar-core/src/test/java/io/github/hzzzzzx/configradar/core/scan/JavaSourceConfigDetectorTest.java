@@ -199,10 +199,21 @@ final class JavaSourceConfigDetectorTest {
             .filter(item -> item.key().equals("spring.profiles"))
             .toList();
 
-        assertEquals(2, profiles.size());
-        assertTrue(profiles.stream().allMatch(item -> item.role() == FindingRole.METADATA));
+        var metadata = profiles.stream().filter(item -> item.role() == FindingRole.METADATA).toList();
+        assertEquals(2, metadata.size());
         assertTrue(profiles.stream().anyMatch(item -> "prod".equals(item.environment().profile())));
         assertTrue(profiles.stream().anyMatch(item -> "staging".equals(item.environment().profile())));
+    }
+
+    @Test
+    void detectsProfilePredicatesAsConditions() throws Exception {
+        var profiles = detect().stream()
+            .filter(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.CONDITION)
+            .toList();
+
+        assertEquals(2, profiles.size());
+        assertTrue(profiles.stream().anyMatch(item -> "prod".equals(item.value().raw())));
+        assertTrue(profiles.stream().anyMatch(item -> "region-cn".equals(item.value().raw())));
     }
 
     @Test
