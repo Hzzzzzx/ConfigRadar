@@ -475,6 +475,10 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.expression().equals("args")
                 && item.reason() == UncertainReason.COMMAND_LINE_ARGS));
         assertTrue(result.inventory().uncertain().stream()
+            .anyMatch(item -> item.expression().equals("args")
+                && item.reason() == UncertainReason.COMMAND_LINE_ARGS
+                && item.rootSink().contains("SpringApplicationBuilder")));
+        assertTrue(result.inventory().uncertain().stream()
             .anyMatch(item -> item.expression().contains("getRuntimeMXBean().getInputArguments()")
                 && item.reason() == UncertainReason.COMMAND_LINE_ARGS));
         assertTrue(result.inventory().uncertain().stream()
@@ -494,6 +498,6 @@ final class ScanPipelineTest {
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
         assertEquals(103, result.inventory().summary().keys());
-        assertEquals(7, result.inventory().summary().checks());
+        assertEquals(8, result.inventory().summary().checks());
     }
 }

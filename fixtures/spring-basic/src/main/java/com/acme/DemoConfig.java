@@ -21,6 +21,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 public class DemoConfig {
     public static void main(String[] args) {
         org.springframework.boot.SpringApplication.run(DemoConfig.class, args);
+        new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class).run(args);
     }
 
     @Value("${payment.timeout:30}")

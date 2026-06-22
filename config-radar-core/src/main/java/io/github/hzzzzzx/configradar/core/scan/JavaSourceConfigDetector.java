@@ -369,7 +369,8 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 return;
             }
             var arguments = tree.getArguments();
-            for (var index = 1; index < arguments.size(); index++) {
+            var firstConfigArgument = method.contains("SpringApplicationBuilder") ? 0 : 1;
+            for (var index = firstConfigArgument; index < arguments.size(); index++) {
                 var argument = arguments.get(index);
                 var property = commandLineProperty(literal(argument));
                 if (property == null) {

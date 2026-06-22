@@ -305,6 +305,12 @@ final class JavaSourceConfigDetectorTest {
             .anyMatch(item -> item.expression().equals("args")
                 && item.reason() == UncertainReason.COMMAND_LINE_ARGS
                 && item.rootSink().contains("SpringApplication.run")));
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("args")
+                && item.reason() == UncertainReason.COMMAND_LINE_ARGS
+                && item.rootSink().contains("SpringApplicationBuilder")));
     }
 
     @Test
