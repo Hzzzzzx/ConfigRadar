@@ -15,6 +15,10 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.scheduling.annotation.Scheduled;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 
 @ConfigurationProperties(prefix = "client")
 @PropertySource("classpath:extra-client.properties")
@@ -228,5 +232,13 @@ public class DemoConfig {
 
     @JmsListener(destination = "${jms.orders.destination:orders.destination}")
     public void consumeJms(String message) {
+    }
+
+    @CircuitBreaker(name = "${resilience.orders.circuitbreaker:orders}")
+    @Retry(name = "${resilience.orders.retry:orders}")
+    @RateLimiter(name = "${resilience.orders.ratelimiter:orders}")
+    @Bulkhead(name = "${resilience.orders.bulkhead:orders}")
+    public String callInventory() {
+        return "ok";
     }
 }

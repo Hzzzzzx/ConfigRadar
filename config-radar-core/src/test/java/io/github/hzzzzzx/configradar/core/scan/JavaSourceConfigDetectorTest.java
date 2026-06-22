@@ -87,6 +87,10 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("kafka.orders.group")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("rabbit.orders.queue")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("jms.orders.destination")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("resilience.orders.circuitbreaker")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("resilience.orders.retry")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("resilience.orders.ratelimiter")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("resilience.orders.bulkhead")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("custom.placeholder.default")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.profiles")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.property-source")));
@@ -240,6 +244,10 @@ final class JavaSourceConfigDetectorTest {
         assertEquals("config-radar", finding(findings, "kafka.orders.group").defaultValue().raw());
         assertEquals("orders.queue", finding(findings, "rabbit.orders.queue").defaultValue().raw());
         assertEquals("orders.destination", finding(findings, "jms.orders.destination").defaultValue().raw());
+        assertEquals("orders", finding(findings, "resilience.orders.circuitbreaker").defaultValue().raw());
+        assertEquals("orders", finding(findings, "resilience.orders.retry").defaultValue().raw());
+        assertEquals("orders", finding(findings, "resilience.orders.ratelimiter").defaultValue().raw());
+        assertEquals("orders", finding(findings, "resilience.orders.bulkhead").defaultValue().raw());
         assertEquals("no", finding(findings, "custom.placeholder.default").defaultValue().raw());
     }
 

@@ -484,6 +484,14 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("jms.orders.destination") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("resilience.orders.circuitbreaker") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("resilience.orders.retry") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("resilience.orders.ratelimiter") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("resilience.orders.bulkhead") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.METADATA
@@ -542,7 +550,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(118, result.inventory().summary().keys());
+        assertEquals(122, result.inventory().summary().keys());
         assertEquals(8, result.inventory().summary().checks());
     }
 }
