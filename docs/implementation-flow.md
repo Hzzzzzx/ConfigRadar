@@ -103,9 +103,10 @@ Implemented:
 - pipeline builder：统一组合 detector、processor、normalizer、enricher 等阶段，后续新增组件不需要散落修改构造器参数
 - processor/normalizer/enricher hooks：主流程已调用
 - uncertain finding checks：动态/无法解析的配置 key 会生成高风险 check
+- sensitive value redaction：`--redact-sensitive` 开启后，对 password/secret/token 等敏感 key 的 value/defaultValue/details 做遮盖
 - YAML inventory output：默认下游消费格式
 - metrics sidecar output：记录阶段耗时和 diagnostics
-- CLI `inventory`：从项目目录生成 inventory，支持 `--include` / `--exclude` 扫描路径过滤，以及 `--profile` / `--region` / `--namespace` 默认环境提示
+- CLI `inventory`：从项目目录生成 inventory，支持 `--include` / `--exclude` 扫描路径过滤、`--profile` / `--region` / `--namespace` 默认环境提示，以及 `--redact-sensitive` 可选脱敏
 - CLI `diff`：读取两个 inventory，按 key-based 策略输出 `added/removed/changed/uncertainChanged`
 - optional codegraph detector：`--enable-codegraph` 可启用外部语义索引，当前只增强自定义 `@Value` meta-annotation 使用点
 - detector failure diagnostics：单 detector 失败不会拖垮整次扫描
@@ -115,7 +116,6 @@ Not implemented yet:
 - full Spring relaxed binding：后续需要完整 Spring 语义时再扩展，当前只做基础 key 归一化
 - richer diff identity strategy：后续可加入 namespace、region、类型等维度
 - OpenRewrite parsing：后续作为 Java/Spring AST 层能力
-- desensitization：后续对敏感 value 做可配置脱敏
 - external pack loading：后续加载外部 detector/rule pack
 - full Config Impact Graph：后续把 ConfigKey、JavaSymbol、AnnotationUse、CallEdge 变成 ConfigRadar 自己的图 sidecar
 

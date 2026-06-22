@@ -47,6 +47,7 @@ Current implementation status:
 - CLI auto-loads `<projectRoot>/config-radar-rules.yaml` when `--rules` is omitted
 - Basic key normalization for case, underscore, hyphen, and camelCase variants
 - Dynamic/uncertain keys produce high-risk inventory checks
+- Optional sensitive value redaction with `--redact-sensitive`
 - OpenRewrite and deeper symbol tracking are intentionally not implemented yet
 
 ## Project Rules
