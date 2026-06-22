@@ -1,6 +1,12 @@
 services:
   app:
     image: config-radar-demo
+    entrypoint:
+      - java
+      - -Dcompose.jvm.mode=prod
+    command:
+      - --compose.cli.mode=worker
+      - --compose.cli.limit=5
     environment:
       COMPOSE_APP_MODE: prod
       COMPOSE_FEATURE_ENABLED: true

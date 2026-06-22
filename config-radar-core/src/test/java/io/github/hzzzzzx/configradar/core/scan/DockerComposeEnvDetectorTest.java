@@ -1,12 +1,14 @@
 package io.github.hzzzzzx.configradar.core.scan;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
+import io.github.hzzzzzx.configradar.core.model.ExternalDetails;
 import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.ValueType;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 final class DockerComposeEnvDetectorTest {
     @Test
@@ -26,6 +28,13 @@ final class DockerComposeEnvDetectorTest {
         assertEquals("4", finding(findings, "COMPOSE_WORKER_THREADS").value().raw());
         assertEquals(ValueType.INTEGER, finding(findings, "COMPOSE_WORKER_THREADS").value().type());
         assertEquals("debug", finding(findings, "COMPOSE_LOG_LEVEL").value().raw());
+        assertEquals("prod", finding(findings, "compose.jvm.mode").value().raw());
+        var jvmArg = assertInstanceOf(ExternalDetails.class, finding(findings, "compose.jvm.mode").details());
+        assertEquals("entrypoint", jvmArg.type());
+        assertEquals("worker", finding(findings, "compose.cli.mode").value().raw());
+        var cliArg = assertInstanceOf(ExternalDetails.class, finding(findings, "compose.cli.mode").details());
+        assertEquals("command", cliArg.type());
+        assertEquals(ValueType.INTEGER, finding(findings, "compose.cli.limit").value().type());
     }
 
     private static ConfigFinding finding(java.util.List<ConfigFinding> findings, String key) {

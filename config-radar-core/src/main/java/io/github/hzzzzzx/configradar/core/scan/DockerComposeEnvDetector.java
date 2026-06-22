@@ -41,6 +41,8 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
             for (var service : services.values()) {
                 if (service instanceof Map<?, ?> serviceMap) {
                     addEnvironment(context, file, serviceMap.get("environment"), findings);
+                    addArgs(context, file, serviceMap.get("entrypoint"), "entrypoint", findings);
+                    addArgs(context, file, serviceMap.get("command"), "command", findings);
                 }
             }
         }
@@ -84,6 +86,41 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
         }
     }
 
+    private static void addArgs(
+        ScanContext context,
+        IndexedFile file,
+        Object value,
+        String type,
+        List<ScanFinding> findings
+    ) {
+        for (var token : argTokens(value)) {
+            var pair = argumentPair(token);
+            if (pair != null) {
+                addFinding(context, file, pair.key(), pair.value(), type, findings);
+            }
+        }
+    }
+
+    private static List<String> argTokens(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream().map(String::valueOf).toList();
+        }
+        if (value instanceof String text) {
+            return List.of(text.split("\\s+"));
+        }
+        return List.of();
+    }
+
+    private static Pair argumentPair(String token) {
+        if (token.startsWith("--")) {
+            return pair(token.substring(2));
+        }
+        if (token.startsWith("-D")) {
+            return pair(token.substring(2));
+        }
+        return null;
+    }
+
     private static Pair pair(String text) {
         var split = text.indexOf('=');
         if (split <= 0) {
@@ -99,6 +136,17 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
         String value,
         List<ScanFinding> findings
     ) {
+        addFinding(context, file, key, value, "environment", findings);
+    }
+
+    private static void addFinding(
+        ScanContext context,
+        IndexedFile file,
+        String key,
+        String value,
+        String type,
+        List<ScanFinding> findings
+    ) {
         findings.add(new ConfigFinding(
             key,
             key,
@@ -109,7 +157,7 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
             source(context.input().projectRoot(), file),
             Confidence.MEDIUM,
             "docker-compose-env",
-            new ExternalDetails("docker-compose", "environment", null)
+            new ExternalDetails("docker-compose", type, null)
         ));
     }
 

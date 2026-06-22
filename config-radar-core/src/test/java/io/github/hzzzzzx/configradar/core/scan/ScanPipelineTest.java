@@ -727,6 +727,12 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("COMPOSE_LOG_LEVEL")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("compose.jvm.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("compose.cli.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("compose.cli.limit")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("k8s.config.mode")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("k8s.config.limit")));
@@ -770,7 +776,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("kubernetes.volume.secret.app-secret")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.volume.secret.app-secret.token")));
-        assertEquals(215, result.inventory().summary().keys());
+        assertEquals(218, result.inventory().summary().keys());
         assertEquals(42, result.inventory().summary().checks());
     }
 }
