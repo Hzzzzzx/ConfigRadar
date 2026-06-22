@@ -34,6 +34,11 @@ public final class DockerfileEnvDetector implements ConfigDetector {
             for (var line : lines) {
                 for (var pair : envPairs(line.text())) {
                     addFinding(findings, root, file, line.number(), pair, "env");
+                    if (isJvmOptionsKey(pair.key())) {
+                        for (var option : jvmOptionPairs(pair.value())) {
+                            addFinding(findings, root, file, line.number(), option, "env-jvm-arg");
+                        }
+                    }
                 }
                 for (var pair : commandPairs(line.text())) {
                     addFinding(findings, root, file, line.number(), pair, "command");
@@ -138,6 +143,20 @@ public final class DockerfileEnvDetector implements ConfigDetector {
             return equalsPair(token.substring(2));
         }
         return null;
+    }
+
+    private static boolean isJvmOptionsKey(String key) {
+        return key.equals("JAVA_TOOL_OPTIONS")
+            || key.equals("JDK_JAVA_OPTIONS")
+            || key.equals("JAVA_OPTS")
+            || key.endsWith("_JAVA_OPTS");
+    }
+
+    private static List<Pair> jvmOptionPairs(String value) {
+        return tokens(value).stream()
+            .map(DockerfileEnvDetector::argumentPair)
+            .filter(java.util.Objects::nonNull)
+            .toList();
     }
 
     private static Pair equalsPair(String token) {

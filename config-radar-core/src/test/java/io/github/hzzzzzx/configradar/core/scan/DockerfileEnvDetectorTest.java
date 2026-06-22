@@ -31,6 +31,9 @@ final class DockerfileEnvDetectorTest {
             "-XX:MaxRAMPercentage=75 -Dfile.encoding=UTF-8",
             finding(findings, "DOCKER_JAVA_OPTS").value().raw()
         );
+        assertEquals("UTF-8", finding(findings, "file.encoding").value().raw());
+        var envJvmArg = assertInstanceOf(ExternalDetails.class, finding(findings, "file.encoding").details());
+        assertEquals("env-jvm-arg", envJvmArg.type());
         assertEquals("prod", finding(findings, "docker.jvm.mode").value().raw());
         var jvmArg = assertInstanceOf(ExternalDetails.class, finding(findings, "docker.jvm.mode").details());
         assertEquals("command", jvmArg.type());

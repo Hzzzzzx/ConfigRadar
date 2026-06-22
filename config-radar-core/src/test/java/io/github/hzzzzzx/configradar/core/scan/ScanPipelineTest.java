@@ -713,6 +713,8 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("DOCKER_JAVA_OPTS")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("file.encoding")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("docker.jvm.mode")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("docker.cli.mode")));
@@ -776,7 +778,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("kubernetes.volume.secret.app-secret")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.volume.secret.app-secret.token")));
-        assertEquals(218, result.inventory().summary().keys());
+        assertEquals(219, result.inventory().summary().keys());
         assertEquals(42, result.inventory().summary().checks());
     }
 }
