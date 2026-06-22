@@ -50,4 +50,34 @@ final class UncertainFindingCheckEnricherTest {
         );
         assertEquals(source, enriched.checks().getFirst().source());
     }
+
+    @Test
+    void usesUnknownSinkWhenRootSinkIsMissing() {
+        var source = new SourceLocation("src/main/java/App.java", 7, "App", SourceKind.JAVA, Scope.MAIN);
+        var inventory = new ConfigInventory(
+            null,
+            ProjectInfo.unknown(),
+            null,
+            List.of(),
+            List.of(new UncertainFinding(
+                "dynamicKey",
+                UncertainReason.UNKNOWN,
+                null,
+                null,
+                source,
+                Confidence.LOW,
+                "test",
+                null
+            )),
+            List.of(),
+            List.of()
+        );
+
+        var enriched = new UncertainFindingCheckEnricher().enrich(inventory, null);
+
+        assertEquals(
+            "Dynamic configuration key requires review: UNKNOWN via unknown sink: dynamicKey",
+            enriched.checks().getFirst().message()
+        );
+    }
 }

@@ -23,7 +23,7 @@ public final class UncertainFindingCheckEnricher implements InventoryEnricher {
                 "dynamic-config-key",
                 DiagnosticSeverity.ERROR,
                 "Dynamic configuration key requires review: "
-                    + uncertain.reason() + " via " + uncertain.rootSink() + ": " + uncertain.expression(),
+                    + uncertain.reason() + " via " + sink(uncertain.rootSink()) + ": " + uncertain.expression(),
                 null,
                 uncertain.source()
             ));
@@ -37,5 +37,9 @@ public final class UncertainFindingCheckEnricher implements InventoryEnricher {
             checks,
             inventory.diagnostics()
         );
+    }
+
+    private static String sink(String rootSink) {
+        return rootSink == null || rootSink.isBlank() ? "unknown sink" : rootSink;
     }
 }
