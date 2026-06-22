@@ -48,3 +48,34 @@ Current implementation status:
 - Basic key normalization for case, underscore, hyphen, and camelCase variants
 - Dynamic/uncertain keys produce high-risk inventory checks
 - OpenRewrite and deeper symbol tracking are intentionally not implemented yet
+
+## Project Rules
+
+Put `config-radar-rules.yaml` in the project root, or pass it with `--rules`.
+
+```yaml
+methodCalls:
+  - id: acme-config-get
+    owner: ConfigCenter
+    method: get
+    keyArg: 0
+    defaultArg: 1
+    confidence: HIGH
+    role: READ
+
+annotations:
+  - id: acme-value
+    type: CustomConfigValue
+    keyAttribute: key
+    defaultAttribute: defaultValue
+    confidence: MEDIUM
+    role: READ
+
+configFiles:
+  - id: deploy-props
+    pattern: deploy/*.properties
+    format: PROPERTIES
+    scope: RUNTIME
+```
+
+`role` can be `DEFINE`, `READ`, `CONDITION`, or `METADATA`; it defaults to `READ` for Java rules.

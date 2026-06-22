@@ -22,7 +22,8 @@ methodCalls:
     owner: com.acme.Configs
     method: get
     keyArg: 0
-    confidence: high
+    confidence: HIGH
+    role: READ
 ```
 
 Agent assistance should suggest rules, not silently mutate inventory.
@@ -49,7 +50,8 @@ methodCalls:
     owner: com.acme.Configs
     method: get
     keyArg: 0
-    confidence: high
+    confidence: HIGH
+    role: READ
 
 annotations:
   - id: acme-value
@@ -60,8 +62,8 @@ annotations:
 configFiles:
   - id: deploy-properties
     pattern: deploy/*.properties
-    format: properties
-    scope: deployment
+    format: PROPERTIES
+    scope: RUNTIME
 ```
 
 ## Dynamic Config Policy

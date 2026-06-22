@@ -247,20 +247,22 @@ methodCalls:
     method: getString
     keyArg: 0
     defaultArg: 1
-    confidence: medium
+    confidence: MEDIUM
+    role: READ
 
 annotations:
   - id: acme-value
     type: com.acme.ConfigValue
     keyAttribute: value
     defaultAttribute: defaultValue
-    confidence: high
+    confidence: HIGH
+    role: READ
 
 configFiles:
   - id: deploy-props
     pattern: deploy/*.properties
-    format: properties
-    scope: runtime
+    format: PROPERTIES
+    scope: RUNTIME
 ```
 
 Boundary:
