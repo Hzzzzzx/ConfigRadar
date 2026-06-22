@@ -106,12 +106,21 @@ public final class KubernetesEnvDetector implements ConfigDetector {
             return;
         }
         for (var container : list) {
-            if (!(container instanceof Map<?, ?> map) || !(map.get("env") instanceof List<?> env)) {
+            if (!(container instanceof Map<?, ?> map)) {
                 continue;
             }
-            for (var item : env) {
-                if (item instanceof Map<?, ?> envMap) {
-                    readEnvItem(context, file, envMap, findings);
+            if (map.get("env") instanceof List<?> env) {
+                for (var item : env) {
+                    if (item instanceof Map<?, ?> envMap) {
+                        readEnvItem(context, file, envMap, findings);
+                    }
+                }
+            }
+            if (map.get("envFrom") instanceof List<?> envFrom) {
+                for (var item : envFrom) {
+                    if (item instanceof Map<?, ?> envFromMap) {
+                        readEnvFromItem(context, file, envFromMap, findings);
+                    }
                 }
             }
         }
@@ -135,6 +144,26 @@ public final class KubernetesEnvDetector implements ConfigDetector {
         var ref = keyRef(env.get("valueFrom"));
         if (ref != null) {
             addFinding(context, file, key, ref.value(), ref.type(), Confidence.MEDIUM, findings);
+        }
+    }
+
+    private static void readEnvFromItem(
+        ScanContext context,
+        IndexedFile file,
+        Map<?, ?> envFrom,
+        List<ScanFinding> findings
+    ) {
+        if (envFrom.get("configMapRef") instanceof Map<?, ?> configMap) {
+            var name = string(configMap.get("name"));
+            if (name != null && !name.isBlank()) {
+                addMetadata(context, file, "kubernetes.env-from.config-map." + name, name, "env-from-config-map-ref", findings);
+            }
+        }
+        if (envFrom.get("secretRef") instanceof Map<?, ?> secret) {
+            var name = string(secret.get("name"));
+            if (name != null && !name.isBlank()) {
+                addMetadata(context, file, "kubernetes.env-from.secret." + name, name, "env-from-secret-ref", findings);
+            }
         }
     }
 
@@ -162,6 +191,28 @@ public final class KubernetesEnvDetector implements ConfigDetector {
 
     private static String string(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    private static void addMetadata(
+        ScanContext context,
+        IndexedFile file,
+        String key,
+        String value,
+        String type,
+        List<ScanFinding> findings
+    ) {
+        findings.add(new ConfigFinding(
+            key,
+            key,
+            FindingRole.METADATA,
+            new ConfigValue(value, value, ValueType.STRING),
+            null,
+            EnvironmentContext.none(),
+            source(context.input().projectRoot(), file),
+            Confidence.MEDIUM,
+            "kubernetes-env",
+            new ExternalDetails("kubernetes", type, null)
+        ));
     }
 
     private static void addFinding(

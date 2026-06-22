@@ -33,6 +33,16 @@ final class KubernetesEnvDetectorTest {
         assertEquals("app-secret:token", finding(findings, "K8S_SECRET_TOKEN").value().raw());
         var secretRef = assertInstanceOf(ExternalDetails.class, finding(findings, "K8S_SECRET_TOKEN").details());
         assertEquals("secret-key-ref", secretRef.type());
+        var envFromConfigMap = finding(findings, "kubernetes.env-from.config-map.app-extra-config");
+        assertEquals(FindingRole.METADATA, envFromConfigMap.role());
+        assertEquals("app-extra-config", envFromConfigMap.value().raw());
+        var envFromConfigMapDetails = assertInstanceOf(ExternalDetails.class, envFromConfigMap.details());
+        assertEquals("env-from-config-map-ref", envFromConfigMapDetails.type());
+        var envFromSecret = finding(findings, "kubernetes.env-from.secret.app-secret");
+        assertEquals(FindingRole.METADATA, envFromSecret.role());
+        assertEquals("app-secret", envFromSecret.value().raw());
+        var envFromSecretDetails = assertInstanceOf(ExternalDetails.class, envFromSecret.details());
+        assertEquals("env-from-secret-ref", envFromSecretDetails.type());
     }
 
     private static ConfigFinding finding(java.util.List<ConfigFinding> findings, String key) {

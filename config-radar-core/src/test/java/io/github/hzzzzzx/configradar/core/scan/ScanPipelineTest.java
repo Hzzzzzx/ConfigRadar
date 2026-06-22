@@ -732,7 +732,11 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("K8S_CONFIG_LIMIT")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("K8S_SECRET_TOKEN")));
-        assertEquals(196, result.inventory().summary().keys());
-        assertEquals(37, result.inventory().summary().checks());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("kubernetes.env-from.config-map.app-extra-config")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("kubernetes.env-from.secret.app-secret")));
+        assertEquals(198, result.inventory().summary().keys());
+        assertEquals(38, result.inventory().summary().checks());
     }
 }

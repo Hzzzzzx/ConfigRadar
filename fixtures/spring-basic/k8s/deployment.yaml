@@ -16,6 +16,11 @@ spec:
       containers:
         - name: app
           image: config-radar-demo
+          envFrom:
+            - configMapRef:
+                name: app-extra-config
+            - secretRef:
+                name: app-secret
           env:
             - name: K8S_APP_MODE
               value: prod
