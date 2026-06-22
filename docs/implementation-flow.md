@@ -89,6 +89,7 @@ Implemented:
   - `spring.config.import` 支持一跳本地 `classpath:` / `file:` 配置导入；远程配置中心只保留 import 元数据
   - `spring.config.import=configtree:` 支持一跳本地目录文件，文件名作为 key、文件内容作为 value
   - `spring.config.location` / `spring.config.additional-location` 支持一跳本地文件；目录展开后续再做
+  - 上述 Spring config 引用支持 YAML list 形式，例如 `spring.config.additional-location[0]`
 - Spring configuration metadata detector：扫描 `spring-configuration-metadata.json` / `additional-spring-configuration-metadata.json` 中的 `properties[].name`
 - Logging XML detector：扫描 `logback-spring.xml` / `logback.xml` / `log4j2-spring.xml` / `log4j2.xml` 中的 `<springProperty source="...">` 和 `${...}` 占位符
 - Spring YAML profile support：识别多文档 YAML 中的 `spring.config.activate.on-profile`
