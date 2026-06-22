@@ -720,7 +720,19 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("COMPOSE_WORKER_THREADS")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("COMPOSE_LOG_LEVEL")));
-        assertEquals(190, result.inventory().summary().keys());
-        assertEquals(36, result.inventory().summary().checks());
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("k8s.config.mode")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("k8s.config.limit")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("K8S_APP_MODE")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("K8S_FEATURE_ENABLED")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("K8S_CONFIG_LIMIT")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("K8S_SECRET_TOKEN")));
+        assertEquals(196, result.inventory().summary().keys());
+        assertEquals(37, result.inventory().summary().checks());
     }
 }

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  k8s.config.mode: prod
+  k8s.config.limit: "5"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-radar-demo
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: config-radar-demo
+          env:
+            - name: K8S_APP_MODE
+              value: prod
+            - name: K8S_FEATURE_ENABLED
+              value: "true"
+            - name: K8S_CONFIG_LIMIT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: k8s.config.limit
+            - name: K8S_SECRET_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: token

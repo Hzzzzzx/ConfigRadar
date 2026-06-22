@@ -86,6 +86,7 @@ public final class ScanPipeline {
         detectors.add(new HoconConfigFileDetector());
         detectors.add(new DockerfileEnvDetector());
         detectors.add(new DockerComposeEnvDetector());
+        detectors.add(new KubernetesEnvDetector());
         detectors.add(new JavaSourceConfigDetector());
         if (enableCodegraph) {
             detectors.add(new CodegraphConfigUsageDetector());
