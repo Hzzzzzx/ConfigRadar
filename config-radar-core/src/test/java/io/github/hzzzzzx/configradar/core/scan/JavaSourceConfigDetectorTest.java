@@ -47,6 +47,7 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.placeholder.required")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("client.pool")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("client.cache")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("app.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("APP_SECRET")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("MAP_SECRET")));
@@ -117,6 +118,7 @@ final class JavaSourceConfigDetectorTest {
 
         assertEquals(FindingRole.READ, finding(findings, "cache.enabled").role());
         assertEquals(FindingRole.READ, finding(findings, "client.pool").role());
+        assertEquals(FindingRole.READ, finding(findings, "client.cache").role());
 
         var env = finding(findings, "APP_SECRET");
         assertEquals("APP_SECRET", env.key());

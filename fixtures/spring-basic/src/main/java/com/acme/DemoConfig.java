@@ -68,6 +68,8 @@ public class DemoConfig {
         var regionProfile = environment.matchesProfiles("region-cn");
         var binder = org.springframework.boot.context.properties.bind.Binder.get(environment)
             .bind("client.pool", String.class);
+        var createdBinder = org.springframework.boot.context.properties.bind.Binder.get(environment)
+            .bindOrCreate("client.cache", String.class);
         var system = System.getProperty("app.mode", "local");
         var env = System.getenv("APP_SECRET");
         var mapEnv = System.getenv().get("MAP_SECRET");
@@ -83,8 +85,8 @@ public class DemoConfig {
         var dynamic = environment.getProperty(prefix + ".url");
         var custom = ConfigCenter.get("custom.center", "fallback");
         System.setProperty("runtime.region", "cn");
-        return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + binder + system + env + mapEnv
-            + mapEnvDefault + hasEnvFlag
+        return direct + required + typed + hasCache + resolved + prodProfile + regionProfile + binder + createdBinder + system
+            + env + mapEnv + mapEnvDefault + hasEnvFlag
             + propertyMapValue + hasPropertyMapFlag
             + legacyPort + legacyLimit + legacyEnabled + dynamic + custom;
     }

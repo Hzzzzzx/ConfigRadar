@@ -278,6 +278,8 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("client.pool")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("client.cache")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("feature.beta") && item.role() == FindingRole.CONDITION));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("app.mode")));
@@ -344,7 +346,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(76, result.inventory().summary().keys());
+        assertEquals(77, result.inventory().summary().keys());
         assertEquals(2, result.inventory().summary().checks());
     }
 }
