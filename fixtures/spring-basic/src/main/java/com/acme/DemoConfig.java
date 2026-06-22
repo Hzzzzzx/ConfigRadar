@@ -43,6 +43,15 @@ public class DemoConfig {
     @Value("#{systemProperties['spel.mode']}")
     private String spelMode;
 
+    @Value("#{environment.getProperty('spel.method.timeout')}")
+    private String spelMethodTimeout;
+
+    @Value("#{systemEnvironment.get('SPEL_METHOD_SECRET')}")
+    private String spelMethodSecret;
+
+    @Value("#{systemProperties.getProperty('spel.method.mode')}")
+    private String spelMethodMode;
+
     @CustomConfigValue(key = "custom.annotated", defaultValue = "yes")
     private String annotated;
 

@@ -258,6 +258,12 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spel.mode") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("spel.method.timeout") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("SPEL_METHOD_SECRET") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("spel.method.mode") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("http.timeout")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("resolver.endpoint")));
@@ -330,7 +336,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(70, result.inventory().summary().keys());
+        assertEquals(73, result.inventory().summary().keys());
         assertEquals(2, result.inventory().summary().checks());
     }
 }

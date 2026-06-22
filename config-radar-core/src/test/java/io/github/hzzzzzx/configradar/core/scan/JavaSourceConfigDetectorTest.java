@@ -37,6 +37,9 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPEL_SECRET")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.method.timeout")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("SPEL_METHOD_SECRET")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("spel.method.mode")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("http.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.endpoint")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.required")));
@@ -85,6 +88,9 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(FindingRole.READ, finding(findings, "spel.timeout").role());
         assertEquals(FindingRole.READ, finding(findings, "SPEL_SECRET").role());
         assertEquals(FindingRole.READ, finding(findings, "spel.mode").role());
+        assertEquals(FindingRole.READ, finding(findings, "spel.method.timeout").role());
+        assertEquals(FindingRole.READ, finding(findings, "SPEL_METHOD_SECRET").role());
+        assertEquals(FindingRole.READ, finding(findings, "spel.method.mode").role());
 
         var properties = finding(findings, "client");
         assertInstanceOf(SpringConfigurationPropertiesDetails.class, properties.details());

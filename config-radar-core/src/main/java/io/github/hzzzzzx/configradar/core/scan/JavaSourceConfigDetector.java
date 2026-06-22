@@ -51,6 +51,12 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
     private static final Pattern SPEL_ENVIRONMENT = Pattern.compile("environment\\[['\"]([^'\"]+)['\"]]");
     private static final Pattern SPEL_SYSTEM_ENVIRONMENT = Pattern.compile("systemEnvironment\\[['\"]([^'\"]+)['\"]]");
     private static final Pattern SPEL_SYSTEM_PROPERTIES = Pattern.compile("systemProperties\\[['\"]([^'\"]+)['\"]]");
+    private static final Pattern SPEL_ENVIRONMENT_GET_PROPERTY =
+        Pattern.compile("environment\\.getProperty\\(['\"]([^'\"]+)['\"]");
+    private static final Pattern SPEL_SYSTEM_ENVIRONMENT_GET =
+        Pattern.compile("systemEnvironment\\.get\\(['\"]([^'\"]+)['\"]");
+    private static final Pattern SPEL_SYSTEM_PROPERTIES_GET_PROPERTY =
+        Pattern.compile("systemProperties\\.getProperty\\(['\"]([^'\"]+)['\"]");
 
     @Override
     public String id() {
@@ -708,6 +714,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             addSpelReferences(text, tree, SPEL_ENVIRONMENT);
             addSpelReferences(text, tree, SPEL_SYSTEM_ENVIRONMENT);
             addSpelReferences(text, tree, SPEL_SYSTEM_PROPERTIES);
+            addSpelReferences(text, tree, SPEL_ENVIRONMENT_GET_PROPERTY);
+            addSpelReferences(text, tree, SPEL_SYSTEM_ENVIRONMENT_GET);
+            addSpelReferences(text, tree, SPEL_SYSTEM_PROPERTIES_GET_PROPERTY);
         }
 
         private void addSpelReferences(String text, ExpressionTree tree, Pattern pattern) {
