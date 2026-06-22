@@ -11,7 +11,8 @@ public record MethodCallRule(
     int keyArg,
     Integer defaultArg,
     Confidence confidence,
-    FindingRole role
+    FindingRole role,
+    Integer valueArg
 ) implements ConfigRule {
     public MethodCallRule {
         confidence = confidence == null ? Confidence.MEDIUM : confidence;
@@ -19,6 +20,18 @@ public record MethodCallRule(
     }
 
     public MethodCallRule(String id, String owner, String method, int keyArg, Integer defaultArg, Confidence confidence) {
-        this(id, owner, method, keyArg, defaultArg, confidence, FindingRole.READ);
+        this(id, owner, method, keyArg, defaultArg, confidence, FindingRole.READ, null);
+    }
+
+    public MethodCallRule(
+        String id,
+        String owner,
+        String method,
+        int keyArg,
+        Integer defaultArg,
+        Confidence confidence,
+        FindingRole role
+    ) {
+        this(id, owner, method, keyArg, defaultArg, confidence, role, null);
     }
 }

@@ -376,6 +376,28 @@ final class JavaSourceConfigDetectorTest {
         assertEquals(FindingRole.METADATA, finding(findings, "custom.annotated").role());
     }
 
+    @Test
+    void appliesProjectMethodRuleValueArgument() throws Exception {
+        var rules = new ConfigRules(
+            List.of(new MethodCallRule("custom-center-set", "ConfigCenter", "set", 0, null, null, FindingRole.DEFINE, 1)),
+            List.of(),
+            List.of()
+        );
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, rules, index);
+
+        var findings = new JavaSourceConfigDetector().detect(context).stream()
+            .filter(ConfigFinding.class::isInstance)
+            .map(ConfigFinding.class::cast)
+            .toList();
+
+        var customDefined = finding(findings, "custom.defined");
+        assertEquals(FindingRole.DEFINE, customDefined.role());
+        assertEquals("enabled", customDefined.value().raw());
+    }
+
     private static java.util.List<ConfigFinding> detect() throws Exception {
         var input = ScanInput.of(FixturePaths.springBasic());
         var options = ScanOptions.defaults();

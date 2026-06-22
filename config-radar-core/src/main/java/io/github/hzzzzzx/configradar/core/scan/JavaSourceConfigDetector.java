@@ -605,6 +605,9 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 var defaultValue = rule.defaultArg() == null || rule.defaultArg() >= args.size()
                     ? null
                     : literal(args.get(rule.defaultArg()));
+                var value = rule.valueArg() == null || rule.valueArg() < 0 || rule.valueArg() >= args.size()
+                    ? null
+                    : literalValue(args.get(rule.valueArg()));
                 if (key == null) {
                     findings.add(new UncertainFinding(
                         args.get(rule.keyArg()).toString(),
@@ -618,7 +621,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     ));
                     continue;
                 }
-                findings.add(externalFinding(rule.id(), key, defaultValue, rule.confidence(), rule.role(), tree));
+                findings.add(externalFinding(rule.id(), key, value, defaultValue, rule.confidence(), rule.role(), tree));
             }
         }
 
@@ -632,7 +635,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                     continue;
                 }
                 var defaultValue = annotationValue(annotation, rule.defaultAttribute());
-                findings.add(externalFinding(rule.id(), key, defaultValue, rule.confidence(), rule.role(), annotation));
+                findings.add(externalFinding(rule.id(), key, null, defaultValue, rule.confidence(), rule.role(), annotation));
             }
         }
 
@@ -876,6 +879,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         private ConfigFinding externalFinding(
             String ruleId,
             String key,
+            String value,
             String defaultValue,
             Confidence confidence,
             FindingRole role,
@@ -885,7 +889,7 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 key,
                 key,
                 role,
-                null,
+                value == null ? null : new ConfigValue(value, value, typeOf(value)),
                 defaultValue == null ? null : new ConfigValue(defaultValue, defaultValue, typeOf(defaultValue)),
                 EnvironmentContext.none(),
                 source(tree, SourceKind.JAVA),

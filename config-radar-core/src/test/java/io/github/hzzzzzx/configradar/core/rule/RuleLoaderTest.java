@@ -34,6 +34,7 @@ final class RuleLoaderTest {
                 owner: com.acme.Config
                 method: get
                 keyArg: 0
+                valueArg: 1
                 confidence: HIGH
                 role: CONDITION
             annotations:
@@ -52,6 +53,7 @@ final class RuleLoaderTest {
 
         assertEquals(1, rules.methodCalls().size());
         assertEquals("custom-config", rules.methodCalls().getFirst().id());
+        assertEquals(1, rules.methodCalls().getFirst().valueArg());
         assertEquals(Confidence.HIGH, rules.methodCalls().getFirst().confidence());
         assertEquals(FindingRole.CONDITION, rules.methodCalls().getFirst().role());
         assertEquals(1, rules.annotations().size());
