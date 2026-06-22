@@ -38,7 +38,7 @@ Current implementation status:
 - Implemented detectors:
   - Spring `application*.yml/yaml/properties` definitions and placeholder dependencies
   - Spring Boot `spring-configuration-metadata.json` and `additional-spring-configuration-metadata.json`
-  - Runtime XML placeholders, plus Logback and Log4j2 `springProperty`
+  - Runtime XML placeholders, `web.xml` params, plus Logback and Log4j2 `springProperty`
   - Java source annotation placeholders, common `@Value` SpEL property references, class/method `@ConfigurationProperties`, `@ConditionalOnProperty`, `@ConditionalOnExpression`, `@Profile`, profile predicate calls, `@PropertySource`, `SpringApplication` default/command-line properties and additional profiles, programmatic Spring `PropertySource` entries, dynamic `PropertiesPropertySource` entries, Apollo `ConfigService` reads, Nacos `ConfigService.getConfig(...)` and `@NacosPropertySource` source entries, Servlet `getInitParameter`, JNDI `java:comp/env` lookups, `Environment.getProperty`, `Environment.getRequiredProperty`, `System.getProperty`, `System.getProperties`, `System.getenv`, `System.console` input, `Integer.getInteger`, `Long.getLong`, `Boolean.getBoolean`
 - Spring YAML multi-document profile detection via `spring.config.activate.on-profile`
 - Spring profile/config control keys, including env-style keys such as `SPRING_PROFILES_ACTIVE`, plus `@Profile` and `@PropertySource` findings are marked as `METADATA`
