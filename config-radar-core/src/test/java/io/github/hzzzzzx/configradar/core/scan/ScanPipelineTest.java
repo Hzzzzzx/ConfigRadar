@@ -380,6 +380,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("resolver.placeholder.required") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("inventory.client.name") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("inventory.client.url") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("cache.enabled")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("client.pool")));
@@ -538,7 +542,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(116, result.inventory().summary().keys());
+        assertEquals(118, result.inventory().summary().keys());
         assertEquals(8, result.inventory().summary().checks());
     }
 }

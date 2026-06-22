@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
@@ -23,6 +24,10 @@ import org.springframework.scheduling.annotation.Scheduled;
     @PropertySource("classpath:kafka.properties")
 })
 public class DemoConfig {
+    @FeignClient(name = "${inventory.client.name:inventory}", url = "${inventory.client.url:http://localhost}")
+    interface InventoryClient {
+    }
+
     public static void main(String[] args) {
         org.springframework.boot.SpringApplication.run(DemoConfig.class, args);
         new org.springframework.boot.builder.SpringApplicationBuilder(DemoConfig.class).run(args);

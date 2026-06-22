@@ -48,6 +48,8 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.required")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolved.placeholder")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resolver.placeholder.required")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.name")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("inventory.client.url")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.enabled")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("client.pool")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("client.cache")));
@@ -131,6 +133,8 @@ final class JavaSourceConfigDetectorTest {
         assertNull(finding(findings, "resolver.required").defaultValue());
         assertEquals("ok", finding(findings, "resolved.placeholder").defaultValue().raw());
         assertNull(finding(findings, "resolver.placeholder.required").defaultValue());
+        assertEquals("inventory", finding(findings, "inventory.client.name").defaultValue().raw());
+        assertEquals("http://localhost", finding(findings, "inventory.client.url").defaultValue().raw());
 
         assertEquals(FindingRole.READ, finding(findings, "cache.enabled").role());
         assertEquals(FindingRole.READ, finding(findings, "client.pool").role());
