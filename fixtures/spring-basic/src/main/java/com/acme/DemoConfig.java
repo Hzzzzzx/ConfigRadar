@@ -16,6 +16,8 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.annotation.Async;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
@@ -220,6 +222,7 @@ public class DemoConfig {
     }
 
     @Scheduled(cron = "${jobs.cleanup.cron:0 0 * * * *}", fixedDelayString = "${jobs.cleanup.delay:60000}")
+    @SchedulerLock(name = "cleanup", lockAtMostFor = "${jobs.cleanup.lock-at-most:PT5M}")
     public void cleanup() {
     }
 
@@ -246,5 +249,9 @@ public class DemoConfig {
     @Cacheable(cacheNames = "${cache.orders.name:orders}", key = "${cache.orders.key:default}")
     public String cachedOrder(String id) {
         return id;
+    }
+
+    @Async("${async.orders.executor:ordersExecutor}")
+    public void asyncOrder() {
     }
 }

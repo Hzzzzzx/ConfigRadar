@@ -83,6 +83,7 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("programmatic.timeout")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("jobs.cleanup.cron")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("jobs.cleanup.delay")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("jobs.cleanup.lock-at-most")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("kafka.orders.topic")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("kafka.orders.group")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("rabbit.orders.queue")));
@@ -93,6 +94,7 @@ final class JavaSourceConfigDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("resilience.orders.bulkhead")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.orders.name")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("cache.orders.key")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("async.orders.executor")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("custom.placeholder.default")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.profiles")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("spring.property-source")));
@@ -242,6 +244,7 @@ final class JavaSourceConfigDetectorTest {
 
         assertEquals("0 0 * * * *", finding(findings, "jobs.cleanup.cron").defaultValue().raw());
         assertEquals("60000", finding(findings, "jobs.cleanup.delay").defaultValue().raw());
+        assertEquals("PT5M", finding(findings, "jobs.cleanup.lock-at-most").defaultValue().raw());
         assertEquals("orders", finding(findings, "kafka.orders.topic").defaultValue().raw());
         assertEquals("config-radar", finding(findings, "kafka.orders.group").defaultValue().raw());
         assertEquals("orders.queue", finding(findings, "rabbit.orders.queue").defaultValue().raw());
@@ -252,6 +255,7 @@ final class JavaSourceConfigDetectorTest {
         assertEquals("orders", finding(findings, "resilience.orders.bulkhead").defaultValue().raw());
         assertEquals("orders", finding(findings, "cache.orders.name").defaultValue().raw());
         assertEquals("default", finding(findings, "cache.orders.key").defaultValue().raw());
+        assertEquals("ordersExecutor", finding(findings, "async.orders.executor").defaultValue().raw());
         assertEquals("no", finding(findings, "custom.placeholder.default").defaultValue().raw());
     }
 

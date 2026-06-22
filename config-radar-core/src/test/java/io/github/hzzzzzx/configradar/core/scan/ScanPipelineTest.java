@@ -476,6 +476,8 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("jobs.cleanup.delay")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("jobs.cleanup.lock-at-most") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kafka.orders.topic") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kafka.orders.group") && item.role() == FindingRole.READ));
@@ -495,6 +497,8 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("cache.orders.name") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("cache.orders.key") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("async.orders.executor") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("spring.profiles") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().items().stream()
@@ -554,7 +558,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(124, result.inventory().summary().keys());
+        assertEquals(126, result.inventory().summary().keys());
         assertEquals(8, result.inventory().summary().checks());
     }
 }
