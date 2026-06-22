@@ -92,6 +92,8 @@ public class DemoConfig {
         var legacyLimit = Long.getLong("legacy.limit", 10L);
         var legacyEnabled = Boolean.getBoolean("legacy.enabled");
         var jvmArgs = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments();
+        var replacementProperties = new java.util.Properties();
+        System.setProperties(replacementProperties);
         var dynamic = environment.getProperty(prefix + ".url");
         var operatorMode = System.console().readLine("operator.mode");
         var custom = ConfigCenter.get("custom.center", "fallback");

@@ -319,6 +319,23 @@ final class JavaSourceConfigDetectorTest {
     }
 
     @Test
+    void exposesSystemPropertiesReplacementAsUncertain() throws Exception {
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context);
+
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("replacementProperties")
+                && item.reason() == UncertainReason.MAP_DRIVEN_KEY
+                && item.rootSink().endsWith("System.setProperties")));
+    }
+
+    @Test
     void exposesConsoleInputAsUncertain() throws Exception {
         var input = ScanInput.of(FixturePaths.springBasic());
         var options = ScanOptions.defaults();

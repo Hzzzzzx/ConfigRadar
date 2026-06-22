@@ -468,6 +468,9 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.expression().contains("getRuntimeMXBean().getInputArguments()")
                 && item.reason() == UncertainReason.COMMAND_LINE_ARGS));
         assertTrue(result.inventory().uncertain().stream()
+            .anyMatch(item -> item.expression().equals("replacementProperties")
+                && item.reason() == UncertainReason.MAP_DRIVEN_KEY));
+        assertTrue(result.inventory().uncertain().stream()
             .anyMatch(item -> item.expression().equals("properties")
                 && item.reason() == UncertainReason.MAP_DRIVEN_KEY));
         assertTrue(result.inventory().uncertain().stream()
@@ -481,6 +484,6 @@ final class ScanPipelineTest {
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
         assertEquals(101, result.inventory().summary().keys());
-        assertEquals(6, result.inventory().summary().checks());
+        assertEquals(7, result.inventory().summary().checks());
     }
 }
