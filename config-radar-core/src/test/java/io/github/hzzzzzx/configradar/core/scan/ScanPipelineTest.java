@@ -212,6 +212,10 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("API_TOKEN") && item.role() == FindingRole.READ
                 && item.environment().profile().equals("prod")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("logging.file.path") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("LOG_LEVEL") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("db.host")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("db.port")));
@@ -271,7 +275,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(43, result.inventory().summary().keys());
+        assertEquals(44, result.inventory().summary().keys());
         assertEquals(1, result.inventory().summary().checks());
     }
 }

@@ -1,0 +1,5 @@
+<configuration>
+    <springProperty name="appName" source="spring.application.name" defaultValue="spring-basic"/>
+    <springProperty name="logPath" source="logging.file.path" defaultValue="./logs"/>
+    <property name="level" value="${LOG_LEVEL:-INFO}"/>
+</configuration>
