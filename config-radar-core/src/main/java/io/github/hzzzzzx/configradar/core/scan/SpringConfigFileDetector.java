@@ -72,8 +72,32 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             findings.add(finding(context, file, key, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES));
             addPlaceholderReads(context, file, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
             expandSpringApplicationJson(context, file, key, rawValue, profileOf(file.path()), index + 1, SourceKind.PROPERTIES, findings);
+            expandJvmToolOptions(context, file, key, rawValue, profileOf(file.path()), index + 1, findings);
         }
         return findings;
+    }
+
+    private void expandJvmToolOptions(
+        ScanContext context,
+        IndexedFile file,
+        String key,
+        String rawValue,
+        String profile,
+        Integer line,
+        List<ScanFinding> findings
+    ) {
+        if (!key.equals("JAVA_TOOL_OPTIONS") && !key.equals("JDK_JAVA_OPTIONS")) {
+            return;
+        }
+        for (var token : rawValue.split("\\s+")) {
+            if (!token.startsWith("-D") || token.length() <= 2) {
+                continue;
+            }
+            var property = propertyString(token.substring(2));
+            if (property != null) {
+                findings.add(finding(context, file, property.key(), property.value(), profile, line, SourceKind.PROPERTIES));
+            }
+        }
     }
 
     private List<ScanFinding> readYaml(ScanContext context, IndexedFile file) throws Exception {
@@ -359,6 +383,15 @@ public final class SpringConfigFileDetector implements ConfigDetector {
         return comment < 0 ? value : value.substring(0, comment).trim();
     }
 
+    private static PropertyPair propertyString(String text) {
+        var split = text.indexOf('=');
+        if (split <= 0) {
+            return null;
+        }
+        var key = text.substring(0, split).trim();
+        return key.isEmpty() ? null : new PropertyPair(key, text.substring(split + 1).trim());
+    }
+
     private static int placeholderSplit(String body) {
         var shellDefault = body.indexOf(":-");
         return shellDefault >= 0 ? shellDefault : body.indexOf(':');
@@ -422,5 +455,8 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             // ponytail: line number is evidence only; missing it must not fail scanning.
         }
         return null;
+    }
+
+    private record PropertyPair(String key, String value) {
     }
 }

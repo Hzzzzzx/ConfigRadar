@@ -57,6 +57,8 @@ final class SpringConfigFileDetectorTest {
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("INLINE_COMMENT")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("LOG_LEVEL")));
         assertTrue(findings.stream().anyMatch(item -> item.key().equals("API_TOKEN")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("tool.mode")));
+        assertTrue(findings.stream().anyMatch(item -> item.key().equals("tool.timeout")));
     }
 
     @Test
@@ -129,6 +131,9 @@ final class SpringConfigFileDetectorTest {
         assertEquals(ValueType.BOOLEAN, finding(findings, "feature.json").value().type());
         assertEquals("true", finding(findings, "file.json.enabled").value().raw());
         assertEquals(ValueType.BOOLEAN, finding(findings, "file.json.enabled").value().type());
+        assertEquals("worker", finding(findings, "tool.mode").value().raw());
+        assertEquals("5s", finding(findings, "tool.timeout").value().raw());
+        assertEquals(ValueType.DURATION, finding(findings, "tool.timeout").value().type());
         assertEquals("enabled", finding(findings, "INLINE_COMMENT").value().raw());
         var shellDefault = findings.stream()
             .filter(item -> item.key().equals("SHELL_DEFAULT") && item.role() == FindingRole.READ)
