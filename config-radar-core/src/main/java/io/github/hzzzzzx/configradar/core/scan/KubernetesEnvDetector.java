@@ -145,6 +145,7 @@ public final class KubernetesEnvDetector implements ConfigDetector {
         if (node instanceof Map<?, ?> map) {
             readEnv(context, file, map.get("containers"), configMaps, findings);
             readEnv(context, file, map.get("initContainers"), configMaps, findings);
+            readVolumes(context, file, map.get("volumes"), findings);
             for (var value : map.values()) {
                 readContainers(context, file, value, configMaps, findings);
             }
@@ -182,6 +183,56 @@ public final class KubernetesEnvDetector implements ConfigDetector {
                 for (var item : envFrom) {
                     if (item instanceof Map<?, ?> envFromMap) {
                         readEnvFromItem(context, file, envFromMap, configMaps, findings);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void readVolumes(
+        ScanContext context,
+        IndexedFile file,
+        Object volumes,
+        List<ScanFinding> findings
+    ) {
+        if (!(volumes instanceof List<?> list)) {
+            return;
+        }
+        for (var item : list) {
+            if (!(item instanceof Map<?, ?> volume)) {
+                continue;
+            }
+            if (volume.get("configMap") instanceof Map<?, ?> configMap) {
+                readVolumeRef(context, file, configMap, "config-map-volume", "kubernetes.volume.config-map.", findings);
+            }
+            if (volume.get("secret") instanceof Map<?, ?> secret) {
+                readVolumeRef(context, file, secret, "secret-volume", "kubernetes.volume.secret.", findings);
+            }
+        }
+    }
+
+    private static void readVolumeRef(
+        ScanContext context,
+        IndexedFile file,
+        Map<?, ?> ref,
+        String type,
+        String keyPrefix,
+        List<ScanFinding> findings
+    ) {
+        var name = string(ref.get("name"));
+        if (name == null) {
+            name = string(ref.get("secretName"));
+        }
+        if (name == null || name.isBlank()) {
+            return;
+        }
+        addMetadata(context, file, keyPrefix + name, name, type, findings);
+        if (ref.get("items") instanceof List<?> items) {
+            for (var item : items) {
+                if (item instanceof Map<?, ?> itemMap) {
+                    var key = string(itemMap.get("key"));
+                    if (key != null && !key.isBlank()) {
+                        addMetadata(context, file, keyPrefix + name + "." + key, key, type + "-item", findings);
                     }
                 }
             }

@@ -55,6 +55,16 @@ final class KubernetesEnvDetectorTest {
         assertEquals("app-secret", envFromSecret.value().raw());
         var envFromSecretDetails = assertInstanceOf(ExternalDetails.class, envFromSecret.details());
         assertEquals("env-from-secret-ref", envFromSecretDetails.type());
+        var configMapVolume = finding(findings, "kubernetes.volume.config-map.app-config");
+        assertEquals(FindingRole.METADATA, configMapVolume.role());
+        var configMapVolumeDetails = assertInstanceOf(ExternalDetails.class, configMapVolume.details());
+        assertEquals("config-map-volume", configMapVolumeDetails.type());
+        assertEquals("k8s.config.mode", finding(findings, "kubernetes.volume.config-map.app-config.k8s.config.mode").value().raw());
+        var secretVolume = finding(findings, "kubernetes.volume.secret.app-secret");
+        assertEquals(FindingRole.METADATA, secretVolume.role());
+        var secretVolumeDetails = assertInstanceOf(ExternalDetails.class, secretVolume.details());
+        assertEquals("secret-volume", secretVolumeDetails.type());
+        assertEquals("token", finding(findings, "kubernetes.volume.secret.app-secret.token").value().raw());
     }
 
     private static ConfigFinding finding(java.util.List<ConfigFinding> findings, String key) {

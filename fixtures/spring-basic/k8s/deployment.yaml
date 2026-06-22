@@ -33,6 +33,11 @@ spec:
       containers:
         - name: app
           image: config-radar-demo
+          volumeMounts:
+            - name: app-config-volume
+              mountPath: /etc/config
+            - name: app-secret-volume
+              mountPath: /etc/secret
           envFrom:
             - configMapRef:
                 name: app-extra-config
@@ -54,3 +59,16 @@ spec:
                 secretKeyRef:
                   name: app-secret
                   key: token
+      volumes:
+        - name: app-config-volume
+          configMap:
+            name: app-config
+            items:
+              - key: k8s.config.mode
+                path: mode
+        - name: app-secret-volume
+          secret:
+            secretName: app-secret
+            items:
+              - key: token
+                path: token
