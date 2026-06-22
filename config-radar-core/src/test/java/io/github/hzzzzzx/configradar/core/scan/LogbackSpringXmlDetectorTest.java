@@ -25,6 +25,8 @@ final class LogbackSpringXmlDetectorTest {
         assertEquals(SourceKind.XML, finding(findings, "spring.application.name").source().sourceKind());
         assertEquals("./logs", finding(findings, "logging.file.path").defaultValue().raw());
         assertEquals("INFO", finding(findings, "LOG_LEVEL").defaultValue().raw());
+        assertEquals("./logs", finding(findings, "log4j2.file.path").defaultValue().raw());
+        assertEquals("INFO", finding(findings, "LOG4J_LEVEL").defaultValue().raw());
     }
 
     private static ConfigFinding finding(java.util.List<ConfigFinding> findings, String key) {

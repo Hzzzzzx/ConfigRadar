@@ -238,6 +238,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("LOG_LEVEL") && item.role() == FindingRole.READ));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("log4j2.file.path") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("LOG4J_LEVEL") && item.role() == FindingRole.READ));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("db.host")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("db.port")));
@@ -353,7 +357,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
-        assertEquals(79, result.inventory().summary().keys());
+        assertEquals(81, result.inventory().summary().keys());
         assertEquals(3, result.inventory().summary().checks());
     }
 }

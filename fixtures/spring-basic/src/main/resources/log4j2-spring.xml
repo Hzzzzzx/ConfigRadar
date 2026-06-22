@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Properties>
+    <Property name="logPath">${log4j2.file.path:./logs}</Property>
+    <Property name="level">${LOG4J_LEVEL:INFO}</Property>
+  </Properties>
+</Configuration>

@@ -18,7 +18,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Element;
 
-/** Detects Spring-aware logback XML configuration reads. */
+/** Detects Spring-aware logging XML configuration reads. */
 public final class LogbackSpringXmlDetector implements ConfigDetector {
     @Override
     public String id() {
@@ -29,7 +29,7 @@ public final class LogbackSpringXmlDetector implements ConfigDetector {
     public List<ScanFinding> detect(ScanContext context) throws Exception {
         var findings = new ArrayList<ScanFinding>();
         for (var file : context.fileIndex().ofType(FileType.XML)) {
-            if (!isLogback(file)) {
+            if (!isLoggingXml(file)) {
                 continue;
             }
             var factory = DocumentBuilderFactory.newInstance();
@@ -61,9 +61,12 @@ public final class LogbackSpringXmlDetector implements ConfigDetector {
         return findings;
     }
 
-    private static boolean isLogback(IndexedFile file) {
+    private static boolean isLoggingXml(IndexedFile file) {
         var name = file.path().getFileName().toString();
-        return name.equals("logback-spring.xml") || name.equals("logback.xml");
+        return name.equals("logback-spring.xml")
+            || name.equals("logback.xml")
+            || name.equals("log4j2-spring.xml")
+            || name.equals("log4j2.xml");
     }
 
     private void addPlaceholders(ScanContext context, IndexedFile file, String text, List<ScanFinding> findings) {
