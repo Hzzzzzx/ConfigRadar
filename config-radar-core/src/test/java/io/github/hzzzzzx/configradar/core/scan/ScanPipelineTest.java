@@ -323,11 +323,14 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("spring.profiles.include") && item.role() == FindingRole.METADATA));
         assertTrue(result.inventory().uncertain().stream()
             .anyMatch(item -> item.expression().contains("prefix + \".url\"")));
+        assertTrue(result.inventory().uncertain().stream()
+            .anyMatch(item -> item.expression().equals("args")
+                && item.reason() == UncertainReason.COMMAND_LINE_ARGS));
         assertTrue(result.inventory().checks().stream()
             .anyMatch(item -> item.type().equals("dynamic-config-key")
                 && item.severity() == DiagnosticSeverity.ERROR
                 && item.message().contains("prefix + \".url\"")));
         assertEquals(70, result.inventory().summary().keys());
-        assertEquals(1, result.inventory().summary().checks());
+        assertEquals(2, result.inventory().summary().checks());
     }
 }

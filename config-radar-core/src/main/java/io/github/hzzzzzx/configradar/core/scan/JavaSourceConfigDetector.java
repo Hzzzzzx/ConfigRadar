@@ -329,9 +329,21 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             if (!method.endsWith(".run") || !method.contains("SpringApplication")) {
                 return;
             }
-            for (var argument : tree.getArguments()) {
+            var arguments = tree.getArguments();
+            for (var index = 1; index < arguments.size(); index++) {
+                var argument = arguments.get(index);
                 var property = commandLineProperty(literal(argument));
                 if (property == null) {
+                    findings.add(new UncertainFinding(
+                        argument.toString(),
+                        UncertainReason.COMMAND_LINE_ARGS,
+                        method,
+                        null,
+                        source(tree, SourceKind.JAVA),
+                        Confidence.LOW,
+                        id(),
+                        new DynamicKeyDetails(null, null, argument.toString())
+                    ));
                     continue;
                 }
                 findings.add(new ConfigFinding(

@@ -18,6 +18,10 @@ import org.springframework.scheduling.annotation.Scheduled;
     @PropertySource("classpath:kafka.properties")
 })
 public class DemoConfig {
+    public static void main(String[] args) {
+        org.springframework.boot.SpringApplication.run(DemoConfig.class, args);
+    }
+
     @Value("${payment.timeout:30}")
     private int timeout;
 

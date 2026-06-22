@@ -5,6 +5,8 @@ import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.JavaSystemPropertyDetails;
 import io.github.hzzzzzx.configradar.core.model.SpringConfigurationPropertiesDetails;
 import io.github.hzzzzzx.configradar.core.model.SpringPlaceholderDetails;
+import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
+import io.github.hzzzzzx.configradar.core.model.UncertainReason;
 import io.github.hzzzzzx.configradar.core.rule.AnnotationRule;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import io.github.hzzzzzx.configradar.core.rule.MethodCallRule;
@@ -212,7 +214,24 @@ final class JavaSourceConfigDetectorTest {
 
         var findings = new JavaSourceConfigDetector().detect(context);
 
-        assertTrue(findings.stream().anyMatch(item -> item instanceof io.github.hzzzzzx.configradar.core.model.UncertainFinding));
+        assertTrue(findings.stream().anyMatch(item -> item instanceof UncertainFinding));
+    }
+
+    @Test
+    void exposesDynamicSpringCommandLineArgsAsUncertain() throws Exception {
+        var input = ScanInput.of(FixturePaths.springBasic());
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context);
+
+        assertTrue(findings.stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .anyMatch(item -> item.expression().equals("args")
+                && item.reason() == UncertainReason.COMMAND_LINE_ARGS
+                && item.rootSink().contains("SpringApplication.run")));
     }
 
     @Test
