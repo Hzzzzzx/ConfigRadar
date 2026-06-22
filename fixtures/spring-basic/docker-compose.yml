@@ -10,6 +10,7 @@ services:
     environment:
       COMPOSE_APP_MODE: prod
       COMPOSE_FEATURE_ENABLED: true
+      COMPOSE_JAVA_OPTS: -Dcompose.env.jvm.mode=blue
   worker:
     image: config-radar-worker
     environment:

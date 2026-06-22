@@ -725,6 +725,10 @@ final class ScanPipelineTest {
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("COMPOSE_FEATURE_ENABLED")));
         assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("COMPOSE_JAVA_OPTS")));
+        assertTrue(result.inventory().items().stream()
+            .anyMatch(item -> item.key().equals("compose.env.jvm.mode")));
+        assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("COMPOSE_WORKER_THREADS")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("COMPOSE_LOG_LEVEL")));
@@ -778,7 +782,7 @@ final class ScanPipelineTest {
             .anyMatch(item -> item.key().equals("kubernetes.volume.secret.app-secret")));
         assertTrue(result.inventory().items().stream()
             .anyMatch(item -> item.key().equals("kubernetes.volume.secret.app-secret.token")));
-        assertEquals(219, result.inventory().summary().keys());
+        assertEquals(221, result.inventory().summary().keys());
         assertEquals(42, result.inventory().summary().checks());
     }
 }

@@ -71,7 +71,7 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
         if (environment instanceof Map<?, ?> map) {
             for (var entry : map.entrySet()) {
                 if (entry.getKey() != null && entry.getValue() != null) {
-                    addFinding(context, file, String.valueOf(entry.getKey()), String.valueOf(entry.getValue()), findings);
+                    addEnvFinding(context, file, String.valueOf(entry.getKey()), String.valueOf(entry.getValue()), findings);
                 }
             }
             return;
@@ -80,8 +80,23 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
             for (var item : list) {
                 var pair = pair(String.valueOf(item));
                 if (pair != null) {
-                    addFinding(context, file, pair.key(), pair.value(), findings);
+                    addEnvFinding(context, file, pair.key(), pair.value(), findings);
                 }
+            }
+        }
+    }
+
+    private static void addEnvFinding(
+        ScanContext context,
+        IndexedFile file,
+        String key,
+        String value,
+        List<ScanFinding> findings
+    ) {
+        addFinding(context, file, key, value, "environment", findings);
+        if (isJvmOptionsKey(key)) {
+            for (var pair : jvmOptionPairs(value)) {
+                addFinding(context, file, pair.key(), pair.value(), "environment-jvm-arg", findings);
             }
         }
     }
@@ -121,22 +136,26 @@ public final class DockerComposeEnvDetector implements ConfigDetector {
         return null;
     }
 
+    private static boolean isJvmOptionsKey(String key) {
+        return key.equals("JAVA_TOOL_OPTIONS")
+            || key.equals("JDK_JAVA_OPTIONS")
+            || key.equals("JAVA_OPTS")
+            || key.endsWith("_JAVA_OPTS");
+    }
+
+    private static List<Pair> jvmOptionPairs(String value) {
+        return List.of(value.split("\\s+")).stream()
+            .map(DockerComposeEnvDetector::argumentPair)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+    }
+
     private static Pair pair(String text) {
         var split = text.indexOf('=');
         if (split <= 0) {
             return null;
         }
         return new Pair(text.substring(0, split), text.substring(split + 1));
-    }
-
-    private static void addFinding(
-        ScanContext context,
-        IndexedFile file,
-        String key,
-        String value,
-        List<ScanFinding> findings
-    ) {
-        addFinding(context, file, key, value, "environment", findings);
     }
 
     private static void addFinding(
