@@ -143,6 +143,8 @@ final class ScanPipelineTest {
         assertEquals(DiagnosticSeverity.WARNING, result.diagnostics().get(0).severity());
         assertEquals("failing-detector", result.diagnostics().get(0).componentId());
         assertTrue(result.metrics().stream().anyMatch(metric -> metric.phase().equals("detector-execution")));
+        assertTrue(result.metrics().stream().anyMatch(metric -> metric.phase().equals("detector:failing-detector")));
+        assertTrue(result.metrics().stream().anyMatch(metric -> metric.phase().equals("detector:succeeding-detector")));
     }
 
     @Test
@@ -168,6 +170,8 @@ final class ScanPipelineTest {
         );
 
         assertEquals(2, result.inventory().items().size());
+        assertTrue(result.metrics().stream().anyMatch(metric -> metric.phase().equals("detector:first")));
+        assertTrue(result.metrics().stream().anyMatch(metric -> metric.phase().equals("detector:second")));
     }
 
     private static ConfigDetector waitingDetector(

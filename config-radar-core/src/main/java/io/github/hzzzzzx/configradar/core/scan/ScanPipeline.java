@@ -124,7 +124,7 @@ public final class ScanPipeline {
         List<ScanFinding> findings = new ArrayList<>();
 
         var startDetectors = System.nanoTime();
-        findings.addAll(runDetectors(context, diagnostics));
+        findings.addAll(runDetectors(context, diagnostics, metrics));
         metrics.add(metric("detector-execution", startDetectors));
 
         var startProcessors = System.nanoTime();
@@ -155,25 +155,33 @@ public final class ScanPipeline {
         return new ScanResult(inventory, diagnostics, metrics);
     }
 
-    private List<ScanFinding> runDetectors(ScanContext context, List<Diagnostic> diagnostics) throws InterruptedException {
+    private List<ScanFinding> runDetectors(
+        ScanContext context,
+        List<Diagnostic> diagnostics,
+        List<PerformanceMetric> metrics
+    ) throws InterruptedException {
         var detectors = detectorRegistry.detectors();
         if (detectors.size() <= 1 || context.options().parallelism() <= 1) {
             var findings = new ArrayList<ScanFinding>();
             for (var detector : detectors) {
-                findings.addAll(runDetector(detector, context, diagnostics));
+                var run = runDetector(detector, context);
+                findings.addAll(run.findings());
+                addRunData(run, diagnostics, metrics);
             }
             return findings;
         }
 
         try (var executor = Executors.newFixedThreadPool(Math.min(context.options().parallelism(), detectors.size()))) {
-            var futures = new ArrayList<java.util.concurrent.Future<List<ScanFinding>>>();
+            var futures = new ArrayList<java.util.concurrent.Future<DetectorRun>>();
             for (var detector : detectors) {
-                futures.add(executor.submit(() -> detector.detect(context)));
+                futures.add(executor.submit(() -> runDetector(detector, context)));
             }
             var findings = new ArrayList<ScanFinding>();
             for (var index = 0; index < detectors.size(); index++) {
                 try {
-                    findings.addAll(futures.get(index).get());
+                    var run = futures.get(index).get();
+                    findings.addAll(run.findings());
+                    addRunData(run, diagnostics, metrics);
                 } catch (Exception error) {
                     diagnostics.add(diagnostic(detectors.get(index), error.getCause() == null ? error : error.getCause()));
                 }
@@ -182,17 +190,37 @@ public final class ScanPipeline {
         }
     }
 
-    private List<ScanFinding> runDetector(
+    private DetectorRun runDetector(
         ConfigDetector detector,
-        ScanContext context,
-        List<Diagnostic> diagnostics
+        ScanContext context
     ) {
+        var start = System.nanoTime();
         try {
-            return detector.detect(context);
+            var findings = detector.detect(context);
+            LOG.fine(() -> "Detector " + detector.id() + " produced " + findings.size() + " findings");
+            return new DetectorRun(
+                findings,
+                null,
+                metric("detector:" + detector.id(), start)
+            );
         } catch (Exception error) {
-            diagnostics.add(diagnostic(detector, error));
-            return List.of();
+            return new DetectorRun(
+                List.of(),
+                diagnostic(detector, error),
+                metric("detector:" + detector.id(), start)
+            );
         }
+    }
+
+    private static void addRunData(
+        DetectorRun run,
+        List<Diagnostic> diagnostics,
+        List<PerformanceMetric> metrics
+    ) {
+        if (run.diagnostic() != null) {
+            diagnostics.add(run.diagnostic());
+        }
+        metrics.add(run.metric());
     }
 
     private static Diagnostic diagnostic(ConfigDetector detector, Throwable error) {
@@ -206,5 +234,12 @@ public final class ScanPipeline {
 
     private static PerformanceMetric metric(String phase, long startNanos) {
         return new PerformanceMetric(phase, (System.nanoTime() - startNanos) / 1_000_000L);
+    }
+
+    private record DetectorRun(
+        List<ScanFinding> findings,
+        Diagnostic diagnostic,
+        PerformanceMetric metric
+    ) {
     }
 }
