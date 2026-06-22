@@ -176,6 +176,12 @@ public class DemoConfig {
             new org.springframework.core.io.support.ResourcePropertySource("classpath:programmatic.properties")
         );
         environment.getPropertySources().addLast(
+            new org.springframework.core.io.support.ResourcePropertySource(
+                "named-programmatic",
+                "classpath:named-programmatic.properties"
+            )
+        );
+        environment.getPropertySources().addLast(
             new org.springframework.core.env.PropertiesPropertySource("programmatic-properties", properties)
         );
     }

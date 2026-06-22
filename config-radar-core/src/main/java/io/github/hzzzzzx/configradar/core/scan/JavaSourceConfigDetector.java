@@ -537,7 +537,8 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             if (!tree.getIdentifier().toString().endsWith("ResourcePropertySource") || tree.getArguments().isEmpty()) {
                 return;
             }
-            var location = literal(tree.getArguments().getFirst());
+            var locationArg = tree.getArguments().size() > 1 ? tree.getArguments().get(1) : tree.getArguments().getFirst();
+            var location = literal(locationArg);
             if (location == null || location.isBlank()) {
                 return;
             }

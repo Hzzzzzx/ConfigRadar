@@ -292,12 +292,13 @@ final class JavaSourceConfigDetectorTest {
             .filter(item -> item.key().equals("spring.property-source"))
             .toList();
 
-        assertEquals(4, propertySources.size());
+        assertEquals(5, propertySources.size());
         assertTrue(propertySources.stream().allMatch(item -> item.role() == FindingRole.METADATA));
         assertTrue(propertySources.stream().anyMatch(item -> item.value().raw().equals("classpath:extra-client.properties")));
         assertTrue(propertySources.stream().anyMatch(item -> item.value().raw().equals("classpath:redis.properties")));
         assertTrue(propertySources.stream().anyMatch(item -> item.value().raw().equals("classpath:kafka.properties")));
         assertTrue(propertySources.stream().anyMatch(item -> item.value().raw().equals("classpath:programmatic.properties")));
+        assertTrue(propertySources.stream().anyMatch(item -> item.value().raw().equals("classpath:named-programmatic.properties")));
     }
 
     @Test
