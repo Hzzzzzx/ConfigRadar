@@ -2,12 +2,46 @@ package io.github.hzzzzzx.configradar.core.scan;
 
 import io.github.hzzzzzx.configradar.core.model.Scope;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /** Minimal project file indexer used before real build/source-set detection. */
 public final class DefaultFileIndexer implements FileIndexer {
+
+    /**
+     * Directory names that are never source/resource roots and are pruned during the walk.
+     * Pruning (skipping the whole subtree) keeps large monorepos or IDE-managed trees
+     * (e.g. {@code node_modules}, {@code .idea}) from blowing up indexing time and memory.
+     */
+    private static final Set<String> PRUNED_DIRECTORIES = Set.of(
+        ".git",
+        ".idea",
+        ".gradle",
+        ".svn",
+        ".hg",
+        ".mvn",
+        ".next",
+        ".nuxt",
+        ".codegraph",
+        "node_modules",
+        "bower_components",
+        "target",
+        "build",
+        "out",
+        "dist",
+        "bin",
+        "venv",
+        ".venv",
+        "__pycache__",
+        ".cache"
+    );
+
     @Override
     public FileIndex index(ScanInput input, ScanOptions options) throws Exception {
         var root = input.projectRoot();
@@ -15,17 +49,37 @@ public final class DefaultFileIndexer implements FileIndexer {
             throw new IOException("Project root does not exist or is not a directory: " + root);
         }
 
-        try (var paths = Files.walk(root)) {
-            var files = paths
-                .filter(Files::isRegularFile)
-                .filter(path -> !isIgnored(root.relativize(path)))
-                .filter(path -> isIncluded(input, root, path))
-                .filter(path -> !isExcluded(input, root, path))
-                .filter(path -> options.includeTests() || !isTestPath(root.relativize(path)))
-                .map(path -> new IndexedFile(path, typeOf(path), scopeOf(root.relativize(path))))
-                .toList();
-            return new FileIndex(files);
-        }
+        var files = new ArrayList<IndexedFile>();
+        java.nio.file.Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                var name = dir.getFileName() != null ? dir.getFileName().toString() : "";
+                if (dir.equals(root)) {
+                    return FileVisitResult.CONTINUE;
+                }
+                if (PRUNED_DIRECTORIES.contains(name)) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                if (!attrs.isRegularFile()) {
+                    return FileVisitResult.CONTINUE;
+                }
+                var relative = root.relativize(path);
+                if (!isIncluded(input, root, path) || isExcluded(input, root, path)) {
+                    return FileVisitResult.CONTINUE;
+                }
+                if (!options.includeTests() && isTestPath(relative)) {
+                    return FileVisitResult.CONTINUE;
+                }
+                files.add(new IndexedFile(path, typeOf(path), scopeOf(relative)));
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        return new FileIndex(files);
     }
 
     private static boolean isIncluded(ScanInput input, Path root, Path path) {
@@ -44,18 +98,13 @@ public final class DefaultFileIndexer implements FileIndexer {
         return absolute.startsWith(direct) || absolute.startsWith(rooted);
     }
 
-    private static boolean isIgnored(Path relative) {
-        var text = relative.toString();
-        return text.startsWith(".git/")
-            || text.startsWith("target/")
-            || text.startsWith("build/")
-            || text.contains("/target/")
-            || text.contains("/build/");
-    }
-
     private static boolean isTestPath(Path relative) {
-        var text = relative.toString();
-        return text.contains("src/test/");
+        for (var segment : relative) {
+            if (segment.toString().equals("test") || segment.toString().equals("testFixtures")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Scope scopeOf(Path relative) {
