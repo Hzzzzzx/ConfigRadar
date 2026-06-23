@@ -15,11 +15,12 @@ ConfigRadar is a static configuration inventory and change-analysis tool for Jav
 ## Build the CLI (once)
 
 ```bash
-mvn -q -pl config-radar-cli -am package -DskipTests
-# produces: config-radar-cli/target/config-radar-cli.jar
+./scripts/build.sh
+# produces: dist/config-radar-cli.jar (self-contained executable)
+# use --skip-tests for a faster build
 ```
 
-If the jar already exists, skip this. The two commands below assume the jar path; substitute as needed. Typical path: `config-radar-cli/target/config-radar-cli.jar`.
+If the jar already exists, skip this. The two commands below assume the jar path; substitute as needed. Typical path: `dist/config-radar-cli.jar`.
 
 ## Two commands
 

@@ -19,12 +19,12 @@ The longer [docs/design-draft.md](docs/design-draft.md) keeps raw discussion not
 
 ## Usage
 
-An agent skill documents the supported workflows and exact commands in [skills/config-radar/SKILL.md](skills/config-radar/SKILL.md). Build the CLI once, then run `inventory` and `diff`:
+An agent skill documents the supported workflows and exact commands in [skills/config-radar/SKILL.md](skills/config-radar/SKILL.md). Build the CLI once with the build script, then run `inventory` and `diff`:
 
 ```bash
-mvn -q -pl config-radar-cli -am package -DskipTests
-java -jar config-radar-cli/target/config-radar-cli.jar inventory . -o config-inventory.yaml
-java -jar config-radar-cli/target/config-radar-cli.jar diff --base before.yaml --head after.yaml -o config-diff.yaml
+./scripts/build.sh
+java -jar dist/config-radar-cli.jar inventory . -o config-inventory.yaml
+java -jar dist/config-radar-cli.jar diff --base before.yaml --head after.yaml -o config-diff.yaml
 ```
 
 ## Development
