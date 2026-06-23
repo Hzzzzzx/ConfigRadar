@@ -243,7 +243,13 @@ public final class ConfigRadarCli implements Runnable {
             }
 
             writeParent(output);
-            mapper.writeValue(output.toFile(), java.util.Map.of("app_configs", entries));
+            // Output is partitioned: app_configs (plain config) on top, J2C.secrets (sensitive) below.
+            var outputMap = new java.util.LinkedHashMap<String, Object>();
+            outputMap.put("app_configs", entries);
+            if (!result.secrets().isEmpty()) {
+                outputMap.put("J2C", java.util.Map.of("secrets", result.secrets()));
+            }
+            mapper.writeValue(output.toFile(), outputMap);
             if (missing != null) {
                 writeParent(missing);
                 mapper.writeValue(missing.toFile(), java.util.Map.of("app_configs", result.missing()));

@@ -69,7 +69,7 @@ The diff workflow is always: scan two states → diff the two YAML files. Config
 | `--missing <f>` | Optional output for keys read in code but never defined (no value/default). Fill `config_value` there and feed back via `--merge`. |
 | `--merge <f>` | Optional filled missing-file; its values override the inventory for matching keys. |
 
-`export` produces a flat `app_configs` list for a downstream config center. Duplicate keys (defined in multiple files) are deduplicated keeping the highest Spring-priority source. Sensitive key names get `secret: 1`. Deploy-time fields (`scope`, `version`, `docker_version`, `sub_application_id`, `remark`) are left empty — ConfigRadar cannot discover them statically.
+`export` produces a partitioned output: plain config keys go to `app_configs`, while sensitive keys (password/secret/token/credential) go to a `J2C.secrets` section where `password` is a placeholder derived from the key (underscore form), since the real secret is provisioned out-of-band. Duplicate keys (defined in multiple files) are deduplicated keeping the highest Spring-priority source. Deploy-time fields (`scope`, `version`, `docker_version`, `sub_application_id`, `remark`, `account`) are left empty — ConfigRadar cannot discover them statically.
 
 ## How to read the inventory YAML
 

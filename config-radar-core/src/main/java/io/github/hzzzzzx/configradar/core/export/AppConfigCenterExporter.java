@@ -37,21 +37,36 @@ public final class AppConfigCenterExporter {
     /** Placeholder scope used for every entry; deploy-time metadata ConfigRadar cannot know. */
     public static final String DEFAULT_SCOPE = "${app_deploy_unit_name}";
 
+    /** Default encrypt type used by the J2C secret template. */
+    public static final String DEFAULT_ENCRYPT_TYPE = "ADVANCED2.6";
+
+    /** Default init source for J2C secrets (manual input). */
+    public static final String DEFAULT_INIT_SOURCE = "input";
+
     private static final RedactionPolicy SENSITIVE = RedactionPolicy.redactSensitive();
 
-    /** Result of an export: the main list and (optionally) the missing-default list. */
-    public record ExportResult(List<AppConfigEntry> entries, List<AppConfigEntry> missing) {
+    /** Result of an export: the main list, J2C secrets, and (optionally) the missing-default list. */
+    public record ExportResult(
+        List<AppConfigEntry> entries,
+        List<J2cSecretEntry> secrets,
+        List<AppConfigEntry> missing
+    ) {
     }
 
     /**
-     * Exports an inventory to the app-config-center format.
+     * Exports an inventory to the app-config-center format with a separate J2C secrets section.
+     *
+     * <p>Sensitive keys (password/secret/token/credential) are routed to {@code secrets}; the rest
+     * go to {@code entries}. Keys read in code but never defined and without a default go to
+     * {@code missing}.
      *
      * @param inventory the ConfigRadar inventory to convert
-     * @return main entries plus the missing-default entries
+     * @return main entries, J2C secrets, and missing-default entries
      */
     public ExportResult export(ConfigInventory inventory) {
         var byKey = deduplicate(inventory.items());
         var entries = new ArrayList<AppConfigEntry>();
+        var secrets = new ArrayList<J2cSecretEntry>();
         var missing = new ArrayList<AppConfigEntry>();
         var definedKeys = new java.util.HashSet<String>();
 
@@ -65,7 +80,11 @@ public final class AppConfigCenterExporter {
         for (var entry : byKey.entrySet()) {
             var key = entry.getKey();
             var winner = entry.getValue();
-            if (definedKeys.contains(key) || winner.defaultValue() != null) {
+            boolean hasValue = definedKeys.contains(key) || winner.defaultValue() != null;
+            if (SENSITIVE.matchesKey(key)) {
+                // Sensitive keys always go to the J2C secrets section, regardless of value state.
+                secrets.add(toSecret(key, hasValue ? valueOr(winner) : null, winner));
+            } else if (hasValue) {
                 entries.add(toEntry(key, valueOr(winner), winner));
             } else {
                 // Read but never defined and no default — needs a value filled in.
@@ -74,8 +93,9 @@ public final class AppConfigCenterExporter {
         }
 
         entries.sort(Comparator.comparing(AppConfigEntry::config_key));
+        secrets.sort(Comparator.comparing(J2cSecretEntry::key));
         missing.sort(Comparator.comparing(AppConfigEntry::config_key));
-        return new ExportResult(entries, missing);
+        return new ExportResult(entries, secrets, missing);
     }
 
     /**
@@ -171,6 +191,50 @@ public final class AppConfigCenterExporter {
             null,
             null
         );
+    }
+
+    /**
+     * Builds a J2C secret entry for a sensitive key. The {@code key} is the underscore form of the
+     * config key (e.g. {@code db.password} -> {@code db_password}); {@code password} is a
+     * placeholder built from that underscore key, since the real secret is provisioned elsewhere.
+     */
+    private J2cSecretEntry toSecret(String normalizedKey, String value, ConfigFinding finding) {
+        var underscoreKey = toUnderscore(normalizedKey);
+        return new J2cSecretEntry(
+            underscoreKey,
+            DEFAULT_INIT_SOURCE,
+            typeHint(normalizedKey),
+            null,
+            "${" + underscoreKey + "}",
+            DEFAULT_ENCRYPT_TYPE,
+            remarkOf(normalizedKey),
+            DEFAULT_SCOPE
+        );
+    }
+
+    /** Converts a normalized dotted/hyphenated key into an underscore form for placeholder names. */
+    static String toUnderscore(String key) {
+        if (key == null || key.isBlank()) {
+            return "config";
+        }
+        return key.replace('-', '_').replace('.', '_').toLowerCase(Locale.ROOT);
+    }
+
+    /** Best-effort connection type hint from the key (e.g. {@code db.password} -> {@code mysql}). */
+    private static String typeHint(String key) {
+        var lower = key.toLowerCase(Locale.ROOT);
+        if (lower.contains("redis")) {
+            return "redis";
+        }
+        if (lower.startsWith("db.") || lower.contains("datasource") || lower.contains("jdbc")) {
+            return "mysql";
+        }
+        return null;
+    }
+
+    private static String remarkOf(String key) {
+        var type = typeHint(key);
+        return type == null ? null : type;
     }
 
     /** First segment of a dotted key, used as the config-center group. {@code db.host} -> {@code db}. */

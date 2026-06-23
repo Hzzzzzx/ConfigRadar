@@ -82,22 +82,34 @@ java -jar dist/config-radar-cli.jar export --inventory <config-inventory.yaml> -
 | `--missing <f>` | Optional output for keys missing a value (read in code but never defined, no default). |
 | `--merge <f>` | Optional filled missing-file to merge values back into the export. |
 
-This converts a ConfigRadar inventory into a flat `app_configs` list for loading into an application config center:
+This converts a ConfigRadar inventory into a partitioned output: plain config keys go to `app_configs`, while sensitive keys (password/secret/token/credential) go to a separate `J2C.secrets` section:
 
 ```yaml
-app_configs:
+app_configs:                            # plain config (non-sensitive)
   - scope: "${app_deploy_unit_name}"   # placeholder; deploy-time metadata ConfigRadar cannot know
     group_name: server                 # first key segment
     config_key: server-port            # normalized key
     config_value: "8080"               # value from the highest-priority source
-    secret: 0                          # 1 if the key name looks sensitive
+    secret: 0
     sub_application_id:                # empty; fill downstream
     version:
     docker_version:
     remark:
+J2C:                                    # sensitive config (password/secret/token/credential)
+  secrets:
+    - key: db_password                 # underscore form of the config key
+      init_source: input               # manual input by default
+      type: mysql                      # best-effort type hint from the key (null when unknown)
+      account:                         # empty; fill downstream
+      password: "${db_password}"       # placeholder; real secret provisioned via encryption interface
+      encrypt_type: ADVANCED2.6
+      remark: mysql
+      scope: "${app_deploy_unit_name}"
 ```
 
 **Deduplication:** when a key is defined in multiple sources (e.g. `application.yml` and `application-prod.yml`), the value from the highest Spring-priority source wins (an approximation based on file name and profile).
+
+**Sensitive partitioning:** keys whose names look sensitive are routed to `J2C.secrets` with a placeholder password derived from the key (underscore form), since the real secret is provisioned out-of-band. `secret` in `app_configs` is therefore always `0`.
 
 **Missing-value workflow:** keys read in code but never defined and without a default go to `--missing`. Fill in `config_value` there, then run with `--merge` to produce the final YAML:
 
