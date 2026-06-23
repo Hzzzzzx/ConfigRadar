@@ -283,8 +283,11 @@ final class SpringConfigFileDetectorTest {
         var external = tempDir.resolve("external-config");
         Files.createDirectories(resources);
         Files.createDirectories(external);
-        Files.writeString(resources.resolve("application.properties"), "spring.config.additional-location=file:"
-            + external + "/\n");
+        // Use a forward-slash file: URL so the location string is platform-independent
+        // (Path.toString() uses '\' on Windows, which breaks the file: prefix parsing).
+        var externalLocation = "file:" + external.toString().replace('\\', '/') + "/";
+        Files.writeString(resources.resolve("application.properties"),
+            "spring.config.additional-location=" + externalLocation + "\n");
         Files.writeString(external.resolve("application.properties"), "external.dir.enabled=true\n");
 
         var input = ScanInput.of(project);
