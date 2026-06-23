@@ -73,18 +73,31 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         return "java-source-config";
     }
 
+    private static final java.util.logging.Logger LOG =
+        java.util.logging.Logger.getLogger(JavaSourceConfigDetector.class.getName());
+
     @Override
     public List<ScanFinding> detect(ScanContext context) throws Exception {
         var compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
+            LOG.warning("No system Java compiler available; Java source scanning is skipped.");
             return List.of();
         }
 
         var findings = new ArrayList<ScanFinding>();
         for (var file : context.fileIndex().ofType(FileType.JAVA)) {
-            findings.addAll(scanFile(context, compiler, file));
+            try {
+                findings.addAll(scanFile(context, compiler, file));
+            } catch (Exception error) {
+                LOG.warning(() -> "Skipped unparseable Java source " + file.path() + ": " + errorMessage(error));
+            }
         }
         return findings;
+    }
+
+    private static String errorMessage(Throwable error) {
+        var message = error.getMessage();
+        return message != null ? message : error.getClass().getSimpleName();
     }
 
     private List<ScanFinding> scanFile(ScanContext context, JavaCompiler compiler, IndexedFile file) throws IOException {
@@ -109,6 +122,12 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
         private final SourcePositions positions;
         private final List<ScanFinding> findings;
         private String className;
+        /**
+         * Local {@code static final String} constant names mapped to their literal values,
+         * collected for the current compilation unit so that keys assembled from constants
+         * (e.g. {@code PREFIX + ".host"}) can be resolved without cross-file type attribution.
+         */
+        private final java.util.Map<String, String> stringConstants = new java.util.HashMap<>();
 
         private Scanner(
             ScanContext context,
@@ -145,12 +164,37 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
 
         @Override
         public Void visitVariable(VariableTree tree, Void unused) {
+            registerStringConstant(tree);
             for (var annotation : tree.getModifiers().getAnnotations()) {
                 readAnnotationPlaceholders(annotation);
                 readConditionalOnProperty(annotation, tree);
                 readRuleAnnotation(annotation);
             }
             return super.visitVariable(tree, unused);
+        }
+
+        /**
+         * Records a {@code static final String} field initializer so subsequent key arguments
+         * can be resolved without type attribution. Only string literals (and literal-only
+         * concatenations) are recorded; anything more complex is left for the uncertain path.
+         */
+        private void registerStringConstant(VariableTree tree) {
+            var modifiers = tree.getModifiers();
+            if (modifiers == null) {
+                return;
+            }
+            var flags = modifiers.getFlags();
+            if (!flags.contains(javax.lang.model.element.Modifier.STATIC)
+                || !flags.contains(javax.lang.model.element.Modifier.FINAL)) {
+                return;
+            }
+            if (tree.getInitializer() == null) {
+                return;
+            }
+            var resolved = literal(tree.getInitializer());
+            if (resolved != null) {
+                stringConstants.put(tree.getName().toString(), resolved);
+            }
         }
 
         @Override
@@ -162,6 +206,16 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
                 readPropertySourcesAnnotation(annotation, tree);
                 readAnnotationPlaceholders(annotation);
                 readRuleAnnotation(annotation);
+            }
+            // Constructor and method parameter injections (e.g. @Value("#{...}") String x),
+            // a very common Spring wiring style, are otherwise missed because the parameter
+            // annotations live on VariableTree nodes inside the parameter list.
+            for (var parameter : tree.getParameters()) {
+                for (var annotation : parameter.getModifiers().getAnnotations()) {
+                    readAnnotationPlaceholders(annotation);
+                    readConditionalOnProperty(annotation, parameter);
+                    readRuleAnnotation(annotation);
+                }
             }
             return super.visitMethod(tree, unused);
         }
@@ -1370,6 +1424,19 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             }
             if (tree instanceof NewArrayTree array && !array.getInitializers().isEmpty()) {
                 return literal(array.getInitializers().getFirst());
+            }
+            // Local static final String constant reference, e.g. getProperty(PREFIX + ".host").
+            if (tree instanceof com.sun.source.tree.IdentifierTree identifier) {
+                return stringConstants.get(identifier.getName().toString());
+            }
+            // String concatenation of literal/constant operands, e.g. "db." + "host" or PREFIX + ".host".
+            // Only fully resolvable operands collapse to a literal; mixed dynamic operands stay uncertain.
+            if (tree instanceof BinaryTree binary) {
+                var left = literal(binary.getLeftOperand());
+                var right = literal(binary.getRightOperand());
+                if (left != null && right != null) {
+                    return left + right;
+                }
             }
             return null;
         }

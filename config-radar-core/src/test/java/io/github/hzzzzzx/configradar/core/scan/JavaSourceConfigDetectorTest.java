@@ -5,6 +5,7 @@ import io.github.hzzzzzx.configradar.core.model.ConfigCenterDetails;
 import io.github.hzzzzzx.configradar.core.model.ExternalDetails;
 import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.model.JavaSystemPropertyDetails;
+import io.github.hzzzzzx.configradar.core.model.ScanFinding;
 import io.github.hzzzzzx.configradar.core.model.SpringConfigurationPropertiesDetails;
 import io.github.hzzzzzx.configradar.core.model.SpringPlaceholderDetails;
 import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
@@ -13,6 +14,7 @@ import io.github.hzzzzzx.configradar.core.model.ValueType;
 import io.github.hzzzzzx.configradar.core.rule.AnnotationRule;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import io.github.hzzzzzx.configradar.core.rule.MethodCallRule;
+import java.nio.file.Files;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -764,6 +766,131 @@ final class JavaSourceConfigDetectorTest {
             .filter(ConfigFinding.class::isInstance)
             .map(ConfigFinding.class::cast)
             .toList();
+    }
+
+    private static java.util.List<ScanFinding> detectSource(String javaSource) throws Exception {
+        var tmp = Files.createTempDirectory("configradar-javasrc");
+        var javaDir = tmp.resolve("src/main/java/com/acme");
+        Files.createDirectories(javaDir);
+        Files.writeString(javaDir.resolve("Sample.java"), javaSource);
+        var input = ScanInput.of(tmp);
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+        return new JavaSourceConfigDetector().detect(context);
+    }
+
+    @Test
+    void detectsValueOnConstructorParameter() throws Exception {
+        // Constructor-injected @Value is the most common Spring wiring style and was missed
+        // before parameter annotations were scanned.
+        var source = """
+            package com.acme;
+            import org.springframework.beans.factory.annotation.Value;
+            public class Sample {
+                private final String timeout;
+                public Sample(@Value("${sample.timeout:1000}") String timeout) {
+                    this.timeout = timeout;
+                }
+            }
+            """;
+        var findings = detectSource(source).stream()
+            .filter(ConfigFinding.class::isInstance)
+            .map(ConfigFinding.class::cast)
+            .toList();
+        var item = findings.stream().filter(f -> f.key().equals("sample.timeout")).findFirst().orElseThrow();
+        assertEquals(FindingRole.READ, item.role());
+        assertEquals("1000", item.defaultValue().raw());
+    }
+
+    @Test
+    void inlinesStaticFinalStringConstant() throws Exception {
+        // A static final String constant used to assemble a key should be resolved into a real
+        // key instead of dropping to an uncertain finding.
+        var source = """
+            package com.acme;
+            import org.springframework.core.env.Environment;
+            public class Sample {
+                static final String PREFIX = "sample.";
+                public String read(Environment env) {
+                    return env.getProperty(PREFIX + "host", "localhost");
+                }
+            }
+            """;
+        var findings = detectSource(source).stream()
+            .filter(ConfigFinding.class::isInstance)
+            .map(ConfigFinding.class::cast)
+            .toList();
+        assertTrue(findings.stream().anyMatch(f -> f.key().equals("sample.host")));
+    }
+
+    @Test
+    void resolvesLiteralStringConcatenation() throws Exception {
+        // Plain string literal concatenation (no constant) should also collapse to a real key.
+        var source = """
+            package com.acme;
+            import org.springframework.core.env.Environment;
+            public class Sample {
+                public String read(Environment env) {
+                    return env.getProperty("sample." + "port", "8080");
+                }
+            }
+            """;
+        var findings = detectSource(source).stream()
+            .filter(ConfigFinding.class::isInstance)
+            .map(ConfigFinding.class::cast)
+            .toList();
+        assertTrue(findings.stream().anyMatch(f -> f.key().equals("sample.port")));
+    }
+
+    @Test
+    void keepsDynamicConcatenationAsUncertain() throws Exception {
+        // A non-constant operand (method parameter) must remain uncertain, not be guessed.
+        var source = """
+            package com.acme;
+            import org.springframework.core.env.Environment;
+            public class Sample {
+                public String read(Environment env, String prefix) {
+                    return env.getProperty(prefix + ".host");
+                }
+            }
+            """;
+        var uncertain = detectSource(source).stream()
+            .filter(UncertainFinding.class::isInstance)
+            .map(UncertainFinding.class::cast)
+            .toList();
+        assertTrue(uncertain.stream().anyMatch(u -> u.reason() == UncertainReason.STRING_CONCAT));
+    }
+
+    @Test
+    void isolatesUnparseableFileWithoutLosingOthers() throws Exception {
+        // A single malformed .java file must not wipe out findings from other valid files.
+        var tmp = Files.createTempDirectory("configradar-isolation");
+        var javaDir = tmp.resolve("src/main/java/com/acme");
+        Files.createDirectories(javaDir);
+        Files.writeString(javaDir.resolve("Broken.java"),
+            "package com.acme; public class Broken { oops not valid java }}}");
+        Files.writeString(javaDir.resolve("Good.java"), """
+            package com.acme;
+            import org.springframework.core.env.Environment;
+            public class Good {
+                public String read(Environment env) {
+                    return env.getProperty("good.key", "default");
+                }
+            }
+            """);
+        var input = ScanInput.of(tmp);
+        var options = ScanOptions.defaults();
+        var index = new DefaultFileIndexer().index(input, options);
+        var context = new ScanContext(input, options, ConfigRules.empty(), index);
+
+        var findings = new JavaSourceConfigDetector().detect(context).stream()
+            .filter(ConfigFinding.class::isInstance)
+            .map(ConfigFinding.class::cast)
+            .toList();
+
+        assertTrue(findings.stream().anyMatch(f -> f.key().equals("good.key")),
+            "valid file findings must survive an unparseable sibling");
     }
 
     private static ConfigFinding finding(java.util.List<ConfigFinding> findings, String key) {
