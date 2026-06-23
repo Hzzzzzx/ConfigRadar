@@ -17,6 +17,16 @@ Start with [docs/plan.md](docs/plan.md) for the organized plan.
 
 The longer [docs/design-draft.md](docs/design-draft.md) keeps raw discussion notes and detailed candidates.
 
+## Usage
+
+An agent skill documents the supported workflows and exact commands in [skills/config-radar/SKILL.md](skills/config-radar/SKILL.md). Build the CLI once, then run `inventory` and `diff`:
+
+```bash
+mvn -q -pl config-radar-cli -am package -DskipTests
+java -jar config-radar-cli/target/config-radar-cli.jar inventory . -o config-inventory.yaml
+java -jar config-radar-cli/target/config-radar-cli.jar diff --base before.yaml --head after.yaml -o config-diff.yaml
+```
+
 ## Development
 
 Requirements:
