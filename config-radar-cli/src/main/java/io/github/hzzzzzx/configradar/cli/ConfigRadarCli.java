@@ -1,6 +1,8 @@
 package io.github.hzzzzzx.configradar.cli;
 
 import io.github.hzzzzzx.configradar.core.diff.KeyBasedDiffStrategy;
+import io.github.hzzzzzx.configradar.core.export.AppConfigCenterExporter;
+import io.github.hzzzzzx.configradar.core.export.AppConfigEntry;
 import io.github.hzzzzzx.configradar.core.io.YamlSupport;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.output.YamlInventoryConsumer;
@@ -26,7 +28,8 @@ import picocli.CommandLine.Parameters;
     mixinStandardHelpOptions = true,
     subcommands = {
         ConfigRadarCli.InventoryCommand.class,
-        ConfigRadarCli.DiffCommand.class
+        ConfigRadarCli.DiffCommand.class,
+        ConfigRadarCli.ExportCommand.class
     }
 )
 public final class ConfigRadarCli implements Runnable {
@@ -189,6 +192,62 @@ public final class ConfigRadarCli implements Runnable {
             }
             writeParent(output);
             mapper.writeValue(output.toFile(), diff);
+            return 0;
+        }
+    }
+
+    @Command(name = "export", description = "Export an inventory to the app-config-center format.")
+    static final class ExportCommand implements Callable<Integer> {
+        @Option(names = "--inventory", required = true, description = "Inventory YAML to convert.")
+        private Path inventoryPath;
+
+        @Option(names = {"-o", "--output"}, required = true, description = "App-config YAML output path.")
+        private Path output;
+
+        @Option(names = "--missing", description = "Optional output for keys missing a value (to fill in and merge back).")
+        private Path missing;
+
+        @Option(names = "--merge", description = "Optional filled missing-file to merge into the export.")
+        private Path merge;
+
+        /**
+         * Reads an inventory, converts it to the app-config-center {@code app_configs} format, and
+         * optionally writes a missing-value list or merges a filled one back in.
+         *
+         * @return process exit code
+         * @throws Exception when the inventory cannot be read or output cannot be written
+         */
+        @Override
+        public Integer call() throws Exception {
+            if (!Files.isReadable(inventoryPath)) {
+                return fail("Inventory does not exist or is not readable: " + inventoryPath);
+            }
+            var mapper = YamlSupport.mapper();
+            var inventory = mapper.readValue(inventoryPath.toFile(), ConfigInventory.class);
+            var exporter = new AppConfigCenterExporter();
+            var result = exporter.export(inventory);
+
+            var entries = result.entries();
+            if (merge != null) {
+                if (!Files.isReadable(merge)) {
+                    return fail("Merge file does not exist or is not readable: " + merge);
+                }
+                // Merge files share the {"app_configs": [...]} wrapper, so unwrap before merging.
+                var wrapped = mapper.readValue(merge.toFile(),
+                    mapper.getTypeFactory().constructMapType(java.util.Map.class, String.class, Object.class));
+                Object rawList = wrapped instanceof java.util.Map<?, ?> m ? m.get("app_configs") : wrapped;
+                var listType = mapper.getTypeFactory()
+                    .constructCollectionType(java.util.List.class, AppConfigEntry.class);
+                java.util.List<AppConfigEntry> filled = mapper.convertValue(rawList, listType);
+                entries = exporter.merge(entries, filled);
+            }
+
+            writeParent(output);
+            mapper.writeValue(output.toFile(), java.util.Map.of("app_configs", entries));
+            if (missing != null) {
+                writeParent(missing);
+                mapper.writeValue(missing.toFile(), java.util.Map.of("app_configs", result.missing()));
+            }
             return 0;
         }
     }

@@ -22,7 +22,7 @@ ConfigRadar is a static configuration inventory and change-analysis tool for Jav
 
 If the jar already exists, skip this. The two commands below assume the jar path; substitute as needed. Typical path: `dist/config-radar-cli.jar`.
 
-## Two commands
+## Three commands
 
 ```bash
 # Generate an inventory of one project
@@ -30,6 +30,9 @@ java -jar <jar> inventory <project-root> -o <inventory.yaml> [options]
 
 # Compare two inventories (e.g. before/after a release)
 java -jar <jar> diff --base <before.yaml> --head <after.yaml> -o <diff.yaml> [options]
+
+# Convert an inventory to the app-config-center format
+java -jar <jar> export --inventory <inventory.yaml> -o <app-configs.yaml> [options]
 ```
 
 The diff workflow is always: scan two states → diff the two YAML files. ConfigRadar never diffs source directly.
@@ -56,6 +59,17 @@ The diff workflow is always: scan two states → diff the two YAML files. Config
 | `--base <f>` / `--head <f>` | The two inventories to compare (required). |
 | `-o, --output <f>` | Diff YAML output (required). |
 | `--redact-sensitive` | Mask sensitive values in the diff. |
+
+### export options
+
+| Option | Purpose |
+|---|---|
+| `--inventory <f>` | Inventory YAML to convert (required). |
+| `-o, --output <f>` | App-config YAML output (required). |
+| `--missing <f>` | Optional output for keys read in code but never defined (no value/default). Fill `config_value` there and feed back via `--merge`. |
+| `--merge <f>` | Optional filled missing-file; its values override the inventory for matching keys. |
+
+`export` produces a flat `app_configs` list for a downstream config center. Duplicate keys (defined in multiple files) are deduplicated keeping the highest Spring-priority source. Sensitive key names get `secret: 1`. Deploy-time fields (`scope`, `version`, `docker_version`, `sub_application_id`, `remark`) are left empty — ConfigRadar cannot discover them statically.
 
 ## How to read the inventory YAML
 
@@ -171,6 +185,23 @@ configFiles:
 ```
 
 Re-run the inventory; the new keys appear with the rule's `id` as `detectorId`. `keyArg`/`defaultArg`/`valueArg` are zero-based argument indexes; `keyAttribute`/`valueAttribute`/`defaultAttribute` are annotation attribute names.
+
+### 6. Export to an application config center
+
+Goal: produce a flat `app_configs` list for loading into a downstream config center, deduplicating keys by Spring priority, and flagging sensitive keys.
+
+```bash
+# produce main list + a missing-value list for keys with no definition/default
+java -jar <jar> export --inventory config-inventory.yaml -o app-configs.yaml --missing missing.yaml
+```
+
+Keys read in code but never defined (and without a default) land in `missing.yaml` with an empty `config_value`. Fill those values (manually or via this skill), then merge them back to emit the final YAML:
+
+```bash
+java -jar <jar> export --inventory config-inventory.yaml -o final.yaml --merge missing-filled.yaml
+```
+
+When helping a user fill the missing list, look up each `config_key` in the inventory: the source evidence (which `@Value`, which file) often reveals the intended value or a sensible default. Always state that deploy-time fields (`scope`, `version`, etc.) are left empty and must be set by the deployment pipeline.
 
 ## Rules of thumb for running scans
 

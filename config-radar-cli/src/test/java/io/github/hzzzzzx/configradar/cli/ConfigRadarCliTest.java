@@ -340,6 +340,95 @@ final class ConfigRadarCliTest {
         assertFalse(Files.exists(output), "no output should be produced on failure");
     }
 
+    @Test
+    void exportCommandWritesAppConfigsFormat() throws Exception {
+        var inventoryPath = tempDir.resolve("inv.yaml");
+        var output = tempDir.resolve("app-configs.yaml");
+        io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper()
+            .writeValue(inventoryPath.toFile(), inventory(item("server.port", "8080")));
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "export", "--inventory", inventoryPath.toString(), "-o", output.toString()
+        );
+
+        assertEquals(0, exitCode);
+        var mapper = io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper();
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> root = mapper.readValue(output.toFile(), java.util.Map.class);
+        @SuppressWarnings("unchecked")
+        var entries = (java.util.List<java.util.Map<String, Object>>) root.get("app_configs");
+        assertEquals(1, entries.size());
+        var entry = entries.getFirst();
+        assertEquals("server.port", entry.get("config_key"));
+        assertEquals("8080", entry.get("config_value"));
+        assertEquals("server", entry.get("group_name"));
+    }
+
+    @Test
+    void exportCommandWritesMissingListForUndefinedKeys() throws Exception {
+        var inventoryPath = tempDir.resolve("inv.yaml");
+        var output = tempDir.resolve("app-configs.yaml");
+        var missing = tempDir.resolve("missing.yaml");
+        // A READ-only key with no definition and no default lands in the missing list.
+        io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper()
+            .writeValue(inventoryPath.toFile(), inventoryWithUncertain(
+                List.of(readItem("feature.flag")), List.of()));
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "export", "--inventory", inventoryPath.toString(), "-o", output.toString(),
+            "--missing", missing.toString()
+        );
+
+        assertEquals(0, exitCode);
+        var mapper = io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper();
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> root = mapper.readValue(missing.toFile(), java.util.Map.class);
+        @SuppressWarnings("unchecked")
+        var entries = (java.util.List<java.util.Map<String, Object>>) root.get("app_configs");
+        assertEquals(1, entries.size());
+        assertEquals("feature.flag", entries.getFirst().get("config_key"));
+    }
+
+    @Test
+    void exportCommandMergesFilledMissingValues() throws Exception {
+        var inventoryPath = tempDir.resolve("inv.yaml");
+        var output = tempDir.resolve("out.yaml");
+        var filled = tempDir.resolve("filled.yaml");
+        io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper()
+            .writeValue(inventoryPath.toFile(), inventory(item("db.host", "localhost")));
+        // filled file provides a value for a key that was missing in the inventory.
+        io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper().writeValue(filled.toFile(),
+            java.util.Map.of("app_configs", List.of(
+                new io.github.hzzzzzx.configradar.core.export.AppConfigEntry(
+                    "${app_deploy_unit_name}", "feature", "feature.flag", "enabled", 0, null, null, null, null)
+            )));
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "export", "--inventory", inventoryPath.toString(), "-o", output.toString(),
+            "--merge", filled.toString()
+        );
+
+        assertEquals(0, exitCode);
+        var mapper = io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper();
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> root = mapper.readValue(output.toFile(), java.util.Map.class);
+        @SuppressWarnings("unchecked")
+        var entries = (java.util.List<java.util.Map<String, Object>>) root.get("app_configs");
+        var byKey = new java.util.LinkedHashMap<String, java.util.Map<String, Object>>();
+        for (var e : entries) byKey.put((String) e.get("config_key"), e);
+        assertTrue(byKey.containsKey("db.host"));
+        assertTrue(byKey.containsKey("feature.flag"));
+        assertEquals("enabled", byKey.get("feature.flag").get("config_value"));
+    }
+
+    private static ConfigFinding readItem(String key) {
+        return new ConfigFinding(
+            key, key, FindingRole.READ, null, null, EnvironmentContext.none(),
+            new SourceLocation("App.java", 1, "App", SourceKind.JAVA, Scope.MAIN),
+            Confidence.HIGH, "test", new UnknownDetails("test", key)
+        );
+    }
+
     private static ConfigInventory inventory(ConfigFinding... items) {
         return new ConfigInventory(null, null, null, List.of(items), List.of(), List.of(), List.of());
     }

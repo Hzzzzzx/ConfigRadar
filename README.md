@@ -69,6 +69,46 @@ The diff reports `added` / `removed` / `changed` (value or default changed) plus
 
 The workflow is always: scan two states → diff the two YAML files. ConfigRadar never diffs source directly.
 
+### `export` — convert an inventory to the app-config-center format
+
+```bash
+java -jar dist/config-radar-cli.jar export --inventory <config-inventory.yaml> -o <app-configs.yaml> [options]
+```
+
+| Option | Purpose |
+|---|---|
+| `--inventory <f>` | Inventory YAML to convert (required). |
+| `-o, --output <f>` | App-config YAML output path (required). |
+| `--missing <f>` | Optional output for keys missing a value (read in code but never defined, no default). |
+| `--merge <f>` | Optional filled missing-file to merge values back into the export. |
+
+This converts a ConfigRadar inventory into a flat `app_configs` list for loading into an application config center:
+
+```yaml
+app_configs:
+  - scope: "${app_deploy_unit_name}"   # placeholder; deploy-time metadata ConfigRadar cannot know
+    group_name: server                 # first key segment
+    config_key: server-port            # normalized key
+    config_value: "8080"               # value from the highest-priority source
+    secret: 0                          # 1 if the key name looks sensitive
+    sub_application_id:                # empty; fill downstream
+    version:
+    docker_version:
+    remark:
+```
+
+**Deduplication:** when a key is defined in multiple sources (e.g. `application.yml` and `application-prod.yml`), the value from the highest Spring-priority source wins (an approximation based on file name and profile).
+
+**Missing-value workflow:** keys read in code but never defined and without a default go to `--missing`. Fill in `config_value` there, then run with `--merge` to produce the final YAML:
+
+```bash
+# 1. export, producing the main list + a missing-value list
+java -jar dist/config-radar-cli.jar export --inventory inv.yaml -o app-configs.yaml --missing missing.yaml
+# 2. (manually or via a skill) fill config_value in missing.yaml
+# 3. merge the filled values back and emit the final YAML
+java -jar dist/config-radar-cli.jar export --inventory inv.yaml -o final.yaml --merge missing-filled.yaml
+```
+
 ## Reading the inventory output
 
 ```yaml
