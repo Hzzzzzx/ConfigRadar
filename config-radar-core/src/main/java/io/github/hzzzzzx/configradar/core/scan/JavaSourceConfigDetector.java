@@ -446,7 +446,17 @@ public final class JavaSourceConfigDetector implements ConfigDetector {
             Path path;
             if (text.startsWith("classpath:")) {
                 var resource = text.substring("classpath:".length());
-                path = root.resolve("src/main/resources").resolve(resource.startsWith("/") ? resource.substring(1) : resource);
+                if (resource.startsWith("/")) {
+                    resource = resource.substring(1);
+                }
+                // Resolve segment-by-segment so '/' in `resource` works on both Unix and Windows.
+                var resolved = root.resolve("src").resolve("main").resolve("resources");
+                for (var segment : resource.split("/")) {
+                    if (!segment.isEmpty()) {
+                        resolved = resolved.resolve(segment);
+                    }
+                }
+                path = resolved;
             } else if (text.startsWith("file:")) {
                 path = Path.of(text.substring("file:".length()));
                 if (!path.isAbsolute()) {

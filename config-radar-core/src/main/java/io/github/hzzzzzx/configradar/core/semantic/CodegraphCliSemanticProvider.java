@@ -126,7 +126,13 @@ public final class CodegraphCliSemanticProvider implements CodeSemanticProvider 
     }
 
     private static Scope scopeOf(Path relative) {
-        return relative.toString().contains("src/test/") ? Scope.TEST : Scope.MAIN;
+        // Match the "test" path segment so it works on '/' (Unix) and '\' (Windows) separators.
+        for (var segment : relative) {
+            if (segment.toString().equals("test")) {
+                return Scope.TEST;
+            }
+        }
+        return Scope.MAIN;
     }
 
     private static boolean commandWorks(String... command) {

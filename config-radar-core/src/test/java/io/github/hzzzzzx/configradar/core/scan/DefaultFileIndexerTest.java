@@ -25,8 +25,10 @@ final class DefaultFileIndexerTest {
             .anyMatch(file -> file.path().endsWith(".env") && file.type() == FileType.OTHER));
         assertTrue(index.files().stream()
             .anyMatch(file -> file.path().endsWith(".env.prod") && file.type() == FileType.OTHER));
+        // Tests are excluded by default; assert via the scope field (cross-platform) rather than
+        // a path-separator string match.
         assertFalse(index.files().stream()
-            .anyMatch(file -> file.path().toString().contains("src/test/")));
+            .anyMatch(file -> file.scope() == io.github.hzzzzzx.configradar.core.model.Scope.TEST));
     }
 
     @Test

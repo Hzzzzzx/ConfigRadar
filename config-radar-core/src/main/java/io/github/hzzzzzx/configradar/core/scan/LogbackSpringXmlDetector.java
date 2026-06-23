@@ -12,6 +12,7 @@ import io.github.hzzzzzx.configradar.core.model.SourceLocation;
 import io.github.hzzzzzx.configradar.core.model.SpringPlaceholderDetails;
 import io.github.hzzzzzx.configradar.core.model.ValueType;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.XMLConstants;
@@ -132,7 +133,21 @@ public final class LogbackSpringXmlDetector implements ConfigDetector {
         }
         var root = context.input().projectRoot();
         var path = root == null ? file.path() : root.toAbsolutePath().relativize(file.path().toAbsolutePath());
-        return path.toString().contains("src/main/resources/");
+        // Match path segments so it works on both '/' (Unix) and '\' (Windows) separators.
+        return underMainResources(path);
+    }
+
+    private static boolean underMainResources(Path relative) {
+        var segments = new java.util.ArrayList<String>();
+        for (var segment : relative) {
+            segments.add(segment.toString());
+        }
+        for (var index = 0; index + 1 < segments.size(); index++) {
+            if (segments.get(index).equals("main") && segments.get(index + 1).equals("resources")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isLoggingXml(IndexedFile file) {

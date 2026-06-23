@@ -287,7 +287,17 @@ public final class SpringConfigFileDetector implements ConfigDetector {
                 return List.of();
             }
             var resource = text.substring("classpath:".length());
-            path = root.resolve("src/main/resources").resolve(resource.startsWith("/") ? resource.substring(1) : resource);
+            if (resource.startsWith("/")) {
+                resource = resource.substring(1);
+            }
+            // Resolve segment-by-segment so '/' in `resource` works on both Unix and Windows.
+            var resolved = root.resolve("src").resolve("main").resolve("resources");
+            for (var segment : resource.split("/")) {
+                if (!segment.isEmpty()) {
+                    resolved = resolved.resolve(segment);
+                }
+            }
+            path = resolved;
         } else if (text.startsWith("file:")) {
             if (root == null) {
                 return List.of();
