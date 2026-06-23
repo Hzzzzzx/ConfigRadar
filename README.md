@@ -1,38 +1,143 @@
 # ConfigRadar
 
-ConfigRadar is an extensible configuration inventory and change analysis tool for Java/Spring applications.
+ConfigRadar is an extensible configuration inventory and change-analysis tool for Java/Spring applications. It scans source and resources **without running the app** and produces a stable YAML inventory that can be diffed across releases.
 
-The goal is to help teams understand configuration assets before deployment or review:
+It answers:
 
 - what configuration keys exist
-- where they are defined
-- where they are read
-- which environments or profiles they belong to
-- what changed between two versions
-- which findings are uncertain and need human review
+- where each key is defined and where it is read
+- which profiles, regions, or namespaces a key belongs to
+- what the static value and default value are
+- which keys are dynamic or uncertain and need human review
+- what changed in config between two versions
 
-ConfigRadar should start small: collect common Java/Spring configuration facts, output a default YAML inventory, and leave clean extension points for project-specific detectors and downstream consumers.
+It does **not** fetch runtime-resolved values, scan inside packaged JARs, or require the target app to build. Those are later phases.
 
-Start with [docs/plan.md](docs/plan.md) for the organized plan.
-
-The longer [docs/design-draft.md](docs/design-draft.md) keeps raw discussion notes and detailed candidates.
-
-## Usage
-
-An agent skill documents the supported workflows and exact commands in [skills/config-radar/SKILL.md](skills/config-radar/SKILL.md). Build the CLI once with the build script, then run `inventory` and `diff`:
-
-```bash
-./scripts/build.sh
-java -jar dist/config-radar-cli.jar inventory . -o config-inventory.yaml
-java -jar dist/config-radar-cli.jar diff --base before.yaml --head after.yaml -o config-diff.yaml
-```
-
-## Development
-
-Requirements:
+## Requirements
 
 - JDK 21+
 - Maven 3.9+
+
+## Quick start
+
+```bash
+git clone <repo> ConfigRadar
+cd ConfigRadar
+./scripts/build.sh                  # builds dist/config-radar-cli.jar
+```
+
+Then scan any Java/Spring project:
+
+```bash
+java -jar dist/config-radar-cli.jar inventory /path/to/spring-project -o config-inventory.yaml
+```
+
+## Commands
+
+### `inventory` — generate a config inventory of one project
+
+```bash
+java -jar dist/config-radar-cli.jar inventory <project-root> -o <output.yaml> [options]
+```
+
+| Option | Purpose |
+|---|---|
+| `<project-root>` | Project to scan (required). |
+| `-o, --output <f>` | Inventory YAML output path (required). |
+| `--profile <p>` | Default profile hint for findings without one. |
+| `--region <r>` / `--namespace <n>` | Default region/namespace hints. |
+| `--rules <f>` | Custom `config-radar-rules.yaml`. Omit to auto-load `<project-root>/config-radar-rules.yaml`. |
+| `--include <path>` / `--exclude <path>` | Path-prefix filters (repeatable). |
+| `--include-tests` | Scan `src/test` too (off by default). |
+| `--redact-sensitive` | Mask values of sensitive-looking keys (password/secret/token). |
+| `--metrics <f>` | Write timing/diagnostics sidecar YAML. |
+| `--enable-codegraph` | Opt-in semantic detector (needs the `codegraph` tool installed). |
+
+### `diff` — compare two inventories
+
+```bash
+java -jar dist/config-radar-cli.jar diff --base <before.yaml> --head <after.yaml> -o <diff.yaml>
+```
+
+| Option | Purpose |
+|---|---|
+| `--base <f>` / `--head <f>` | The two inventories to compare (required). |
+| `-o, --output <f>` | Diff YAML output path (required). |
+| `--redact-sensitive` | Mask sensitive values in the diff output. |
+
+The diff reports `added` / `removed` / `changed` (value or default changed) plus `uncertainChanged` (new dynamic access) and new `checks`. **Use the same `--profile/--region/--namespace` on both inventories** or matching keys appear as add+remove instead of changed.
+
+The workflow is always: scan two states → diff the two YAML files. ConfigRadar never diffs source directly.
+
+## Reading the inventory output
+
+```yaml
+summary:        # counts: keys, findings, uncertain, checks, diagnostics
+items:          # confirmed config facts
+  - key / normalizedKey
+  - role: DEFINE | READ | CONDITION | METADATA
+  - value / defaultValue
+  - environment: profile/region/namespace
+  - source: path/line/sourceKind(JAVA|YAML|PROPERTIES|XML|JSON)/scope
+  - confidence: HIGH | MEDIUM | LOW
+  - detectorId
+uncertain:       # dynamic/unresolved keys (assembled at runtime, map/args driven)
+checks:          # automated warnings
+diagnostics:     # any detector failures (empty when healthy)
+```
+
+- `items` vs `uncertain`: confirmed keys are in `items`; dynamic keys that cannot be statically resolved go to `uncertain` rather than being guessed.
+- `role`: `DEFINE` = declared in a config file; `READ` = consumed in code; `CONDITION` = gates behavior (`@ConditionalOnProperty`); `METADATA` = profile/import wiring.
+- The same key may appear multiple times (defined in a file AND read in several places). That is correct.
+
+### Automated checks
+
+The inventory/diff automatically flags:
+
+- `sensitive-looking-key` (WARNING): key name looks like a secret.
+- `remote-config-source` (WARNING): reference to a remote config center (Spring Cloud Config/Nacos/Apollo) — review externally.
+- `dynamic-config-key` (ERROR): an uncertain/dynamic key that could not be resolved statically.
+
+## What gets scanned
+
+Built-in, no setup needed: Spring `application*`/`bootstrap*` files (yml/yaml/properties), `.env`, `${...}` placeholders with defaults, HOCON, Spring Boot metadata JSON, runtime XML (`web.xml`, Logback/Log4j2 `springProperty`), Dockerfile/docker-compose/Kubernetes deploy files, and Java source reads — `@Value` (field/param/constructor), `@ConfigurationProperties`, `@ConditionalOnProperty`, `@Profile`, `@PropertySource`, `Environment.getProperty`, `System.getProperty/getenv`, `Binder.bind`, `static final` constants and string concatenation, Apollo/Nacos entries, JNDI, and more.
+
+## Project-specific rules
+
+When the project uses a custom config API built-in detectors don't know (e.g. `AcmeConfig.get("x")`, `@AcmeValue("x")`, or a non-standard config file), add a `config-radar-rules.yaml` in the project root. It is auto-loaded when `--rules` is omitted:
+
+```yaml
+methodCalls:
+  - id: acme-config-get
+    owner: AcmeConfig          # owner type or variable name
+    method: get
+    keyArg: 0                  # zero-based index of the key argument
+    defaultArg: 1              # optional: default-value argument index
+    confidence: HIGH
+    role: READ
+
+annotations:
+  - id: acme-value
+    type: AcmeValue            # annotation type name
+    keyAttribute: value        # attribute holding the key
+    defaultAttribute: fallback # optional: attribute holding the default
+    confidence: MEDIUM
+    role: READ
+
+configFiles:
+  - id: deploy-props
+    pattern: deploy/*.properties   # glob relative to project root
+    format: PROPERTIES             # PROPERTIES | YAML
+    scope: RUNTIME                 # RUNTIME | MAIN
+```
+
+`keyArg`/`defaultArg`/`valueArg` are zero-based argument indexes; `keyAttribute`/`valueAttribute`/`defaultAttribute` are annotation attribute names. Re-run the inventory; new keys appear with the rule's `id` as `detectorId`.
+
+## Consuming the inventory downstream
+
+The default YAML inventory is the integration point. See [docs/downstream-consumers.md](docs/downstream-consumers.md) for how to read it programmatically, transform it into your own format, or plug in a custom consumer when you embed ConfigRadar as a library.
+
+## Development
 
 Run tests:
 
@@ -40,65 +145,21 @@ Run tests:
 mvn test
 ```
 
-Current implementation status:
+Modules:
 
-- Maven modules: `config-radar-core`, `config-radar-cli`
-- Core skeleton: typed models, hooks, scan pipeline, YAML output, metrics sidecar
-- CLI: `inventory` and key-based `diff`
-- Implemented detectors:
-  - Spring `application*.yml/yaml/properties` definitions and placeholder dependencies
-  - Simple Typesafe Config HOCON `application.conf` / `reference.conf` key-value definitions
-  - Spring Boot `spring-configuration-metadata.json` and `additional-spring-configuration-metadata.json`
-  - Runtime XML placeholders, `web.xml` params, plus Logback and Log4j2 `springProperty`
-  - Dockerfile `ENV` / JVM option env / explicit `CMD` and `ENTRYPOINT` runtime args, docker-compose `environment` / JVM option env / explicit `command` and `entrypoint` runtime args, and Kubernetes `ConfigMap.data` / Secret keys / container `env` / `envFrom` / config volumes / explicit `command` and `args` runtime definitions
-  - Java source annotation placeholders, common `@Value` SpEL property references, class/method `@ConfigurationProperties`, `@ConditionalOnProperty`, `@ConditionalOnExpression`, `@Profile`, profile predicate calls, `@PropertySource`, `SpringApplication` default/command-line properties and additional profiles, programmatic Spring `PropertySource` entries, dynamic `PropertiesPropertySource` entries, Apollo `ConfigService` reads, Nacos `ConfigService.getConfig(...)` and `@NacosPropertySource` source entries, Servlet `getInitParameter` and `@WebInitParam`, JNDI `java:comp/env` lookups, generic config getters such as Typesafe Config / Apache Commons Configuration / MicroProfile Config, Java `Preferences` and `ResourceBundle` getters, `Environment.getProperty`, `Environment.getRequiredProperty`, `System.getProperty`, `System.getProperties`, `System.getenv`, `System.console` input, `Integer.getInteger`, `Long.getLong`, `Boolean.getBoolean`
-- Spring YAML multi-document profile detection via `spring.config.activate.on-profile`
-- Spring profile/config control keys, including env-style keys such as `SPRING_PROFILES_ACTIVE`, plus `@Profile` and `@PropertySource` findings are marked as `METADATA`
-- Project rules: Java method-call and annotation rules from `config-radar-rules.yaml`
-- Project rules: custom YAML/properties config file patterns from `config-radar-rules.yaml`
-- CLI auto-loads `<projectRoot>/config-radar-rules.yaml` when `--rules` is omitted
-- Basic key normalization for case, underscore, hyphen, and camelCase variants
-- Dynamic/uncertain keys produce high-risk inventory checks
-- Remote config center references produce review checks without fetching remote values
-- Sensitive-looking key names produce review checks
-- Optional sensitive value redaction with `--redact-sensitive`
-- OpenRewrite and deeper symbol tracking are intentionally not implemented yet
+- `config-radar-core` — models, scan pipeline, detectors, rules, diff, YAML output
+- `config-radar-cli` — picocli command line (`inventory`, `diff`)
 
-## Project Rules
+## Documentation
 
-Put `config-radar-rules.yaml` in the project root, or pass it with `--rules`.
+- [Project plan](docs/plan.md)
+- [Architecture](docs/architecture.md)
+- [Coverage scope](docs/coverage.md)
+- [Use cases](docs/use-cases.md)
+- [Downstream consumers](docs/downstream-consumers.md)
+- [Technical decisions](docs/technical-decisions.md)
+- [Implementation flow](docs/implementation-flow.md)
+- [Roadmap](docs/roadmap.md)
+- [Agent usage skill](skills/config-radar/SKILL.md)
 
-```yaml
-methodCalls:
-  - id: acme-config-get
-    owner: ConfigCenter
-    method: get
-    keyArg: 0
-    defaultArg: 1
-    confidence: HIGH
-    role: READ
-  - id: acme-config-set
-    owner: ConfigCenter
-    method: set
-    keyArg: 0
-    valueArg: 1
-    confidence: HIGH
-    role: DEFINE
-
-annotations:
-  - id: acme-value
-    type: CustomConfigValue
-    keyAttribute: key
-    valueAttribute: configuredValue
-    defaultAttribute: defaultValue
-    confidence: MEDIUM
-    role: READ
-
-configFiles:
-  - id: deploy-props
-    pattern: deploy/*.properties
-    format: PROPERTIES
-    scope: RUNTIME
-```
-
-`keyArg`, `defaultArg`, and `valueArg` are zero-based method argument indexes. `keyAttribute`, `valueAttribute`, and `defaultAttribute` are annotation attribute names. `role` can be `DEFINE`, `READ`, `CONDITION`, or `METADATA`; it defaults to `READ` for Java rules.
+Build the CLI with `./scripts/build.sh`; the agent skill in `skills/config-radar/` documents the supported workflows and exact commands.
