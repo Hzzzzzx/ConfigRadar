@@ -93,8 +93,23 @@ public final class BasicFindingNormalizer implements FindingNormalizer {
         return Comparator
             .comparing((ScanFinding finding) -> finding.source().path())
             .thenComparing(finding -> finding.source().line(), Comparator.nullsLast(Integer::compareTo))
+            .thenComparing(BasicFindingNormalizer::profileOrEmpty, Comparator.nullsLast(String::compareTo))
             .thenComparing(ScanFinding::detectorId)
             .thenComparing(BasicFindingNormalizer::keyOrExpression);
+    }
+
+    private static String profileOrEmpty(ScanFinding finding) {
+        if (finding instanceof ConfigFinding config) {
+            return environmentProfile(config.environment());
+        }
+        if (finding instanceof UncertainFinding uncertain) {
+            return environmentProfile(uncertain.environment());
+        }
+        return null;
+    }
+
+    private static String environmentProfile(EnvironmentContext environment) {
+        return environment == null ? null : environment.profile();
     }
 
     private static String keyOrExpression(ScanFinding finding) {

@@ -302,6 +302,44 @@ final class ConfigRadarCliTest {
         }
     }
 
+    @Test
+    void inventoryCommandFailsCleanlyOnMissingProjectRoot() throws Exception {
+        var inventory = tempDir.resolve("inventory.yaml");
+        var missingRoot = tempDir.resolve("does-not-exist");
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "inventory",
+            missingRoot.toString(),
+            "-o", inventory.toString()
+        );
+
+        assertTrue(exitCode != 0, "missing project root should fail");
+        assertFalse(Files.exists(inventory), "no output should be produced on failure");
+    }
+
+    @Test
+    void diffCommandFailsCleanlyOnMissingBase() throws Exception {
+        var output = tempDir.resolve("diff.yaml");
+        var missingBase = tempDir.resolve("missing-base.yaml");
+        var head = tempDir.resolve("head.yaml");
+        Files.writeString(head, """
+            ---
+            schemaVersion: "config-inventory/v1"
+            items: []
+            uncertain: []
+            """);
+
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "diff",
+            "--base", missingBase.toString(),
+            "--head", head.toString(),
+            "-o", output.toString()
+        );
+
+        assertTrue(exitCode != 0, "missing base file should fail");
+        assertFalse(Files.exists(output), "no output should be produced on failure");
+    }
+
     private static ConfigInventory inventory(ConfigFinding... items) {
         return new ConfigInventory(null, null, null, List.of(items), List.of(), List.of(), List.of());
     }

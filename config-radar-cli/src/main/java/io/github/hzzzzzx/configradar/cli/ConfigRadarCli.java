@@ -96,6 +96,12 @@ public final class ConfigRadarCli implements Runnable {
          */
         @Override
         public Integer call() throws Exception {
+            if (!Files.isDirectory(projectRoot)) {
+                return fail("Project root does not exist or is not a directory: " + projectRoot);
+            }
+            if (rulesFile != null && !Files.isReadable(rulesFile)) {
+                return fail("Rules file does not exist or is not readable: " + rulesFile);
+            }
             var resolvedRulesFile = resolveRulesFile(projectRoot, rulesFile);
             var input = new ScanInput(
                 projectRoot,
@@ -167,6 +173,12 @@ public final class ConfigRadarCli implements Runnable {
          */
         @Override
         public Integer call() throws Exception {
+            if (!Files.isReadable(base)) {
+                return fail("Base inventory does not exist or is not readable: " + base);
+            }
+            if (!Files.isReadable(head)) {
+                return fail("Head inventory does not exist or is not readable: " + head);
+            }
             var mapper = YamlSupport.mapper();
             var baseInventory = mapper.readValue(base.toFile(), ConfigInventory.class);
             var headInventory = mapper.readValue(head.toFile(), ConfigInventory.class);
@@ -179,6 +191,18 @@ public final class ConfigRadarCli implements Runnable {
             mapper.writeValue(output.toFile(), diff);
             return 0;
         }
+    }
+
+    /**
+     * Prints a clear error message to standard error and returns a non-zero exit code,
+     * instead of letting picocli surface a raw stack trace to the user.
+     *
+     * @param message human-readable error description
+     * @return non-zero exit code
+     */
+    private static int fail(String message) {
+        System.err.println("config-radar: " + message);
+        return 2;
     }
 
     /**
