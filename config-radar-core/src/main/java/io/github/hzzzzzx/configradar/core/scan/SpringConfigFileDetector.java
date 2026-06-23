@@ -302,11 +302,7 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             if (root == null) {
                 return List.of();
             }
-            var value = text.substring("file:".length());
-            path = Path.of(value);
-            if (!path.isAbsolute()) {
-                path = root.resolve(value);
-            }
+            path = resolveLocationPath(root, text.substring("file:".length()));
         } else {
             return List.of();
         }
@@ -347,11 +343,27 @@ public final class SpringConfigFileDetector implements ConfigDetector {
             return null;
         }
         var value = text.substring("configtree:".length());
-        var path = Path.of(value);
-        if (!path.isAbsolute()) {
-            path = root.resolve(value);
-        }
+        var path = resolveLocationPath(root, value);
         return Files.isDirectory(path) ? path : null;
+    }
+
+    /**
+     * Resolves a {@code file:}/{@code configtree:} location value against the project root,
+     * splitting on {@code /} so the same Unix-style location string works on Windows too.
+     * Absolute paths (already platform-correct) are returned as-is.
+     */
+    private static Path resolveLocationPath(Path root, String value) {
+        var direct = Path.of(value);
+        if (direct.isAbsolute()) {
+            return direct;
+        }
+        var resolved = root;
+        for (var segment : value.replace("\\", "/").split("/")) {
+            if (!segment.isEmpty()) {
+                resolved = resolved.resolve(segment);
+            }
+        }
+        return resolved;
     }
 
     private static boolean isSpringConfigReference(String key) {
