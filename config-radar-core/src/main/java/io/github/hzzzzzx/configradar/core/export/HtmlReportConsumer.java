@@ -449,7 +449,7 @@ public final class HtmlReportConsumer implements InventoryConsumer {
         .sub{margin-top:4px;color:var(--mut);font-size:13px}\
         .sub .proj{font-weight:600;color:var(--ink)}\
         .sub .ref,.sub .schema{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}\
-        section,.search,details,footer,.intro{max-width:1100px;margin:16px auto;padding:0 24px}\
+        section,.search,details,footer,.intro{max-width:min(1600px,94vw);margin:16px auto;padding:0 24px}\
         .intro{margin:8px auto 0;color:var(--mut);line-height:1.7}\
         details.help{margin-top:8px}\
         details.help ul{margin:6px 0 0;padding-left:20px;color:var(--mut);line-height:1.8}\
