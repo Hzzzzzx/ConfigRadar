@@ -88,28 +88,33 @@ java -jar dist/config-radar-cli.jar export --inventory <config-inventory.yaml> -
 Two output modes:
 
 - **`default`** — plain config inventory. Every key goes into `app_configs`; sensitive keys are kept inline and flagged with `secret: 1`. No J2C section. This is the general-purpose config statistic.
-- **`xac`** — artifact for the internal XAC deployment platform. Sensitive keys (password/secret/token/credential) are routed to a separate `J2C.secrets` section with placeholder passwords, while `app_configs` holds only non-sensitive keys:
+- **`xac`** — artifact for the internal XAC deployment platform. Output follows the platform manifest shape: fixed `apiVersion`/`kind` headers, an application `metadata.name`, and all config under `data`. Sensitive keys (password/secret/token/credential) are routed to `data.J2C.secrets` with placeholder passwords, while `data.app_configs` holds only non-sensitive keys:
 
 ```yaml
-app_configs:                            # plain config (non-sensitive)
-  - scope: "${app_deploy_unit_name}"   # placeholder; deploy-time metadata ConfigRadar cannot know
-    group_name: server                 # first key segment
-    config_key: server-port            # normalized key
-    config_value: "8080"               # value from the highest-priority source
-    secret: 0
-    sub_application_id:                # empty; fill downstream
-    version:
-    docker_version:
-    remark:
-J2C:                                    # sensitive config (password/secret/token/credential)
-  secrets:
-    - key: db_password                 # underscore form of the config key
-      init_source: input               # manual input by default
-      type: mysql                      # best-effort type hint from the key (null when unknown)
-      account:                         # empty; fill downstream
-      password: "${db_password}"       # placeholder; real secret provisioned via encryption interface
-      encrypt_type: ADVANCED2.6
-      remark: mysql
+apiVersion: "com.huawei.his.appconfigcenter.v3"   # fixed
+kind: "his.appconfigcenter"                        # fixed
+metadata:
+  name: "my-app"                                   # application name (-D name=... or project name)
+data:
+  app_configs:                                     # plain config (non-sensitive)
+    - scope: "${app_deploy_unit_name}"
+      group_name: server
+      config_key: server-port
+      config_value: "8080"
+      secret: 0
+      sub_application_id: ""
+      version: "1.0"
+      docker_version: "1.0"
+      remark: ""
+  J2C:                                             # sensitive config
+    secrets:
+      - key: db_password
+        init_source: input
+        type: mysql
+        account: ""
+        password: "${db_password}"
+        encrypt_type: ADVANCED2.6
+        remark: mysql
       scope: "${app_deploy_unit_name}"
 ```
 
