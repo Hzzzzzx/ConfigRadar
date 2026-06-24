@@ -131,7 +131,7 @@ final class AppConfigCenterExporterTest {
         assertTrue(result.entries().isEmpty(), "undefined key with no default is not a real entry");
         assertEquals(1, result.missing().size());
         assertEquals("feature.flag", result.missing().getFirst().config_key());
-        assertEquals(null, result.missing().getFirst().config_value());
+        assertEquals("", result.missing().getFirst().config_value());
     }
 
     @Test
@@ -183,7 +183,7 @@ final class AppConfigCenterExporterTest {
         // Same fields present so a filled missing file can be merged directly.
         assertEquals(AppConfigCenterExporter.DEFAULT_SCOPE, missingEntry.scope());
         assertEquals("orphan", missingEntry.group_name());
-        assertEquals(null, missingEntry.config_value());
+        assertEquals("", missingEntry.config_value());
         assertEquals(0, missingEntry.secret());
     }
 

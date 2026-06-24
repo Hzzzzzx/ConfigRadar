@@ -7,10 +7,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * One entry in the application-config-center format produced by {@link AppConfigCenterExporter}.
  *
  * <p>This mirrors the downstream {@code app_configs} schema: a flat list of config key/value
- * records that teams load into their internal config center. Deploy-time metadata
- * ({@code scope}, {@code sub_application_id}, {@code version}, {@code docker_version},
- * {@code remark}) is left empty because ConfigRadar cannot discover it statically; consumers
- * fill it in later.
+ * records that teams load into their internal config center. Empty deploy-time fields are emitted
+ * as empty strings (never {@code null}) so the schema stays visible for downstream consumers to
+ * fill in. {@code version} and {@code docker_version} default to {@code "1.0"} for new config.
  */
 @JsonPropertyOrder({
     "scope",

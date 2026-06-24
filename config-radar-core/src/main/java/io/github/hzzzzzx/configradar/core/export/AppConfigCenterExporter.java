@@ -43,6 +43,9 @@ public final class AppConfigCenterExporter {
     /** Default init source for J2C secrets (manual input). */
     public static final String DEFAULT_INIT_SOURCE = "input";
 
+    /** Default version for newly discovered config entries. */
+    public static final String DEFAULT_VERSION = "1.0";
+
     private static final RedactionPolicy SENSITIVE = RedactionPolicy.redactSensitive();
 
     /**
@@ -111,7 +114,7 @@ public final class AppConfigCenterExporter {
                 entries.add(toEntry(key, valueOr(winner), winner));
             } else {
                 // Read but never defined and no default — needs a value filled in.
-                missing.add(toEntry(key, null, winner));
+                missing.add(toEntry(key, "", winner));
             }
         }
 
@@ -149,7 +152,7 @@ public final class AppConfigCenterExporter {
         if (finding.defaultValue() != null) {
             return finding.defaultValue().raw();
         }
-        return null;
+        return "";
     }
 
     /** Deduplicates findings by normalizedKey, keeping the highest Spring-priority source. */
@@ -209,10 +212,10 @@ public final class AppConfigCenterExporter {
             normalizedKey,
             value,
             SENSITIVE.matchesKey(normalizedKey) ? 1 : 0,
-            null,
-            null,
-            null,
-            null
+            "",
+            DEFAULT_VERSION,
+            DEFAULT_VERSION,
+            ""
         );
     }
 
@@ -223,11 +226,12 @@ public final class AppConfigCenterExporter {
      */
     private J2cSecretEntry toSecret(String normalizedKey, String value, ConfigFinding finding) {
         var underscoreKey = toUnderscore(normalizedKey);
+        var type = typeHint(normalizedKey);
         return new J2cSecretEntry(
             underscoreKey,
             DEFAULT_INIT_SOURCE,
-            typeHint(normalizedKey),
-            null,
+            type == null ? "" : type,
+            "",
             "${" + underscoreKey + "}",
             DEFAULT_ENCRYPT_TYPE,
             remarkOf(normalizedKey),
@@ -257,7 +261,7 @@ public final class AppConfigCenterExporter {
 
     private static String remarkOf(String key) {
         var type = typeHint(key);
-        return type == null ? null : type;
+        return type == null ? "" : type;
     }
 
     /** First segment of a dotted key, used as the config-center group. {@code db.host} -> {@code db}. */
