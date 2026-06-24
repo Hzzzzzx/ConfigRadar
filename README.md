@@ -50,6 +50,8 @@ java -jar dist/config-radar-cli.jar inventory <project-root> -o <output.yaml> [o
 | `--include <path>` / `--exclude <path>` | Path-prefix filters (repeatable). |
 | `--include-tests` | Scan `src/test` too (off by default). |
 | `--redact-sensitive` | Mask values of sensitive-looking keys (password/secret/token). |
+| `--consumer <id>` | Output consumer: `yaml` (default ConfigRadar inventory), `default` (plain app_configs), or `xac` (XAC platform artifact). Default: `yaml`. See [downstream consumers](docs/downstream-consumers.md). |
+| `-D <key=value>` | Downstream context property (repeatable), passed to the consumer, e.g. `-D scope=prod`. |
 | `--metrics <f>` | Write timing/diagnostics sidecar YAML. |
 | `--enable-codegraph` | Opt-in semantic detector (needs the `codegraph` tool installed). |
 

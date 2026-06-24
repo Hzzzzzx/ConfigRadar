@@ -82,9 +82,15 @@ final class ScanPipelineTest {
         assertEquals(1, result.inventory().uncertain().size());
         assertEquals(1, result.inventory().summary().keys());
 
-        var out = new ByteArrayOutputStream();
-        new YamlInventoryConsumer().write(result.inventory(), out);
-        var yaml = out.toString();
+        var captured = new java.util.concurrent.atomic.AtomicReference<ByteArrayOutputStream>();
+        io.github.hzzzzzx.configradar.core.output.ConsumerSink sink = fileName -> {
+            var bytes = new ByteArrayOutputStream();
+            captured.set(bytes);
+            return bytes;
+        };
+        new YamlInventoryConsumer().consume(result.inventory(),
+            io.github.hzzzzzx.configradar.core.output.ConsumerContext.empty(), sink);
+        var yaml = captured.get().toString();
         assertTrue(yaml.contains("items:"));
         assertTrue(yaml.contains("uncertain:"));
         assertTrue(yaml.contains("payment.timeout"));

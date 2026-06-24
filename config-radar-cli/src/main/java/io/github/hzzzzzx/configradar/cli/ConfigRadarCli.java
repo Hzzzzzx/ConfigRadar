@@ -3,8 +3,14 @@ package io.github.hzzzzzx.configradar.cli;
 import io.github.hzzzzzx.configradar.core.diff.KeyBasedDiffStrategy;
 import io.github.hzzzzzx.configradar.core.export.AppConfigCenterExporter;
 import io.github.hzzzzzx.configradar.core.export.AppConfigEntry;
+import io.github.hzzzzzx.configradar.core.export.DefaultFormatConsumer;
+import io.github.hzzzzzx.configradar.core.export.HtmlReportConsumer;
+import io.github.hzzzzzx.configradar.core.export.XacConsumer;
 import io.github.hzzzzzx.configradar.core.io.YamlSupport;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
+import io.github.hzzzzzx.configradar.core.output.ConsumerContext;
+import io.github.hzzzzzx.configradar.core.output.ConsumerRegistry;
+import io.github.hzzzzzx.configradar.core.output.DirectoryConsumerSink;
 import io.github.hzzzzzx.configradar.core.output.YamlInventoryConsumer;
 import io.github.hzzzzzx.configradar.core.rule.RuleLoader;
 import io.github.hzzzzzx.configradar.core.scan.EnvironmentHints;
@@ -91,6 +97,13 @@ public final class ConfigRadarCli implements Runnable {
         @Option(names = "--redact-sensitive", description = "Mask values for sensitive-looking keys.")
         private boolean redactSensitive;
 
+        @Option(names = "--consumer", defaultValue = "yaml",
+            description = "Consumer id: 'yaml' (default ConfigRadar inventory), 'default' (plain app_configs), 'xac' (XAC platform artifact), or 'html' (self-contained HTML report). Default: yaml.")
+        private String consumerId;
+
+        @Option(names = "-D", description = "Downstream context property (key=value, repeatable). Passed to the consumer, e.g. -D scope=prod.")
+        private java.util.List<String> contextProps = java.util.List.of();
+
         /**
          * Runs the inventory skeleton: build input, load rules, scan, then write YAML outputs.
          *
@@ -134,15 +147,50 @@ public final class ConfigRadarCli implements Runnable {
             );
             var rules = new RuleLoader().load(resolvedRulesFile);
             var result = ScanPipeline.defaults(enableCodegraph).scan(input, options, rules);
+            // Route output through the selected consumer; ConfigRadar owns detection, the consumer
+            // owns the output shape. yaml is the default (ConfigRadar's own inventory format).
+            var consumer = builtinConsumers().find(consumerId);
+            if (consumer.isEmpty()) {
+                return fail("Unknown --consumer '" + consumerId + "'; available: " + builtinConsumers().ids());
+            }
             writeParent(output);
-            try (var out = Files.newOutputStream(output)) {
-                new YamlInventoryConsumer().write(result.inventory(), out);
+            var context = new ConsumerContext(profile, region, namespace, parseContextProps(contextProps));
+            // yaml writes the exact -o path (backward compatible); other consumers write into -o's
+            // directory (they may emit multiple files, e.g. app-configs + J2C).
+            if ("yaml".equals(consumerId)) {
+                try (var out = Files.newOutputStream(output)) {
+                    YamlSupport.mapper().writeValue(out, result.inventory());
+                }
+            } else {
+                var sink = new DirectoryConsumerSink(output.getParent());
+                consumer.get().consume(result.inventory(), context, sink);
             }
             if (metrics != null) {
                 writeParent(metrics);
                 YamlSupport.mapper().writeValue(metrics.toFile(), result.report());
             }
             return 0;
+        }
+
+        /** Builds the built-in consumer registry (no plugin loading; explicit registration only). */
+        private static ConsumerRegistry builtinConsumers() {
+            return new ConsumerRegistry()
+                .register(new YamlInventoryConsumer())
+                .register(new DefaultFormatConsumer())
+                .register(new XacConsumer())
+                .register(new HtmlReportConsumer());
+        }
+
+        /** Parses -D key=value pairs into a map for the consumer context. */
+        private static java.util.Map<String, String> parseContextProps(java.util.List<String> props) {
+            var map = new java.util.LinkedHashMap<String, String>();
+            for (var prop : props) {
+                var eq = prop.indexOf('=');
+                if (eq > 0) {
+                    map.put(prop.substring(0, eq), prop.substring(eq + 1));
+                }
+            }
+            return map;
         }
 
         private static Path resolveRulesFile(Path projectRoot, Path explicitRulesFile) {

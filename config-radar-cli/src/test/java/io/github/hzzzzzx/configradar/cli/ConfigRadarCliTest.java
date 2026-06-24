@@ -421,6 +421,40 @@ final class ConfigRadarCliTest {
         assertEquals("enabled", byKey.get("feature.flag").get("config_value"));
     }
 
+    @Test
+    void inventoryCommandUsesXacConsumer() throws Exception {
+        var inventoryPath = tempDir.resolve("inv.yaml");
+        var output = tempDir.resolve("app-configs.yaml");
+        io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper()
+            .writeValue(inventoryPath.toFile(), inventory(item("db.password", "secret123")));
+        // xac consumer via inventory --consumer xac: sensitive key routes to J2C.secrets
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "export", "--inventory", inventoryPath.toString(), "-o", output.toString(), "--format", "xac"
+        );
+        assertEquals(0, exitCode);
+        var mapper = io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper();
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> root = mapper.readValue(output.toFile(), java.util.Map.class);
+        @SuppressWarnings("unchecked")
+        var secrets = (java.util.List<java.util.Map<String, Object>>)
+            ((java.util.Map<String, Object>) root.get("J2C")).get("secrets");
+        assertEquals(1, secrets.size());
+        assertEquals("db_password", secrets.getFirst().get("key"));
+        assertEquals("${db_password}", secrets.getFirst().get("password"));
+    }
+
+    @Test
+    void inventoryCommandRejectsUnknownConsumer() throws Exception {
+        var inventoryPath = tempDir.resolve("inv.yaml");
+        var output = tempDir.resolve("out.yaml");
+        io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper()
+            .writeValue(inventoryPath.toFile(), inventory(item("server.port", "8080")));
+        int exitCode = new CommandLine(new ConfigRadarCli()).execute(
+            "export", "--inventory", inventoryPath.toString(), "-o", output.toString(), "--format", "nope"
+        );
+        assertTrue(exitCode != 0, "unknown format/consumer should fail");
+    }
+
     private static ConfigFinding readItem(String key) {
         return new ConfigFinding(
             key, key, FindingRole.READ, null, null, EnvironmentContext.none(),

@@ -238,9 +238,20 @@ with open("config-review.csv", "w", newline="") as f:
 
 Keep the transformer versioned alongside your platform, not inside ConfigRadar — its job is to adapt to *your* format, which ConfigRadar should not know about.
 
-## Level 3 — embed ConfigRadar as a library and add a custom consumer
+## Level 3 — implement a custom `InventoryConsumer` (the downstream extension point)
 
-When you run ConfigRadar inside a Java/JVM tool and want ConfigRadar itself to emit your format, implement the `InventoryConsumer` SPI. This is for embedded use; the standalone CLI currently writes the default YAML only.
+When you want ConfigRadar to produce **your** format — with field mapping, partitioning, deploy-time metadata, or business-module/environment logic you own — implement the `InventoryConsumer` SPI. ConfigRadar (upstream) owns detection and produces a typed `ConfigInventory`; you (downstream) own how that inventory is shaped into output. **ConfigRadar does not know or constrain your output.**
+
+### Upstream / downstream boundary
+
+| Upstream (ConfigRadar) owns | Downstream (you) owns |
+|---|---|
+| Detection → typed `ConfigInventory` | Implementing `InventoryConsumer` |
+| The SPI interface, `ConsumerContext`, `ConsumerSink`, registry | How to map fields, partition, fill deploy-time metadata |
+| Passing scan environment (profile/region) + your `-D` properties through | Resolving `scope`/`version`/etc. from context using **your** logic |
+| Built-in reference consumers (`yaml`, `default`, `xac`) | The correctness of your output |
+
+ConfigRadar deliberately does not ship a template engine or interpret your downstream properties — those are decisions for the consumer, so ConfigRadar never has to maintain "downstream logic". A template engine could later be added as *just another consumer*, without changing the SPI.
 
 ### The SPI
 
@@ -248,12 +259,43 @@ When you run ConfigRadar inside a Java/JVM tool and want ConfigRadar itself to e
 package io.github.hzzzzzx.configradar.core.output;
 
 public interface InventoryConsumer {
-    String id();                                        // format id, e.g. "my-platform"
-    void write(ConfigInventory inventory, OutputStream output) throws IOException;
+    String id();
+    // Consume the inventory, writing output file(s) into the sink using the context.
+    void consume(ConfigInventory inventory, ConsumerContext context, ConsumerSink sink) throws Exception;
 }
 ```
 
-`ConfigInventory` is a typed Java record (see `core/model/ConfigInventory.java`) with `items`, `uncertain`, `checks`, `diagnostics`, and `summary`. Implement `write` to serialize it however your platform needs.
+- **`ConsumerContext`** merges ConfigRadar's scan environment (`profile`/`region`/`namespace`) with your `-D key=value` properties. Use it to make decisions (e.g. resolve `scope` from a module/environment table you own). ConfigRadar does **not** interpret your properties — it only carries them.
+- **`ConsumerSink`** lets you write multiple files (`sink.openFile("app-configs.yaml")`, `sink.openFile("secrets.yaml")`). The base directory is set by the caller.
+
+### Implement and register your consumer
+
+```java
+import io.github.hzzzzzx.configradar.core.output.*;
+
+public final class MyPlatformConsumer implements InventoryConsumer {
+    @Override public String id() { return "my-platform"; }
+
+    @Override
+    public void consume(ConfigInventory inventory, ConsumerContext ctx, ConsumerSink sink) throws Exception {
+        // YOUR logic: read inventory.items(), resolve scope/version from ctx.property("scope"),
+        // map to your record, partition, write one or more files.
+        var module = ctx.property("module");      // passed via CLI -D module=payment
+        var profile = ctx.profile();               // from --profile
+        try (var out = sink.openFile("platform-config.yaml")) {
+            // serialize your shape...
+        }
+    }
+}
+```
+
+Then register it (no plugin loading — explicit, in-process):
+
+```java
+var registry = new ConsumerRegistry()
+    .register(new MyPlatformConsumer());
+var consumer = registry.find("my-platform").orElseThrow();
+```
 
 ### Add the dependency
 
@@ -265,25 +307,23 @@ public interface InventoryConsumer {
 </dependency>
 ```
 
-(Note: ConfigRadar is not yet published to Maven Central — `0.1.0-SNAPSHOT` must be built locally with `./scripts/build.sh` / `mvn install` first. Publishing is a later milestone.)
+(ConfigRadar is not yet on Maven Central — build locally with `./scripts/build.sh` / `mvn install` first.)
 
-### Run a scan in-process and consume with your format
+### Run in-process
 
 ```java
-import io.github.hzzzzzx.configradar.core.scan.*;
-
-var input = ScanInput.of(Path.of("/path/to/project"));
-var options = ScanOptions.defaults();
-var rules = new RuleLoader().load(null);
 var result = ScanPipeline.defaults(false).scan(input, options, rules);
-
-// your consumer writes whatever format you need
-try (var out = Files.newOutputStream(Path.of("my-platform-format.yaml"))) {
-    new MyPlatformConsumer().write(result.inventory(), out);
-}
+var ctx = new ConsumerContext("prod", null, null, Map.of("module", "payment"));
+consumer.consume(result.inventory(), ctx, new DirectoryConsumerSink(Path.of("output/")));
 ```
 
-The pipeline produces a typed `ConfigInventory`; your consumer is the only thing that changes. This keeps ConfigRadar's scan logic stable while letting each platform own its output shape.
+### Built-in reference consumers (study these)
+
+- `YamlInventoryConsumer` (`id="yaml"`) — writes the default ConfigRadar inventory.
+- `DefaultFormatConsumer` (`id="default"`) — plain `app_configs` with sensitive keys inline.
+- `XacConsumer` (`id="xac"`) — partitioned `app_configs` + `J2C.secrets` for the XAC platform.
+
+These show how to use the SPI end-to-end; copy the pattern for your own format.
 
 ## Choosing a level
 
@@ -292,6 +332,6 @@ The pipeline produces a typed `ConfigInventory`; your consumer is the only thing
 | CI gate, release review, dashboard reading the inventory | **1** — parse the YAML |
 | Load config into an app config center (key/value list, sensitive keys separated) | **1.5** — use the built-in `export` command |
 | Your platform needs a different file format than `export` produces | **2** — transform the YAML |
-| You embed ConfigRadar inside a JVM tool and want native output | **3** — implement `InventoryConsumer` |
+| You want ConfigRadar itself to emit your format (field mapping, partitioning, your metadata logic) | **3** — implement `InventoryConsumer` |
 
 Prefer the lowest level that works. Each higher level adds a dependency on ConfigRadar's internals and a maintenance cost; Level 1 keeps your downstream decoupled from ConfigRadar's Java API entirely.

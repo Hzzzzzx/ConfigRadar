@@ -2,18 +2,19 @@ package io.github.hzzzzzx.configradar.core.output;
 
 import io.github.hzzzzzx.configradar.core.io.YamlSupport;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
-import java.io.IOException;
-import java.io.OutputStream;
 
-/** Default inventory YAML writer. */
+/** Reference {@link InventoryConsumer} that writes the default ConfigRadar YAML inventory. */
 public final class YamlInventoryConsumer implements InventoryConsumer {
+
     @Override
     public String id() {
         return "yaml";
     }
 
     @Override
-    public void write(ConfigInventory inventory, OutputStream output) throws IOException {
-        YamlSupport.mapper().writeValue(output, inventory);
+    public void consume(ConfigInventory inventory, ConsumerContext context, ConsumerSink sink) throws Exception {
+        try (var output = sink.openFile("config-inventory.yaml")) {
+            YamlSupport.mapper().writeValue(output, inventory);
+        }
     }
 }
