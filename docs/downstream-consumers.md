@@ -138,6 +138,53 @@ yq '.added[].key' diff.yaml
 - Additive optional fields may appear in future versions; consumers should ignore unknown fields (most YAML parsers do by default).
 - The same key can appear multiple times across files/profiles/read-sites — that is intentional, not duplication. Key on `normalizedKey + role + environment.profile` to dedupe if needed.
 
+## Level 1.5 — the built-in `export` command (app-config-center format)
+
+ConfigRadar ships a built-in transformer for a common downstream shape: a flat config-center list. Use it before writing your own transformer — it may already cover what you need.
+
+```bash
+java -jar dist/config-radar-cli.jar export --inventory config-inventory.yaml -o app-configs.yaml [--missing missing.yaml] [--merge filled.yaml]
+```
+
+The output is **partitioned** into two sections:
+
+```yaml
+app_configs:                  # plain (non-sensitive) config keys
+  - scope: "${app_deploy_unit_name}"   # placeholder; deploy-time metadata ConfigRadar cannot know
+    group_name: server                 # first key segment
+    config_key: server-port            # normalized key
+    config_value: "8080"               # value from the highest-priority source
+    secret: 0                          # always 0 here; sensitive keys go to J2C
+    sub_application_id:                # empty; fill downstream
+    version:
+    docker_version:
+    remark:
+J2C:                          # sensitive keys (password/secret/token/credential)
+  secrets:
+    - key: db_password                 # underscore form of the config key
+      init_source: input               # manual input by default
+      type: mysql                      # best-effort hint from the key (null when unknown)
+      account:                         # empty; fill downstream
+      password: "${db_password}"       # placeholder; real secret provisioned out-of-band
+      encrypt_type: ADVANCED2.6
+      remark: mysql
+      scope: "${app_deploy_unit_name}"
+```
+
+What the built-in export does for you:
+
+- **Deduplicates** keys defined in multiple sources, keeping the highest Spring-priority value (an approximation from file name/profile).
+- **Routes sensitive keys** to `J2C.secrets` with a placeholder password (underscore form), since the real secret is provisioned via an encryption interface.
+- **Separates missing values**: keys read in code but never defined and without a default go to `--missing`, using the same schema. Fill `config_value` there and feed back via `--merge`:
+
+```bash
+java -jar dist/config-radar-cli.jar export --inventory inv.yaml -o app-configs.yaml --missing missing.yaml
+# (manually or via a skill) fill config_value in missing.yaml
+java -jar dist/config-radar-cli.jar export --inventory inv.yaml -o final.yaml --merge missing-filled.yaml
+```
+
+When the built-in `app_configs` / `J2C` shape is **not** what your platform needs — different fields, different grouping, a CSV, a Markdown report — proceed to Level 2 and write a small transformer. The built-in export is one opinionated shape, not the only one.
+
 ## Level 2 — transform the YAML into your own format
 
 When your platform needs a different shape (deployment-platform format, owner-review CSV, Markdown report), transform the YAML rather than reimplementing scanning. Keep ConfigRadar as the scanner of record; your transformer only re-shapes.
@@ -241,7 +288,8 @@ The pipeline produces a typed `ConfigInventory`; your consumer is the only thing
 | Need | Level |
 |---|---|
 | CI gate, release review, dashboard reading the inventory | **1** — parse the YAML |
-| Your deployment platform needs a different file format | **2** — transform the YAML |
+| Load config into an app config center (key/value list, sensitive keys separated) | **1.5** — use the built-in `export` command |
+| Your platform needs a different file format than `export` produces | **2** — transform the YAML |
 | You embed ConfigRadar inside a JVM tool and want native output | **3** — implement `InventoryConsumer` |
 
 Prefer the lowest level that works. Each higher level adds a dependency on ConfigRadar's internals and a maintenance cost; Level 1 keeps your downstream decoupled from ConfigRadar's Java API entirely.
