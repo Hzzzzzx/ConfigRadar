@@ -188,12 +188,14 @@ Re-run the inventory; the new keys appear with the rule's `id` as `detectorId`. 
 
 ### 6. Export to an application config center
 
-Goal: produce a flat `app_configs` list for loading into a downstream config center, deduplicating keys by Spring priority, and flagging sensitive keys.
+Goal: produce a config-center import file from the inventory, with plain config and sensitive secrets partitioned, deduplicating keys by Spring priority.
 
 ```bash
-# produce main list + a missing-value list for keys with no definition/default
+# produce app_configs + J2C.secrets, plus a missing-value list for keys with no definition/default
 java -jar <jar> export --inventory config-inventory.yaml -o app-configs.yaml --missing missing.yaml
 ```
+
+The output is partitioned: non-sensitive keys go to `app_configs`, sensitive keys (password/secret/token/credential) go to `J2C.secrets` with a placeholder password (underscore form of the key, e.g. `db.password` -> `${db_password}`), since the real secret is provisioned out-of-band. Deploy-time fields (`scope`, `version`, `docker_version`, `sub_application_id`, `account`) are left empty.
 
 Keys read in code but never defined (and without a default) land in `missing.yaml` with an empty `config_value`. Fill those values (manually or via this skill), then merge them back to emit the final YAML:
 
