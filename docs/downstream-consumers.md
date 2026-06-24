@@ -138,15 +138,17 @@ yq '.added[].key' diff.yaml
 - Additive optional fields may appear in future versions; consumers should ignore unknown fields (most YAML parsers do by default).
 - The same key can appear multiple times across files/profiles/read-sites — that is intentional, not duplication. Key on `normalizedKey + role + environment.profile` to dedupe if needed.
 
-## Level 1.5 — the built-in `export` command (app-config-center format)
+## Level 1.5 — the built-in `export` command
 
-ConfigRadar ships a built-in transformer for a common downstream shape: a flat config-center list. Use it before writing your own transformer — it may already cover what you need.
+ConfigRadar ships a built-in transformer with two output modes, selectable via `--format`:
 
 ```bash
-java -jar dist/config-radar-cli.jar export --inventory config-inventory.yaml -o app-configs.yaml [--missing missing.yaml] [--merge filled.yaml]
+java -jar dist/config-radar-cli.jar export --inventory config-inventory.yaml -o out.yaml --format default|xac [--missing missing.yaml] [--merge filled.yaml]
 ```
 
-The output is **partitioned** into two sections:
+**`--format default`** — plain config inventory. Every key goes into `app_configs`; sensitive keys are kept inline and flagged with `secret: 1`. This is the general-purpose config statistic.
+
+**`--format xac`** — artifact for the internal XAC deployment platform. The output is partitioned:
 
 ```yaml
 app_configs:                  # plain (non-sensitive) config keys

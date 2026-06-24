@@ -83,6 +83,23 @@ final class AppConfigCenterExporterTest {
     }
 
     @Test
+    void defaultFormatKeepsSensitiveKeysInAppConfigs() {
+        // In DEFAULT mode the sensitive key stays in app_configs flagged secret:1, no J2C section.
+        var inventory = inventory(
+            define("db.password", "secret123", "src/main/resources/application.yml", null, SourceKind.YAML)
+        );
+
+        var result = exporter.export(inventory, AppConfigCenterExporter.ExportFormat.DEFAULT);
+
+        assertTrue(result.secrets().isEmpty(), "DEFAULT mode has no J2C section");
+        assertEquals(1, result.entries().size());
+        var entry = result.entries().getFirst();
+        assertEquals("db.password", entry.config_key());
+        assertEquals("secret123", entry.config_value());
+        assertEquals(1, entry.secret(), "sensitive key is flagged in DEFAULT mode");
+    }
+
+    @Test
     void groupsKeysByFirstSegment() {
         var inventory = inventory(
             define("server.port", "8080", "src/main/resources/application.yml", null, SourceKind.YAML),

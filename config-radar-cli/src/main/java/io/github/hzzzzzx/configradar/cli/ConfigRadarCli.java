@@ -196,13 +196,17 @@ public final class ConfigRadarCli implements Runnable {
         }
     }
 
-    @Command(name = "export", description = "Export an inventory to the app-config-center format.")
+    @Command(name = "export", description = "Export an inventory to a config-center format.")
     static final class ExportCommand implements Callable<Integer> {
         @Option(names = "--inventory", required = true, description = "Inventory YAML to convert.")
         private Path inventoryPath;
 
-        @Option(names = {"-o", "--output"}, required = true, description = "App-config YAML output path.")
+        @Option(names = {"-o", "--output"}, required = true, description = "Output YAML path.")
         private Path output;
+
+        @Option(names = "--format", defaultValue = "default",
+            description = "Output mode: 'default' (plain config inventory) or 'xac' (XAC deployment-platform artifact with app_configs + J2C.secrets). Default: default.")
+        private String formatName;
 
         @Option(names = "--missing", description = "Optional output for keys missing a value (to fill in and merge back).")
         private Path missing;
@@ -211,8 +215,8 @@ public final class ConfigRadarCli implements Runnable {
         private Path merge;
 
         /**
-         * Reads an inventory, converts it to the app-config-center {@code app_configs} format, and
-         * optionally writes a missing-value list or merges a filled one back in.
+         * Reads an inventory, converts it to the requested format, and optionally writes a
+         * missing-value list or merges a filled one back in.
          *
          * @return process exit code
          * @throws Exception when the inventory cannot be read or output cannot be written
@@ -222,10 +226,14 @@ public final class ConfigRadarCli implements Runnable {
             if (!Files.isReadable(inventoryPath)) {
                 return fail("Inventory does not exist or is not readable: " + inventoryPath);
             }
+            var format = parseFormat(formatName);
+            if (format == null) {
+                return fail("Unknown --format '" + formatName + "'; use 'default' or 'xac'.");
+            }
             var mapper = YamlSupport.mapper();
             var inventory = mapper.readValue(inventoryPath.toFile(), ConfigInventory.class);
             var exporter = new AppConfigCenterExporter();
-            var result = exporter.export(inventory);
+            var result = exporter.export(inventory, format);
 
             var entries = result.entries();
             if (merge != null) {
@@ -255,6 +263,17 @@ public final class ConfigRadarCli implements Runnable {
                 mapper.writeValue(missing.toFile(), java.util.Map.of("app_configs", result.missing()));
             }
             return 0;
+        }
+
+        private static AppConfigCenterExporter.ExportFormat parseFormat(String name) {
+            if (name == null) {
+                return AppConfigCenterExporter.ExportFormat.DEFAULT;
+            }
+            return switch (name.toLowerCase(java.util.Locale.ROOT)) {
+                case "default" -> AppConfigCenterExporter.ExportFormat.DEFAULT;
+                case "xac" -> AppConfigCenterExporter.ExportFormat.XAC;
+                default -> null;
+            };
         }
     }
 

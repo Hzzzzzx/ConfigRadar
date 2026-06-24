@@ -69,20 +69,24 @@ The diff reports `added` / `removed` / `changed` (value or default changed) plus
 
 The workflow is always: scan two states → diff the two YAML files. ConfigRadar never diffs source directly.
 
-### `export` — convert an inventory to the app-config-center format
+### `export` — convert an inventory to a config-center format
 
 ```bash
-java -jar dist/config-radar-cli.jar export --inventory <config-inventory.yaml> -o <app-configs.yaml> [options]
+java -jar dist/config-radar-cli.jar export --inventory <config-inventory.yaml> -o <output.yaml> [--format default|xac] [options]
 ```
 
 | Option | Purpose |
 |---|---|
 | `--inventory <f>` | Inventory YAML to convert (required). |
-| `-o, --output <f>` | App-config YAML output path (required). |
+| `-o, --output <f>` | Output YAML path (required). |
+| `--format <m>` | Output mode: `default` (plain config inventory) or `xac` (XAC deployment-platform artifact). Default: `default`. |
 | `--missing <f>` | Optional output for keys missing a value (read in code but never defined, no default). |
 | `--merge <f>` | Optional filled missing-file to merge values back into the export. |
 
-This converts a ConfigRadar inventory into a partitioned output: plain config keys go to `app_configs`, while sensitive keys (password/secret/token/credential) go to a separate `J2C.secrets` section:
+Two output modes:
+
+- **`default`** — plain config inventory. Every key goes into `app_configs`; sensitive keys are kept inline and flagged with `secret: 1`. No J2C section. This is the general-purpose config statistic.
+- **`xac`** — artifact for the internal XAC deployment platform. Sensitive keys (password/secret/token/credential) are routed to a separate `J2C.secrets` section with placeholder passwords, while `app_configs` holds only non-sensitive keys:
 
 ```yaml
 app_configs:                            # plain config (non-sensitive)

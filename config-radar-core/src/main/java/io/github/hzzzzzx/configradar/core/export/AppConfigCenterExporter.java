@@ -45,6 +45,21 @@ public final class AppConfigCenterExporter {
 
     private static final RedactionPolicy SENSITIVE = RedactionPolicy.redactSensitive();
 
+    /**
+     * Output mode.
+     * <ul>
+     *   <li>{@code DEFAULT} — plain config inventory; sensitive keys stay in {@code app_configs}
+     *       flagged with {@code secret: 1}. No J2C section.</li>
+     *   <li>{@code XAC} — platform artifact for the internal XAC deployment platform; sensitive
+     *       keys are routed to a separate {@code J2C.secrets} section with placeholder passwords,
+     *       and {@code app_configs} holds only non-sensitive keys.</li>
+     * </ul>
+     */
+    public enum ExportFormat {
+        DEFAULT,
+        XAC
+    }
+
     /** Result of an export: the main list, J2C secrets, and (optionally) the missing-default list. */
     public record ExportResult(
         List<AppConfigEntry> entries,
@@ -54,16 +69,23 @@ public final class AppConfigCenterExporter {
     }
 
     /**
-     * Exports an inventory to the app-config-center format with a separate J2C secrets section.
-     *
-     * <p>Sensitive keys (password/secret/token/credential) are routed to {@code secrets}; the rest
-     * go to {@code entries}. Keys read in code but never defined and without a default go to
-     * {@code missing}.
+     * Exports an inventory in {@link ExportFormat#XAC} (the default, partitioned output).
      *
      * @param inventory the ConfigRadar inventory to convert
      * @return main entries, J2C secrets, and missing-default entries
      */
     public ExportResult export(ConfigInventory inventory) {
+        return export(inventory, ExportFormat.XAC);
+    }
+
+    /**
+     * Exports an inventory in the chosen format.
+     *
+     * @param inventory the ConfigRadar inventory to convert
+     * @param format    output mode (DEFAULT keeps sensitive keys in app_configs; XAC routes them to J2C)
+     * @return main entries, J2C secrets, and missing-default entries
+     */
+    public ExportResult export(ConfigInventory inventory, ExportFormat format) {
         var byKey = deduplicate(inventory.items());
         var entries = new ArrayList<AppConfigEntry>();
         var secrets = new ArrayList<J2cSecretEntry>();
@@ -81,8 +103,9 @@ public final class AppConfigCenterExporter {
             var key = entry.getKey();
             var winner = entry.getValue();
             boolean hasValue = definedKeys.contains(key) || winner.defaultValue() != null;
-            if (SENSITIVE.matchesKey(key)) {
-                // Sensitive keys always go to the J2C secrets section, regardless of value state.
+            boolean sensitive = SENSITIVE.matchesKey(key);
+            if (sensitive && format == ExportFormat.XAC) {
+                // Sensitive keys route to the J2C secrets section in XAC mode.
                 secrets.add(toSecret(key, hasValue ? valueOr(winner) : null, winner));
             } else if (hasValue) {
                 entries.add(toEntry(key, valueOr(winner), winner));

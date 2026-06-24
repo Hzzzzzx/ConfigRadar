@@ -65,11 +65,12 @@ The diff workflow is always: scan two states → diff the two YAML files. Config
 | Option | Purpose |
 |---|---|
 | `--inventory <f>` | Inventory YAML to convert (required). |
-| `-o, --output <f>` | App-config YAML output (required). |
+| `-o, --output <f>` | Output YAML (required). |
+| `--format <m>` | Output mode: `default` (plain config inventory, sensitive keys kept inline with `secret: 1`) or `xac` (XAC deployment-platform artifact: sensitive keys routed to `J2C.secrets` with placeholder passwords). Default: `default`. |
 | `--missing <f>` | Optional output for keys read in code but never defined (no value/default). Fill `config_value` there and feed back via `--merge`. |
 | `--merge <f>` | Optional filled missing-file; its values override the inventory for matching keys. |
 
-`export` produces a partitioned output: plain config keys go to `app_configs`, while sensitive keys (password/secret/token/credential) go to a `J2C.secrets` section where `password` is a placeholder derived from the key (underscore form), since the real secret is provisioned out-of-band. Duplicate keys (defined in multiple files) are deduplicated keeping the highest Spring-priority source. Deploy-time fields (`scope`, `version`, `docker_version`, `sub_application_id`, `remark`, `account`) are left empty — ConfigRadar cannot discover them statically.
+`--format default` produces a plain `app_configs` list (the general config statistic). `--format xac` partitions the output: non-sensitive keys go to `app_configs`, sensitive keys (password/secret/token/credential) go to `J2C.secrets` with a placeholder password (underscore form of the key, e.g. `db.password` -> `${db_password}`), since the real secret is provisioned out-of-band. In both modes, duplicate keys are deduplicated keeping the highest Spring-priority source, and deploy-time fields (`scope`, `version`, `docker_version`, `sub_application_id`, `remark`, `account`) are left empty.
 
 ## How to read the inventory YAML
 
@@ -186,16 +187,16 @@ configFiles:
 
 Re-run the inventory; the new keys appear with the rule's `id` as `detectorId`. `keyArg`/`defaultArg`/`valueArg` are zero-based argument indexes; `keyAttribute`/`valueAttribute`/`defaultAttribute` are annotation attribute names.
 
-### 6. Export to an application config center
+### 6. Export to the XAC deployment platform (config-center artifact)
 
-Goal: produce a config-center import file from the inventory, with plain config and sensitive secrets partitioned, deduplicating keys by Spring priority.
+Goal: produce an XAC platform artifact (app_configs + J2C.secrets) from the inventory, deduplicating keys by Spring priority.
 
 ```bash
-# produce app_configs + J2C.secrets, plus a missing-value list for keys with no definition/default
-java -jar <jar> export --inventory config-inventory.yaml -o app-configs.yaml --missing missing.yaml
+# XAC format: app_configs + J2C.secrets, plus a missing-value list
+java -jar <jar> export --inventory config-inventory.yaml -o xac.yaml --format xac --missing missing.yaml
 ```
 
-The output is partitioned: non-sensitive keys go to `app_configs`, sensitive keys (password/secret/token/credential) go to `J2C.secrets` with a placeholder password (underscore form of the key, e.g. `db.password` -> `${db_password}`), since the real secret is provisioned out-of-band. Deploy-time fields (`scope`, `version`, `docker_version`, `sub_application_id`, `account`) are left empty.
+The output is partitioned: non-sensitive keys go to `app_configs`, sensitive keys (password/secret/token/credential) go to `J2C.secrets` with a placeholder password (underscore form of the key, e.g. `db.password` -> `${db_password}`), since the real secret is provisioned out-of-band. For a plain config inventory without the J2C split, use `--format default` (sensitive keys stay inline flagged `secret: 1`).
 
 Keys read in code but never defined (and without a default) land in `missing.yaml` with an empty `config_value`. Fill those values (manually or via this skill), then merge them back to emit the final YAML:
 
