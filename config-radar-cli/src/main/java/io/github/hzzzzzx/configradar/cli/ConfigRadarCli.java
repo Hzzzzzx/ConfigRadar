@@ -1,5 +1,6 @@
 package io.github.hzzzzzx.configradar.cli;
 
+import io.github.hzzzzzx.configradar.core.diff.ConfigDiffFilter;
 import io.github.hzzzzzx.configradar.core.diff.KeyBasedDiffStrategy;
 import io.github.hzzzzzx.configradar.core.export.AppConfigCenterExporter;
 import io.github.hzzzzzx.configradar.core.export.AppConfigEntry;
@@ -12,6 +13,7 @@ import io.github.hzzzzzx.configradar.core.output.ConsumerRegistry;
 import io.github.hzzzzzx.configradar.core.output.DirectoryConsumerSink;
 import io.github.hzzzzzx.configradar.core.output.InventoryConsumer;
 import io.github.hzzzzzx.configradar.core.output.YamlInventoryConsumer;
+import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import io.github.hzzzzzx.configradar.core.rule.RuleLoader;
 import io.github.hzzzzzx.configradar.core.scan.EnvironmentHints;
 import io.github.hzzzzzx.configradar.core.scan.RedactionPolicy;
@@ -19,9 +21,11 @@ import io.github.hzzzzzx.configradar.core.scan.ScanInput;
 import io.github.hzzzzzx.configradar.core.scan.ScanOptions;
 import io.github.hzzzzzx.configradar.core.scan.ScanPipeline;
 import io.github.hzzzzzx.configradar.core.scan.SensitiveValueRedactionEnricher;
+import io.github.hzzzzzx.configradar.core.scm.GitClient;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
@@ -35,7 +39,8 @@ import picocli.CommandLine.Parameters;
     subcommands = {
         ConfigRadarCli.InventoryCommand.class,
         ConfigRadarCli.DiffCommand.class,
-        ConfigRadarCli.ExportCommand.class
+        ConfigRadarCli.ExportCommand.class,
+        ConfigRadarCli.ConfigDiffCommand.class
     }
 )
 public final class ConfigRadarCli implements Runnable {
@@ -309,6 +314,92 @@ public final class ConfigRadarCli implements Runnable {
                 mapper.writeValue(missing.toFile(), java.util.Map.of("app_configs", result.missing()));
             }
             return 0;
+        }
+    }
+
+    @Command(name = "config-diff",
+        description = "Diff config between two git commits, scoped to changed files.")
+    static final class ConfigDiffCommand implements Callable<Integer> {
+        @Option(names = "--repo", description = "Git repository path (default: current directory).")
+        private Path repo;
+
+        @Option(names = "--base-ref", required = true, description = "Base commit-ish (tag/branch/sha).")
+        private String baseRef;
+
+        @Option(names = "--head-ref", required = true, description = "Head commit-ish (tag/branch/sha).")
+        private String headRef;
+
+        @Option(names = {"-o", "--output"}, required = true, description = "Diff YAML output path.")
+        private Path output;
+
+        @Option(names = "--profile", description = "Default profile hint (must match on both sides).")
+        private String profile;
+
+        @Option(names = "--region", description = "Default region hint.")
+        private String region;
+
+        @Option(names = "--namespace", description = "Default namespace hint.")
+        private String namespace;
+
+        @Option(names = "--redact-sensitive", description = "Mask sensitive-looking values.")
+        private boolean redactSensitive;
+
+        /**
+         * Materializes two commits into worktrees, scans each, diffs, and filters to only the
+         * changes touching files that git reports as changed between the two refs.
+         *
+         * @return process exit code
+         * @throws Exception when git, scanning, or writing fails
+         */
+        @Override
+        public Integer call() throws Exception {
+            var repository = repo != null ? repo : Path.of(".").toAbsolutePath();
+            var git = new GitClient();
+            var repoRoot = git.repositoryRoot(repository);
+            if (repoRoot == null) {
+                return fail("Not a git repository: " + repository);
+            }
+
+            var changedFiles = new HashSet<>(git.changedFiles(repoRoot, baseRef, headRef));
+            if (changedFiles.isEmpty()) {
+                System.err.println("config-radar: no changed files between " + baseRef + " and " + headRef);
+            }
+
+            Path baseWt = null;
+            Path headWt = null;
+            try {
+                baseWt = Files.createTempDirectory("cr-cfgdiff-base");
+                headWt = Files.createTempDirectory("cr-cfgdiff-head");
+                git.addWorktree(repoRoot, baseRef, baseWt);
+                git.addWorktree(repoRoot, headRef, headWt);
+
+                var baseInventory = scan(baseWt);
+                var headInventory = scan(headWt);
+
+                var diff = new KeyBasedDiffStrategy().diff(baseInventory, headInventory);
+                var filtered = new ConfigDiffFilter().filter(diff, changedFiles, headInventory);
+
+                writeParent(output);
+                var toWrite = redactSensitive
+                    ? new SensitiveValueRedactionEnricher().redact(filtered, RedactionPolicy.redactSensitive())
+                    : filtered;
+                YamlSupport.mapper().writeValue(output.toFile(), toWrite);
+                return 0;
+            } finally {
+                if (baseWt != null) git.removeWorktree(repoRoot, baseWt);
+                if (headWt != null) git.removeWorktree(repoRoot, headWt);
+            }
+        }
+
+        /** Scans a worktree path into an inventory with the command's profile/region hints. */
+        private ConfigInventory scan(Path projectRoot) throws Exception {
+            var input = ScanInput.of(projectRoot);
+            var options = new ScanOptions(
+                false, true, 0, 0, null,
+                redactSensitive ? RedactionPolicy.redactSensitive() : RedactionPolicy.disabled()
+            );
+            var result = ScanPipeline.defaults(false).scan(input, options, ConfigRules.empty());
+            return result.inventory();
         }
     }
 

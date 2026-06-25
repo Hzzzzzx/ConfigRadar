@@ -71,6 +71,22 @@ The diff reports `added` / `removed` / `changed` (value or default changed) plus
 
 The workflow is always: scan two states → diff the two YAML files. ConfigRadar never diffs source directly.
 
+### `config-diff` — config changes between two git commits
+
+```bash
+java -jar dist/config-radar-cli.jar config-diff --repo <repo> --base-ref <commit> --head-ref <commit> -o <changes.yaml> [options]
+```
+
+| Option | Purpose |
+|---|---|
+| `--repo <path>` | Git repository path (default: current directory). |
+| `--base-ref` / `--head-ref` | Commit-ish to compare (required): tag, branch, or sha. |
+| `-o, --output <f>` | Changes YAML output path (required). |
+| `--profile` / `--region` / `--namespace` | Default hints (applied to both sides). |
+| `--redact-sensitive` | Mask sensitive-looking values. |
+
+One command, end-to-end: materializes both commits into temporary worktrees, scans each into an inventory, diffs them, then **filters the diff to only the changes touching files that git reports as changed** between the two refs. This reduces noise — only config keys whose source file actually changed are reported. Worktrees are cleaned up automatically.
+
 ### `export` — convert an inventory to a config-center format
 
 ```bash
