@@ -208,6 +208,7 @@ When helping a user fill the missing list, look up each `config_key` in the inve
 
 ## Rules of thumb for running scans
 
+- **Write outputs into `scan-output/`** (gitignored), organized by purpose: `scan-output/inventory/`, `scan-output/export/{default,xac}/`, `scan-output/diff/`, `scan-output/config-diff/`, `scan-output/html/`. Each consumer writes a fixed filename (`app-configs.yaml` / `config-inventory.yaml` / `config-report.html`), so place one consumer's output per subdirectory to avoid overwrites.
 - Run from a clean checkout of the exact version you want to inventory.
 - Keep `--profile/--region/--namespace` identical when producing inventories you intend to diff.
 - `node_modules`, `target`, `.idea`, `.git` and similar are pruned automatically; no need to exclude them.

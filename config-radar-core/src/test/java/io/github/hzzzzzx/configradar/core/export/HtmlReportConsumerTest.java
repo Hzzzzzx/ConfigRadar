@@ -47,6 +47,8 @@ final class HtmlReportConsumerTest {
         assertTrue(html.contains("<dialog id=\"modal\""), "native modal present");
         assertTrue(html.contains("conic-gradient("), "CSS donut chart present");
         assertTrue(html.contains("目录 / 模块分布"), "directory distribution section present");
+        assertTrue(html.contains("数据从哪里来"), "report explains the scanner to inventory flow");
+        assertTrue(html.contains("ConfigFinding(role=READ, defaultValue=3000)"));
         assertFalse(html.contains("<link "), "no external stylesheet");
         assertFalse(html.contains("<script src"), "no external script");
         assertTrue(html.contains("spring.application.name"));

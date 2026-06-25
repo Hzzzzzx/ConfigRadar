@@ -103,6 +103,8 @@ public final class HtmlReportConsumer implements InventoryConsumer {
             .append("<li><span class=\"lock\">🔒</span> 标记敏感键（password、secret、token 等）；「出现」列为该键在源码中被发现的次数。</li>\n")
             .append("</ul>\n</details>\n");
 
+        renderPipelineSection(sb);
+
         // Stat cards.
         sb.append("<section class=\"stats\">\n");
         statCard(sb, groups.size(), "配置项");
@@ -173,6 +175,26 @@ public final class HtmlReportConsumer implements InventoryConsumer {
         sb.append("<footer>由 ConfigRadar 生成 — 可用任意浏览器直接打开本文件。</footer>\n");
         sb.append("<script>").append(JS).append("</script>\n</body>\n</html>\n");
         return sb.toString();
+    }
+
+    private static void renderPipelineSection(StringBuilder sb) {
+        sb.append("<details class=\"flow-note\" open>\n")
+            .append("<summary>数据从哪里来 <span class=\"n\">scanner → inventory → report</span></summary>\n")
+            .append("<div class=\"flow-grid\">\n")
+            .append("<div class=\"flow-cell\"><b>1. 源码线索</b><span>@Value、application.yml、.env、Dockerfile、k8s、XML 等静态资产。</span></div>\n")
+            .append("<div class=\"flow-arr\">→</div>\n")
+            .append("<div class=\"flow-cell\"><b>2. Detector</b><span>把注解、配置文件、部署文件解析成配置发现。</span></div>\n")
+            .append("<div class=\"flow-arr\">→</div>\n")
+            .append("<div class=\"flow-cell\"><b>3. ConfigInventory</b><span>确定 key 进入 items，动态表达式进入 uncertain。</span></div>\n")
+            .append("<div class=\"flow-arr\">→</div>\n")
+            .append("<div class=\"flow-cell\"><b>4. HTML 投影</b><span>按 key 聚合，展示生效值、所有来源、风险提示和诊断。</span></div>\n")
+            .append("</div>\n")
+            .append("<p class=\"flow-desc\">例：<code>@Value(\"${payment.client.timeout:3000}\")</code> 会变成 ")
+            .append("<code>ConfigFinding(role=READ, defaultValue=3000)</code>；")
+            .append("<code>payment.client.timeout: 5000</code> 会变成 ")
+            .append("<code>ConfigFinding(role=DEFINE, value=5000)</code>。")
+            .append("报告只负责展示这份 inventory，不重新解释源码。</p>\n")
+            .append("</details>\n");
     }
 
     /** Renders the collapsed one-row-per-key entry, and emits its detail into {@code templates}. */
@@ -454,6 +476,12 @@ public final class HtmlReportConsumer implements InventoryConsumer {
         details.help{margin-top:8px}\
         details.help ul{margin:6px 0 0;padding-left:20px;color:var(--mut);line-height:1.8}\
         details.help li b{color:var(--ink)}\
+        details.flow-note{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:0 16px 14px}\
+        .flow-grid{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr 28px 1fr;gap:8px;align-items:stretch;margin:8px 0 10px}\
+        .flow-cell{border:1px solid var(--line);border-radius:8px;background:#f6f8fa;padding:10px 12px}\
+        .flow-cell b{display:block;font-size:13px;margin-bottom:4px}.flow-cell span{display:block;color:var(--mut);font-size:12px;line-height:1.5}\
+        .flow-arr{display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700}\
+        .flow-desc{margin:8px 0 0;color:var(--mut);line-height:1.7}.flow-desc code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f6f8fa;border:1px solid var(--line);border-radius:4px;padding:1px 4px;color:#0a3069}\
         .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}\
         .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}\
         .card .num{font-size:26px;font-weight:700}\
@@ -512,6 +540,7 @@ public final class HtmlReportConsumer implements InventoryConsumer {
         .win{color:var(--c-medium)}\
         footer{color:var(--mut);font-size:12px;text-align:center;padding:24px}\
         .hidden{display:none}\
+        @media(max-width:900px){.flow-grid{grid-template-columns:1fr}.flow-arr{transform:rotate(90deg);height:18px}}\
         """;
 
     private static final String JS = """

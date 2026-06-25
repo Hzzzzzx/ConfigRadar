@@ -3,3 +3,4 @@ dist/
 .codegraph/
 .code-review-graph/
 .DS_Store
+scan-output/
