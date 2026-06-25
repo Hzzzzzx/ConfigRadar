@@ -299,13 +299,29 @@ public final class ConfigRadarCli implements Runnable {
             }
 
             writeParent(output);
-            // Output is partitioned: app_configs (plain config) on top, J2C.secrets (sensitive) below.
-            var outputMap = new java.util.LinkedHashMap<String, Object>();
-            outputMap.put("app_configs", entries);
-            if (!result.secrets().isEmpty()) {
-                outputMap.put("J2C", java.util.Map.of("secrets", result.secrets()));
+            if (format == io.github.hzzzzzx.configradar.core.export.AppConfigCenterExporter.ExportFormat.XAC) {
+                // XAC: build the manifest (apiVersion/kind/metadata/data) and dump at 4-space indent.
+                var data = new java.util.LinkedHashMap<String, Object>();
+                data.put("app_configs", entries);
+                if (!result.secrets().isEmpty()) {
+                    data.put("J2C", java.util.Map.of("secrets", result.secrets()));
+                }
+                var manifest = new java.util.LinkedHashMap<String, Object>();
+                manifest.put("apiVersion", "com.huawei.his.appconfigcenter.v3");
+                manifest.put("kind", "his.appconfigcenter");
+                var project = inventory.project();
+                var appName = (project != null && !"unknown".equals(project.name())) ? project.name() : "app";
+                manifest.put("metadata", java.util.Map.of("name", appName));
+                manifest.put("data", data);
+                try (var writer = Files.newBufferedWriter(output)) {
+                    io.github.hzzzzzx.configradar.core.export.ManifestYaml.dump(manifest, writer);
+                }
+            } else {
+                // default: flat app_configs, 2-space Jackson YAML.
+                var outputMap = new java.util.LinkedHashMap<String, Object>();
+                outputMap.put("app_configs", entries);
+                mapper.writeValue(output.toFile(), outputMap);
             }
-            mapper.writeValue(output.toFile(), outputMap);
             if (missing != null) {
                 writeParent(missing);
                 mapper.writeValue(missing.toFile(), java.util.Map.of("app_configs", result.missing()));

@@ -22,23 +22,6 @@ public final class XacConsumer implements InventoryConsumer {
 
     private final AppConfigCenterExporter exporter = new AppConfigCenterExporter();
 
-    /**
-     * Dumps the manifest with 4-space indentation to match the XAC platform manifest style
-     * (issue #3). Jackson YAML defaults to 2-space, and SnakeYAML does not recognize Java records,
-     * so Jackson is first used to convert the record tree to a generic Map/List structure, then
-     * SnakeYAML dumps that with a 4-space block style.
-     */
-    private static void dumpManifest(Object data, java.io.Writer writer) {
-        // Step 1: Jackson converts records to a generic Map/List tree (handles records correctly).
-        var mapper = io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper();
-        var generic = mapper.convertValue(data, java.util.Map.class);
-        // Step 2: SnakeYAML dumps the generic tree with 4-space block indentation.
-        var options = new org.yaml.snakeyaml.DumperOptions();
-        options.setIndent(4);
-        options.setDefaultFlowStyle(org.yaml.snakeyaml.DumperOptions.FlowStyle.BLOCK);
-        new org.yaml.snakeyaml.Yaml(options).dump(generic, writer);
-    }
-
     @Override
     public String id() {
         return "xac";
@@ -68,7 +51,7 @@ public final class XacConsumer implements InventoryConsumer {
 
         try (var out = sink.openFile("app-configs.yaml");
              var writer = new java.io.OutputStreamWriter(out)) {
-            dumpManifest(output, writer);
+            ManifestYaml.dump(output, writer);
         }
     }
 }

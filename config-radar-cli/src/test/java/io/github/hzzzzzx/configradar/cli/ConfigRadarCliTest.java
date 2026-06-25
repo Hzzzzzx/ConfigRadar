@@ -435,9 +435,12 @@ final class ConfigRadarCliTest {
         var mapper = io.github.hzzzzzx.configradar.core.io.YamlSupport.mapper();
         @SuppressWarnings("unchecked")
         java.util.Map<String, Object> root = mapper.readValue(output.toFile(), java.util.Map.class);
+        // XAC manifest nests config under data; sensitive keys are in data.J2C.secrets.
+        @SuppressWarnings("unchecked")
+        var dataMap = (java.util.Map<String, Object>) root.get("data");
         @SuppressWarnings("unchecked")
         var secrets = (java.util.List<java.util.Map<String, Object>>)
-            ((java.util.Map<String, Object>) root.get("J2C")).get("secrets");
+            ((java.util.Map<String, Object>) dataMap.get("J2C")).get("secrets");
         assertEquals(1, secrets.size());
         assertEquals("db_password", secrets.getFirst().get("key"));
         assertEquals("${db_password}", secrets.getFirst().get("password"));
