@@ -47,23 +47,19 @@ final class AppConfigCenterExporterTest {
     }
 
     @Test
-    void routesSensitiveKeysToJ2cSecrets() {
-        // db.password is sensitive -> goes to the J2C secrets section, not app_configs.
+    void sensitiveKeyStaysInAppConfigsFlagged() {
+        // Sensitive keys stay in app_configs flagged secret:1 (the default/core behavior).
         var inventory = inventory(
             define("db.password", "secret123", "src/main/resources/application.yml", null, SourceKind.YAML)
         );
 
         var result = exporter.export(inventory);
 
-        assertTrue(result.entries().isEmpty(), "sensitive key is not a plain app_config");
-        assertEquals(1, result.secrets().size());
-        var secret = result.secrets().getFirst();
-        assertEquals("db_password", secret.key(), "J2C key is the underscore form");
-        assertEquals("${db_password}", secret.password(), "password is a placeholder from the key");
-        assertEquals(AppConfigCenterExporter.DEFAULT_INIT_SOURCE, secret.init_source());
-        assertEquals(AppConfigCenterExporter.DEFAULT_ENCRYPT_TYPE, secret.encrypt_type());
-        assertEquals("mysql", secret.type(), "db.* key hints type mysql");
-        assertEquals(AppConfigCenterExporter.DEFAULT_SCOPE, secret.scope());
+        assertEquals(1, result.entries().size());
+        var entry = result.entries().getFirst();
+        assertEquals("db.password", entry.config_key());
+        assertEquals("secret123", entry.config_value());
+        assertEquals(1, entry.secret(), "sensitive key is flagged secret:1");
     }
 
     @Test
@@ -80,23 +76,6 @@ final class AppConfigCenterExporterTest {
         assertEquals("8080", entry.config_value());
         assertEquals(0, entry.secret(), "non-sensitive key is not flagged");
         assertEquals(AppConfigCenterExporter.DEFAULT_SCOPE, entry.scope());
-    }
-
-    @Test
-    void defaultFormatKeepsSensitiveKeysInAppConfigs() {
-        // In DEFAULT mode the sensitive key stays in app_configs flagged secret:1, no J2C section.
-        var inventory = inventory(
-            define("db.password", "secret123", "src/main/resources/application.yml", null, SourceKind.YAML)
-        );
-
-        var result = exporter.export(inventory, AppConfigCenterExporter.ExportFormat.DEFAULT);
-
-        assertTrue(result.secrets().isEmpty(), "DEFAULT mode has no J2C section");
-        assertEquals(1, result.entries().size());
-        var entry = result.entries().getFirst();
-        assertEquals("db.password", entry.config_key());
-        assertEquals("secret123", entry.config_value());
-        assertEquals(1, entry.secret(), "sensitive key is flagged in DEFAULT mode");
     }
 
     @Test
@@ -154,7 +133,7 @@ final class AppConfigCenterExporterTest {
     void mergeFillsInMissingValuesOverridingBase() {
         var base = List.of(
             entry("db.host", "localhost"),
-            entry("feature.flag", null)
+            entry("feature.flag", "")
         );
         var filled = List.of(
             entry("feature.flag", "enabled")
@@ -198,7 +177,7 @@ final class AppConfigCenterExporterTest {
 
     private static AppConfigEntry entry(String key, String value) {
         return new AppConfigEntry(
-            AppConfigCenterExporter.DEFAULT_SCOPE, "default", key, value, 0, null, null, null, null
+            AppConfigCenterExporter.DEFAULT_SCOPE, "default", key, value, 0, "", "1.0", "1.0", ""
         );
     }
 

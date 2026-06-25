@@ -278,6 +278,22 @@ Boundary:
 - `keyArg`, `defaultArg`, and `valueArg` are literal argument indexes only; deeper data flow remains a later tracing capability.
 - No plugin classpath loading in MVP.
 
+### Discover Downstream Consumers via ServiceLoader
+
+Decision:
+
+- Downstream consumers (`InventoryConsumer` implementations) are discovered at runtime via `java.util.ServiceLoader` (each module registers under `META-INF/services`).
+- Consumer modules (e.g. `config-radar-xac`) live in their own Maven module, depend on `config-radar-core`, and are packaged into the CLI fat jar. The CLI never imports a consumer module — it discovers them generically.
+
+Rationale:
+
+- Keeps the CLI decoupled from any specific downstream format. Adding/changing a consumer does not touch the CLI.
+- Downstream teams maintain their own module without conflicting with core.
+
+Boundary:
+
+- This is **not** runtime plugin loading of external/downloaded code. All consumer classes are compiled into the fat jar at build time; ServiceLoader only selects which of them to instantiate. Remote packs / dynamic classpath loading remain a later capability.
+
 ### Use OpenRewrite as the Main Static Scanner
 
 Decision:

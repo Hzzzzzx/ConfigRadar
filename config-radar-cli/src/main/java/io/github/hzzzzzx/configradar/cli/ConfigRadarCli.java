@@ -5,12 +5,12 @@ import io.github.hzzzzzx.configradar.core.export.AppConfigCenterExporter;
 import io.github.hzzzzzx.configradar.core.export.AppConfigEntry;
 import io.github.hzzzzzx.configradar.core.export.DefaultFormatConsumer;
 import io.github.hzzzzzx.configradar.core.export.HtmlReportConsumer;
-import io.github.hzzzzzx.configradar.core.export.XacConsumer;
 import io.github.hzzzzzx.configradar.core.io.YamlSupport;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.output.ConsumerContext;
 import io.github.hzzzzzx.configradar.core.output.ConsumerRegistry;
 import io.github.hzzzzzx.configradar.core.output.DirectoryConsumerSink;
+import io.github.hzzzzzx.configradar.core.output.InventoryConsumer;
 import io.github.hzzzzzx.configradar.core.output.YamlInventoryConsumer;
 import io.github.hzzzzzx.configradar.core.rule.RuleLoader;
 import io.github.hzzzzzx.configradar.core.scan.EnvironmentHints;
@@ -98,7 +98,7 @@ public final class ConfigRadarCli implements Runnable {
         private boolean redactSensitive;
 
         @Option(names = "--consumer", defaultValue = "yaml",
-            description = "Consumer id: 'yaml' (default ConfigRadar inventory), 'default' (plain app_configs), 'xac' (XAC platform artifact), or 'html' (self-contained HTML report). Default: yaml.")
+            description = "Consumer id (default: yaml). Built-in: yaml, default, html. Additional consumers (e.g. xac) are discovered from modules on the classpath.")
         private String consumerId;
 
         @Option(names = "-D", description = "Downstream context property (key=value, repeatable). Passed to the consumer, e.g. -D scope=prod.")
@@ -172,13 +172,22 @@ public final class ConfigRadarCli implements Runnable {
             return 0;
         }
 
-        /** Builds the built-in consumer registry (no plugin loading; explicit registration only). */
+        /**
+         * Builds the consumer registry: core built-ins first, then any discovered via ServiceLoader
+         * (e.g. the XAC module, which lives in its own Maven module and registers via
+         * META-INF/services). The CLI itself never imports consumer modules, so downstream formats
+         * evolve without touching the CLI.
+         */
         private static ConsumerRegistry builtinConsumers() {
-            return new ConsumerRegistry()
+            var registry = new ConsumerRegistry()
                 .register(new YamlInventoryConsumer())
                 .register(new DefaultFormatConsumer())
-                .register(new XacConsumer())
                 .register(new HtmlReportConsumer());
+            // ServiceLoader discovers consumers packaged in the fat jar (e.g. config-radar-xac).
+            for (var discovered : java.util.ServiceLoader.load(InventoryConsumer.class)) {
+                registry.register(discovered);
+            }
+            return registry;
         }
 
         /** Parses -D key=value pairs into a map for the consumer context. */
@@ -244,17 +253,13 @@ public final class ConfigRadarCli implements Runnable {
         }
     }
 
-    @Command(name = "export", description = "Export an inventory to a config-center format.")
+    @Command(name = "export", description = "Export an inventory to the default app_configs format.")
     static final class ExportCommand implements Callable<Integer> {
         @Option(names = "--inventory", required = true, description = "Inventory YAML to convert.")
         private Path inventoryPath;
 
         @Option(names = {"-o", "--output"}, required = true, description = "Output YAML path.")
         private Path output;
-
-        @Option(names = "--format", defaultValue = "default",
-            description = "Output mode: 'default' (plain config inventory) or 'xac' (XAC deployment-platform artifact with app_configs + J2C.secrets). Default: default.")
-        private String formatName;
 
         @Option(names = "--missing", description = "Optional output for keys missing a value (to fill in and merge back).")
         private Path missing;
@@ -263,8 +268,9 @@ public final class ConfigRadarCli implements Runnable {
         private Path merge;
 
         /**
-         * Reads an inventory, converts it to the requested format, and optionally writes a
-         * missing-value list or merges a filled one back in.
+         * Reads an inventory, converts it to the default app_configs format, and optionally writes a
+         * missing-value list or merges a filled one back in. For other formats (e.g. xac), use
+         * {@code inventory --consumer <id>} instead.
          *
          * @return process exit code
          * @throws Exception when the inventory cannot be read or output cannot be written
@@ -274,14 +280,10 @@ public final class ConfigRadarCli implements Runnable {
             if (!Files.isReadable(inventoryPath)) {
                 return fail("Inventory does not exist or is not readable: " + inventoryPath);
             }
-            var format = parseFormat(formatName);
-            if (format == null) {
-                return fail("Unknown --format '" + formatName + "'; use 'default' or 'xac'.");
-            }
             var mapper = YamlSupport.mapper();
             var inventory = mapper.readValue(inventoryPath.toFile(), ConfigInventory.class);
             var exporter = new AppConfigCenterExporter();
-            var result = exporter.export(inventory, format);
+            var result = exporter.export(inventory);
 
             var entries = result.entries();
             if (merge != null) {
@@ -299,45 +301,14 @@ public final class ConfigRadarCli implements Runnable {
             }
 
             writeParent(output);
-            if (format == io.github.hzzzzzx.configradar.core.export.AppConfigCenterExporter.ExportFormat.XAC) {
-                // XAC: build the manifest (apiVersion/kind/metadata/data) and dump at 4-space indent.
-                var data = new java.util.LinkedHashMap<String, Object>();
-                data.put("app_configs", entries);
-                if (!result.secrets().isEmpty()) {
-                    data.put("J2C", java.util.Map.of("secrets", result.secrets()));
-                }
-                var manifest = new java.util.LinkedHashMap<String, Object>();
-                manifest.put("apiVersion", "com.huawei.his.appconfigcenter.v3");
-                manifest.put("kind", "his.appconfigcenter");
-                var project = inventory.project();
-                var appName = (project != null && !"unknown".equals(project.name())) ? project.name() : "app";
-                manifest.put("metadata", java.util.Map.of("name", appName));
-                manifest.put("data", data);
-                try (var writer = Files.newBufferedWriter(output)) {
-                    io.github.hzzzzzx.configradar.core.export.ManifestYaml.dump(manifest, writer);
-                }
-            } else {
-                // default: flat app_configs, 2-space Jackson YAML.
-                var outputMap = new java.util.LinkedHashMap<String, Object>();
-                outputMap.put("app_configs", entries);
-                mapper.writeValue(output.toFile(), outputMap);
-            }
+            var outputMap = new java.util.LinkedHashMap<String, Object>();
+            outputMap.put("app_configs", entries);
+            mapper.writeValue(output.toFile(), outputMap);
             if (missing != null) {
                 writeParent(missing);
                 mapper.writeValue(missing.toFile(), java.util.Map.of("app_configs", result.missing()));
             }
             return 0;
-        }
-
-        private static AppConfigCenterExporter.ExportFormat parseFormat(String name) {
-            if (name == null) {
-                return AppConfigCenterExporter.ExportFormat.DEFAULT;
-            }
-            return switch (name.toLowerCase(java.util.Locale.ROOT)) {
-                case "default" -> AppConfigCenterExporter.ExportFormat.DEFAULT;
-                case "xac" -> AppConfigCenterExporter.ExportFormat.XAC;
-                default -> null;
-            };
         }
     }
 

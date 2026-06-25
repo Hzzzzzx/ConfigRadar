@@ -26,7 +26,7 @@ public final class DefaultFormatConsumer implements InventoryConsumer {
 
     @Override
     public void consume(ConfigInventory inventory, ConsumerContext context, ConsumerSink sink) throws Exception {
-        var result = exporter.export(inventory, AppConfigCenterExporter.ExportFormat.DEFAULT);
+        var result = exporter.export(inventory);
         var output = new LinkedHashMap<String, Object>();
         output.put("app_configs", result.entries());
         try (var out = sink.openFile("app-configs.yaml")) {

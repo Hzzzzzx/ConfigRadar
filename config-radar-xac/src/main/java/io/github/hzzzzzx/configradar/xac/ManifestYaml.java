@@ -1,4 +1,4 @@
-package io.github.hzzzzzx.configradar.core.export;
+package io.github.hzzzzzx.configradar.xac;
 
 import io.github.hzzzzzx.configradar.core.io.YamlSupport;
 import java.io.IOException;
@@ -9,8 +9,7 @@ import java.io.Writer;
  *
  * <p>Jackson YAML defaults to 2-space indentation and SnakeYAML cannot serialize Java records
  * directly. This combines both: Jackson converts the record tree to a generic {@code Map}/{@code List}
- * structure, then SnakeYAML dumps it with a 4-space block style. Used by the XAC consumer and the
- * {@code export} command so both emit the same manifest shape (issue #3).
+ * structure, then SnakeYAML dumps it with a 4-space block style.
  */
 public final class ManifestYaml {
     private ManifestYaml() {

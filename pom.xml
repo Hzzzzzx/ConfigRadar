@@ -11,6 +11,7 @@
 
   <modules>
     <module>config-radar-core</module>
+    <module>config-radar-xac</module>
     <module>config-radar-cli</module>
   </modules>
 

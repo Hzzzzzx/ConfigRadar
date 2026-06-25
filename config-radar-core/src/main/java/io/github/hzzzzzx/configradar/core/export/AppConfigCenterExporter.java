@@ -2,9 +2,7 @@ package io.github.hzzzzzx.configradar.core.export;
 
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
-import io.github.hzzzzzx.configradar.core.model.ConfigValue;
 import io.github.hzzzzzx.configradar.core.model.FindingRole;
-import io.github.hzzzzzx.configradar.core.model.Scope;
 import io.github.hzzzzzx.configradar.core.model.SourceKind;
 import io.github.hzzzzzx.configradar.core.scan.RedactionPolicy;
 import java.util.ArrayList;
@@ -12,11 +10,9 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 /**
- * Converts a ConfigRadar {@link ConfigInventory} into the application-config-center
- * {@code app_configs} format.
+ * Converts a ConfigRadar {@link ConfigInventory} into the {@code app_configs} format.
  *
  * <p>The conversion does three things:
  * <ol>
@@ -29,69 +25,36 @@ import java.util.Map;
  * </ol>
  *
  * <p>The Spring priority is an <em>approximation</em> inferred from file name and profile, since
- * ConfigRadar does not record the full 17-layer PropertySource order. The output flags this with
- * {@code priority: approximate}.
+ * ConfigRadar does not record the full 17-layer PropertySource order.
  */
 public final class AppConfigCenterExporter {
 
     /** Placeholder scope used for every entry; deploy-time metadata ConfigRadar cannot know. */
     public static final String DEFAULT_SCOPE = "${app_deploy_unit_name}";
 
-    /** Default encrypt type used by the J2C secret template. */
-    public static final String DEFAULT_ENCRYPT_TYPE = "ADVANCED2.6";
-
-    /** Default init source for J2C secrets (manual input). */
-    public static final String DEFAULT_INIT_SOURCE = "input";
-
     /** Default version for newly discovered config entries. */
     public static final String DEFAULT_VERSION = "1.0";
 
     private static final RedactionPolicy SENSITIVE = RedactionPolicy.redactSensitive();
 
-    /**
-     * Output mode.
-     * <ul>
-     *   <li>{@code DEFAULT} — plain config inventory; sensitive keys stay in {@code app_configs}
-     *       flagged with {@code secret: 1}. No J2C section.</li>
-     *   <li>{@code XAC} — platform artifact for the internal XAC deployment platform; sensitive
-     *       keys are routed to a separate {@code J2C.secrets} section with placeholder passwords,
-     *       and {@code app_configs} holds only non-sensitive keys.</li>
-     * </ul>
-     */
-    public enum ExportFormat {
-        DEFAULT,
-        XAC
-    }
-
-    /** Result of an export: the main list, J2C secrets, and (optionally) the missing-default list. */
+    /** Result of an export: the main list and (optionally) the missing-default list. */
     public record ExportResult(
         List<AppConfigEntry> entries,
-        List<J2cSecretEntry> secrets,
         List<AppConfigEntry> missing
     ) {
     }
 
     /**
-     * Exports an inventory in {@link ExportFormat#XAC} (the default, partitioned output).
+     * Exports an inventory to the plain app_configs format.
+     *
+     * <p>Sensitive keys stay in {@code app_configs} flagged with {@code secret: 1}.
      *
      * @param inventory the ConfigRadar inventory to convert
-     * @return main entries, J2C secrets, and missing-default entries
+     * @return main entries and missing-default entries
      */
     public ExportResult export(ConfigInventory inventory) {
-        return export(inventory, ExportFormat.XAC);
-    }
-
-    /**
-     * Exports an inventory in the chosen format.
-     *
-     * @param inventory the ConfigRadar inventory to convert
-     * @param format    output mode (DEFAULT keeps sensitive keys in app_configs; XAC routes them to J2C)
-     * @return main entries, J2C secrets, and missing-default entries
-     */
-    public ExportResult export(ConfigInventory inventory, ExportFormat format) {
         var byKey = deduplicate(inventory.items());
         var entries = new ArrayList<AppConfigEntry>();
-        var secrets = new ArrayList<J2cSecretEntry>();
         var missing = new ArrayList<AppConfigEntry>();
         var definedKeys = new java.util.HashSet<String>();
 
@@ -106,22 +69,17 @@ public final class AppConfigCenterExporter {
             var key = entry.getKey();
             var winner = entry.getValue();
             boolean hasValue = definedKeys.contains(key) || winner.defaultValue() != null;
-            boolean sensitive = SENSITIVE.matchesKey(key);
-            if (sensitive && format == ExportFormat.XAC) {
-                // Sensitive keys route to the J2C secrets section in XAC mode.
-                secrets.add(toSecret(key, hasValue ? valueOr(winner) : null, winner));
-            } else if (hasValue) {
-                entries.add(toEntry(key, valueOr(winner), winner));
+            if (hasValue) {
+                entries.add(toEntry(key, valueOr(winner)));
             } else {
                 // Read but never defined and no default — needs a value filled in.
-                missing.add(toEntry(key, "", winner));
+                missing.add(toEntry(key, ""));
             }
         }
 
         entries.sort(Comparator.comparing(AppConfigEntry::config_key));
-        secrets.sort(Comparator.comparing(J2cSecretEntry::key));
         missing.sort(Comparator.comparing(AppConfigEntry::config_key));
-        return new ExportResult(entries, secrets, missing);
+        return new ExportResult(entries, missing);
     }
 
     /**
@@ -172,8 +130,9 @@ public final class AppConfigCenterExporter {
     /**
      * Approximates Spring Boot externalized-configuration priority from source evidence.
      * Higher number = higher priority (wins). This is a heuristic, not the full Spring order.
+     * Public so downstream consumers (e.g. the XAC module) can reuse the same ranking.
      */
-    static int springPriority(ConfigFinding finding) {
+    public static int springPriority(ConfigFinding finding) {
         var source = finding.source();
         var path = source.path() == null ? "" : source.path().toLowerCase(Locale.ROOT);
         var profile = finding.environment() == null ? null : finding.environment().profile();
@@ -205,7 +164,7 @@ public final class AppConfigCenterExporter {
         return 10;
     }
 
-    private AppConfigEntry toEntry(String normalizedKey, String value, ConfigFinding finding) {
+    private AppConfigEntry toEntry(String normalizedKey, String value) {
         return new AppConfigEntry(
             DEFAULT_SCOPE,
             groupOf(normalizedKey),
@@ -217,51 +176,6 @@ public final class AppConfigCenterExporter {
             DEFAULT_VERSION,
             ""
         );
-    }
-
-    /**
-     * Builds a J2C secret entry for a sensitive key. The {@code key} is the underscore form of the
-     * config key (e.g. {@code db.password} -> {@code db_password}); {@code password} is a
-     * placeholder built from that underscore key, since the real secret is provisioned elsewhere.
-     */
-    private J2cSecretEntry toSecret(String normalizedKey, String value, ConfigFinding finding) {
-        var underscoreKey = toUnderscore(normalizedKey);
-        var type = typeHint(normalizedKey);
-        return new J2cSecretEntry(
-            underscoreKey,
-            DEFAULT_INIT_SOURCE,
-            type == null ? "" : type,
-            "",
-            "${" + underscoreKey + "}",
-            DEFAULT_ENCRYPT_TYPE,
-            remarkOf(normalizedKey),
-            DEFAULT_SCOPE
-        );
-    }
-
-    /** Converts a normalized dotted/hyphenated key into an underscore form for placeholder names. */
-    static String toUnderscore(String key) {
-        if (key == null || key.isBlank()) {
-            return "config";
-        }
-        return key.replace('-', '_').replace('.', '_').toLowerCase(Locale.ROOT);
-    }
-
-    /** Best-effort connection type hint from the key (e.g. {@code db.password} -> {@code mysql}). */
-    private static String typeHint(String key) {
-        var lower = key.toLowerCase(Locale.ROOT);
-        if (lower.contains("redis")) {
-            return "redis";
-        }
-        if (lower.startsWith("db.") || lower.contains("datasource") || lower.contains("jdbc")) {
-            return "mysql";
-        }
-        return null;
-    }
-
-    private static String remarkOf(String key) {
-        var type = typeHint(key);
-        return type == null ? "" : type;
     }
 
     /** First segment of a dotted key, used as the config-center group. {@code db.host} -> {@code db}. */
