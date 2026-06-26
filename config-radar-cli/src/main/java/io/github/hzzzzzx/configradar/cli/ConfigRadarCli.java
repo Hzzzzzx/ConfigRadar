@@ -7,11 +7,15 @@ import io.github.hzzzzzx.configradar.core.export.AppConfigEntry;
 import io.github.hzzzzzx.configradar.core.export.DefaultFormatConsumer;
 import io.github.hzzzzzx.configradar.core.export.HtmlReportConsumer;
 import io.github.hzzzzzx.configradar.core.io.YamlSupport;
+import io.github.hzzzzzx.configradar.core.model.ConfigDiff;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
 import io.github.hzzzzzx.configradar.core.output.ConsumerContext;
 import io.github.hzzzzzx.configradar.core.output.ConsumerRegistry;
+import io.github.hzzzzzx.configradar.core.output.DiffConsumer;
+import io.github.hzzzzzx.configradar.core.output.DiffConsumerRegistry;
 import io.github.hzzzzzx.configradar.core.output.DirectoryConsumerSink;
 import io.github.hzzzzzx.configradar.core.output.InventoryConsumer;
+import io.github.hzzzzzx.configradar.core.output.YamlDiffConsumer;
 import io.github.hzzzzzx.configradar.core.output.YamlInventoryConsumer;
 import io.github.hzzzzzx.configradar.core.rule.ConfigRules;
 import io.github.hzzzzzx.configradar.core.rule.RuleLoader;
@@ -344,6 +348,13 @@ public final class ConfigRadarCli implements Runnable {
         @Option(names = "--redact-sensitive", description = "Mask sensitive-looking values.")
         private boolean redactSensitive;
 
+        @Option(names = "--consumer", defaultValue = "yaml",
+            description = "Consumer id (default: yaml). Built-in: yaml. Additional consumers (e.g. xac) are discovered from modules on the classpath.")
+        private String consumerId;
+
+        @Option(names = "-D", description = "Downstream context property (key=value, repeatable). Passed to the consumer.")
+        private java.util.List<String> contextProps = java.util.List.of();
+
         /**
          * Materializes two commits into worktrees, scans each, diffs, and filters to only the
          * changes touching files that git reports as changed between the two refs.
@@ -388,10 +399,22 @@ public final class ConfigRadarCli implements Runnable {
                 var toWrite = redactSensitive
                     ? new SensitiveValueRedactionEnricher().redact(filtered, RedactionPolicy.redactSensitive())
                     : filtered;
+                // Always write the standalone YAML diff report (backward compatible), then route the
+                // same diff through the selected consumer for additional formats (e.g. xac).
                 YamlSupport.mapper().writeValue(output.toFile(), toWrite);
                 System.err.println("config-radar: wrote " + output + " (added=" + filtered.summary().added()
                     + ", removed=" + filtered.summary().removed()
                     + ", changed=" + filtered.summary().changed() + ")");
+                if (!"yaml".equals(consumerId)) {
+                    var consumer = builtinDiffConsumers().find(consumerId);
+                    if (consumer.isEmpty()) {
+                        return fail("Unknown --consumer '" + consumerId + "'; available: " + builtinDiffConsumers().ids());
+                    }
+                    var context = new ConsumerContext(profile, region, namespace, parseContextProps(contextProps));
+                    var sink = new DirectoryConsumerSink(output.getParent());
+                    consumer.get().consume(toWrite, context, sink);
+                    System.err.println("config-radar: consumer '" + consumerId + "' wrote into " + output.getParent());
+                }
                 return 0;
             } finally {
                 // baseWt may be a worktree (needs git worktree remove) or an archive dir (plain rmdir).
@@ -449,13 +472,46 @@ public final class ConfigRadarCli implements Runnable {
 
         /** Scans a worktree path into an inventory with the command's profile/region hints. */
         private ConfigInventory scan(Path projectRoot) throws Exception {
-            var input = ScanInput.of(projectRoot);
+            var input = new ScanInput(
+                projectRoot,
+                java.util.List.of(),
+                java.util.List.of(),
+                null,
+                new EnvironmentHints(profile, region, namespace),
+                null
+            );
             var options = new ScanOptions(
                 false, true, 0, 0, null,
                 redactSensitive ? RedactionPolicy.redactSensitive() : RedactionPolicy.disabled()
             );
             var result = ScanPipeline.defaults(false).scan(input, options, ConfigRules.empty());
             return result.inventory();
+        }
+
+        /**
+         * Builds the diff-consumer registry: core built-ins first, then any discovered via
+         * ServiceLoader (e.g. the XAC module's diff consumer). Mirrors the inventory command's
+         * {@code builtinConsumers()} but is isolated to diff consumers.
+         */
+        private static DiffConsumerRegistry builtinDiffConsumers() {
+            var registry = new DiffConsumerRegistry()
+                .register(new YamlDiffConsumer());
+            for (var discovered : java.util.ServiceLoader.load(DiffConsumer.class)) {
+                registry.register(discovered);
+            }
+            return registry;
+        }
+
+        /** Parses -D key=value pairs into a map for the consumer context. */
+        private static java.util.Map<String, String> parseContextProps(java.util.List<String> props) {
+            var map = new java.util.LinkedHashMap<String, String>();
+            for (var prop : props) {
+                var eq = prop.indexOf('=');
+                if (eq > 0) {
+                    map.put(prop.substring(0, eq), prop.substring(eq + 1));
+                }
+            }
+            return map;
         }
     }
 

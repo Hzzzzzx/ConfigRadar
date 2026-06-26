@@ -3,10 +3,7 @@ package io.github.hzzzzzx.configradar.core.diff;
 import io.github.hzzzzzx.configradar.core.model.ConfigDiff;
 import io.github.hzzzzzx.configradar.core.model.ConfigFinding;
 import io.github.hzzzzzx.configradar.core.model.ConfigInventory;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -32,12 +29,12 @@ public final class ConfigDiffFilter {
      *
      * @param diff the full diff to filter
      * @param changedFiles file paths relative to the repository root (forward slashes)
-     * @param head the head inventory, used to resolve {@code changed} entries' source paths by key
+     * @param head the head inventory (reserved for future use; {@code changed} entries now carry
+     *             their own {@code newSource}, so source paths no longer need to be resolved by key)
      * @return a filtered diff (sections may be empty; summary is recomputed)
      */
     public ConfigDiff filter(ConfigDiff diff, Set<String> changedFiles, ConfigInventory head) {
         var normalized = normalize(changedFiles);
-        var keyToPath = indexKeyToPath(head);
 
         var added = diff.added().stream()
             .filter(f -> normalized.contains(normalizePath(f.source().path())))
@@ -45,11 +42,11 @@ public final class ConfigDiffFilter {
         var removed = diff.removed().stream()
             .filter(f -> normalized.contains(normalizePath(f.source().path())))
             .toList();
+        // changed entries carry their own newSource (the winning finding's path), so we filter
+        // directly on it instead of reverse-looking-up a path from the normalized key. This avoids
+        // dropping real changes when a lower-priority source for the same key happens to be unchanged.
         var changed = diff.changed().stream()
-            .filter(c -> {
-                var path = keyToPath.get(c.key());
-                return path != null && normalized.contains(path);
-            })
+            .filter(c -> c.newSource() != null && normalized.contains(normalizePath(c.newSource())))
             .toList();
         var uncertainChanged = diff.uncertainChanged().stream()
             .filter(u -> normalized.contains(normalizePath(u.source().path())))
@@ -79,16 +76,5 @@ public final class ConfigDiffFilter {
 
     private static String normalizePath(String path) {
         return path == null ? "" : path.replace('\\', '/').toLowerCase(Locale.ROOT);
-    }
-
-    private static LinkedHashMap<String, String> indexKeyToPath(ConfigInventory inventory) {
-        var index = new LinkedHashMap<String, String>();
-        if (inventory == null) {
-            return index;
-        }
-        for (var item : inventory.items()) {
-            index.putIfAbsent(item.normalizedKey(), normalizePath(item.source().path()));
-        }
-        return index;
     }
 }

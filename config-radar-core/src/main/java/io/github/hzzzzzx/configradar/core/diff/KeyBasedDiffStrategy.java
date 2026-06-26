@@ -10,6 +10,7 @@ import io.github.hzzzzzx.configradar.core.model.DiagnosticSeverity;
 import io.github.hzzzzzx.configradar.core.model.InventoryCheck;
 import io.github.hzzzzzx.configradar.core.model.UncertainFinding;
 import io.github.hzzzzzx.configradar.core.scan.RedactionPolicy;
+import io.github.hzzzzzx.configradar.core.scan.SpringPriority;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -79,8 +80,12 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
     }
 
     private static LinkedHashMap<String, ConfigFinding> index(List<ConfigFinding> items) {
+        // Within one identity (same normalizedKey|role|profile|region|namespace), the finding with
+        // the highest Spring priority wins — matching the export "highest priority wins" semantics.
+        // Identity is kept as a tie-breaker for deterministic ordering among equal-priority sources.
         var sorted = items.stream()
-            .sorted(Comparator.comparing(KeyBasedDiffStrategy::identity))
+            .sorted(Comparator.comparingInt(SpringPriority::of).reversed()
+                .thenComparing(KeyBasedDiffStrategy::identity))
             .toList();
         var result = new LinkedHashMap<String, ConfigFinding>();
         for (var item : sorted) {
@@ -91,17 +96,18 @@ public final class KeyBasedDiffStrategy implements ConfigDiffStrategy {
 
     private static List<ConfigChange> changes(ConfigFinding before, ConfigFinding after) {
         var changes = new ArrayList<ConfigChange>();
-        addChange(changes, after.normalizedKey(), "value", raw(before.value()), raw(after.value()));
-        addChange(changes, after.normalizedKey(), "value.type", type(before.value()), type(after.value()));
-        addChange(changes, after.normalizedKey(), "defaultValue", raw(before.defaultValue()), raw(after.defaultValue()));
-        addChange(changes, after.normalizedKey(), "defaultValue.type", type(before.defaultValue()), type(after.defaultValue()));
-        addChange(changes, after.normalizedKey(), "source.path", before.source().path(), after.source().path());
+        var source = after.source().path();
+        addChange(changes, after.normalizedKey(), "value", raw(before.value()), raw(after.value()), source);
+        addChange(changes, after.normalizedKey(), "value.type", type(before.value()), type(after.value()), source);
+        addChange(changes, after.normalizedKey(), "defaultValue", raw(before.defaultValue()), raw(after.defaultValue()), source);
+        addChange(changes, after.normalizedKey(), "defaultValue.type", type(before.defaultValue()), type(after.defaultValue()), source);
+        addChange(changes, after.normalizedKey(), "source.path", before.source().path(), after.source().path(), source);
         return changes;
     }
 
-    private static void addChange(List<ConfigChange> changes, String key, String field, String oldValue, String newValue) {
+    private static void addChange(List<ConfigChange> changes, String key, String field, String oldValue, String newValue, String newSource) {
         if (!Objects.equals(oldValue, newValue)) {
-            changes.add(new ConfigChange(key, field, oldValue, newValue));
+            changes.add(new ConfigChange(key, field, oldValue, newValue, newSource));
         }
     }
 

@@ -44,28 +44,56 @@ final class ConfigDiffFilterTest {
     }
 
     @Test
-    void resolvesChangedEntriesViaHeadInventory() {
-        // ConfigChange has no source path; it must be resolved from the head inventory by key.
+    void filtersChangedByCarriedNewSource() {
+        // Each ConfigChange carries its own newSource (the winning finding's path), so changed
+        // entries are filtered directly on it — no head-inventory key lookup is involved.
         var diff = new ConfigDiff(
             null, null,
             List.of(), List.of(),
             List.of(
-                new ConfigChange("db.host", "value", "localhost", "prod-host"),   // in application.yml (changed)
-                new ConfigChange("cache.ttl", "value", "10", "20")                // in cache.yml (not changed)
+                new ConfigChange("db.host", "value", "localhost", "prod-host",
+                    "src/main/resources/application.yml"),                        // changed file
+                new ConfigChange("cache.ttl", "value", "10", "20",
+                    "src/main/resources/cache.yml")                               // not a changed file
             ),
             List.of(), List.of()
         );
-        var head = inventory(
-            finding("db.host", "src/main/resources/application.yml"),
-            finding("cache.ttl", "src/main/resources/cache.yml")
-        );
         var changedFiles = Set.of("src/main/resources/application.yml");
 
-        var filtered = filter.filter(diff, changedFiles, head);
+        var filtered = filter.filter(diff, changedFiles, inventory());
 
         assertEquals(1, filtered.changed().size());
         assertEquals("db.host", filtered.changed().getFirst().key());
         assertEquals(1, filtered.summary().changed());
+    }
+
+    @Test
+    void keepsChangeWhenLowerPrioritySourceForSameKeyIsUnchanged() {
+        // Regression for the key-reverse-lookup bug: the same key exists in a lower-priority,
+        // unchanged file (application.yml) and a higher-priority, changed file (application-prod.yml).
+        // The change carries newSource = application-prod.yml, so it must be kept even though the
+        // unchanged application.yml would have been the first hit under the old key->path lookup.
+        var diff = new ConfigDiff(
+            null, null,
+            List.of(), List.of(),
+            List.of(
+                new ConfigChange("db.host", "value", "localhost", "prod-host",
+                    "src/main/resources/application-prod.yml")
+            ),
+            List.of(), List.of()
+        );
+        // head inventory deliberately lists the unchanged application.yml FIRST for this key,
+        // which used to win the putIfAbsent index and caused the real change to be dropped.
+        var head = inventory(
+            finding("db.host", "src/main/resources/application.yml"),         // unchanged, lower priority
+            finding("db.host", "src/main/resources/application-prod.yml")     // changed, higher priority
+        );
+        var changedFiles = Set.of("src/main/resources/application-prod.yml");
+
+        var filtered = filter.filter(diff, changedFiles, head);
+
+        assertEquals(1, filtered.changed().size(), "real change under application-prod.yml must not be dropped");
+        assertEquals("db.host", filtered.changed().getFirst().key());
     }
 
     @Test

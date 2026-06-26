@@ -151,6 +151,29 @@ final class KeyBasedDiffStrategyTest {
         assertEquals("redis.password", diff.checks().getFirst().key());
     }
 
+    @Test
+    void picksHighestSpringPrioritySourceWhenSameIdentityHasMultipleSources() {
+        // Same key + same profile (prod) defined in two head sources. A .env-style override
+        // (priority 90) ranks higher than application-prod.yml (priority 80), so the override's
+        // value must win the diff and the change must carry the .env file as newSource.
+        // NOTE: the Spring priority heuristic only distinguishes coarse source tiers; two
+        // same-tier profile files (e.g. application-prod.yml vs application-prod-override.yml both
+        // score 80) cannot be ranked and fall back to identity ordering.
+        var base = inventory(yamlItem("server.port", "8080", "prod", "application-prod.yml"));
+        var head = inventory(
+            yamlItem("server.port", "9090", "prod", "application-prod.yml"),   // priority 80
+            yamlItem("server.port", "9443", "prod", ".env")                    // priority 90 (wins)
+        );
+
+        var diff = new KeyBasedDiffStrategy().diff(base, head);
+
+        var valueChange = diff.changed().stream()
+            .filter(c -> c.field().equals("value"))
+            .findFirst().orElseThrow();
+        assertEquals("9443", valueChange.newValue(), "highest Spring priority source should win");
+        assertEquals(".env", valueChange.newSource());
+    }
+
     private static ConfigInventory inventory(ConfigFinding... items) {
         return new ConfigInventory(null, null, null, List.of(items), List.of(), List.of(), List.of());
     }
@@ -170,6 +193,21 @@ final class KeyBasedDiffStrategyTest {
 
     private static ConfigFinding item(String key, String value, String profile) {
         return item(key, value, profile, null, null);
+    }
+
+    private static ConfigFinding yamlItem(String key, String value, String profile, String path) {
+        return new ConfigFinding(
+            key,
+            key,
+            FindingRole.DEFINE,
+            new ConfigValue(value, value, ValueType.STRING),
+            null,
+            new EnvironmentContext(profile, null, null),
+            new SourceLocation(path, 1, null, SourceKind.YAML, Scope.MAIN),
+            Confidence.HIGH,
+            "test",
+            new UnknownDetails("test", key)
+        );
     }
 
     private static ConfigFinding item(String key, String value, String profile, String region, String namespace) {

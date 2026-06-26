@@ -8,7 +8,6 @@ import io.github.hzzzzzx.configradar.core.model.FindingRole;
 import io.github.hzzzzzx.configradar.core.output.ConsumerContext;
 import io.github.hzzzzzx.configradar.core.output.ConsumerSink;
 import io.github.hzzzzzx.configradar.core.output.InventoryConsumer;
-import io.github.hzzzzzx.configradar.core.scan.RedactionPolicy;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,17 +32,6 @@ import java.util.Map;
  */
 public final class XacConsumer implements InventoryConsumer {
 
-    private static final RedactionPolicy SENSITIVE = RedactionPolicy.redactSensitive();
-
-    /** Placeholder scope used for every entry; deploy-time metadata ConfigRadar cannot know. */
-    private static final String DEFAULT_SCOPE = "${app_deploy_unit_name}";
-
-    /** Default encrypt type used by the J2C secret template. */
-    private static final String DEFAULT_ENCRYPT_TYPE = "ADVANCED2.6";
-
-    /** Default init source for J2C secrets (manual input). */
-    private static final String DEFAULT_INIT_SOURCE = "input";
-
     @Override
     public String id() {
         return "xac";
@@ -65,10 +53,10 @@ public final class XacConsumer implements InventoryConsumer {
             var key = entry.getKey();
             var winner = entry.getValue();
             boolean hasValue = definedKeys.contains(key) || winner.defaultValue() != null;
-            if (SENSITIVE.matchesKey(key)) {
-                secrets.add(toSecret(key, hasValue ? valueOr(winner) : "", winner));
+            if (XacEntryBuilder.SENSITIVE.matchesKey(key)) {
+                secrets.add(XacEntryBuilder.toSecret(key, hasValue ? XacEntryBuilder.valueOr(winner) : "", winner));
             } else if (hasValue) {
-                entries.add(toEntry(key, valueOr(winner)));
+                entries.add(XacEntryBuilder.toEntry(key, XacEntryBuilder.valueOr(winner)));
             }
         }
 
@@ -109,70 +97,5 @@ public final class XacConsumer implements InventoryConsumer {
             result.putIfAbsent(item.normalizedKey(), item);
         }
         return result;
-    }
-
-    private String valueOr(ConfigFinding finding) {
-        if (finding.value() != null) {
-            return finding.value().raw();
-        }
-        if (finding.defaultValue() != null) {
-            return finding.defaultValue().raw();
-        }
-        return "";
-    }
-
-    private AppConfigEntry toEntry(String normalizedKey, String value) {
-        return new AppConfigEntry(
-            DEFAULT_SCOPE,
-            groupOf(normalizedKey),
-            normalizedKey,
-            value,
-            SENSITIVE.matchesKey(normalizedKey) ? 1 : 0,
-            "",
-            AppConfigCenterExporter.DEFAULT_VERSION,
-            AppConfigCenterExporter.DEFAULT_VERSION,
-            ""
-        );
-    }
-
-    private J2cSecretEntry toSecret(String normalizedKey, String value, ConfigFinding finding) {
-        var underscoreKey = toUnderscore(normalizedKey);
-        var type = typeHint(normalizedKey);
-        return new J2cSecretEntry(
-            underscoreKey,
-            DEFAULT_INIT_SOURCE,
-            type,
-            "",
-            "${" + underscoreKey + "}",
-            DEFAULT_ENCRYPT_TYPE,
-            type.isEmpty() ? "" : type,
-            DEFAULT_SCOPE
-        );
-    }
-
-    private static String toUnderscore(String key) {
-        if (key == null || key.isBlank()) {
-            return "config";
-        }
-        return key.replace('-', '_').replace('.', '_').toLowerCase(Locale.ROOT);
-    }
-
-    private static String typeHint(String key) {
-        var lower = key.toLowerCase(Locale.ROOT);
-        if (lower.contains("redis")) {
-            return "redis";
-        }
-        if (lower.startsWith("db.") || lower.contains("datasource") || lower.contains("jdbc")) {
-            return "mysql";
-        }
-        return "";
-    }
-
-    private static String groupOf(String key) {
-        if (key == null || key.isBlank()) {
-            return "default";
-        }
-        var dot = key.indexOf('.');
-        return dot > 0 ? key.substring(0, dot) : "default";
     }
 }

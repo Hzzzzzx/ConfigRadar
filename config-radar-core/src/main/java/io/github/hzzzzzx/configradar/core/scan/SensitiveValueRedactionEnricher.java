@@ -74,7 +74,7 @@ public final class SensitiveValueRedactionEnricher implements InventoryEnricher 
             || (!change.field().equals("value") && !change.field().equals("defaultValue"))) {
             return change;
         }
-        return new ConfigChange(change.key(), change.field(), policy.replacement(), policy.replacement());
+        return new ConfigChange(change.key(), change.field(), policy.replacement(), policy.replacement(), change.newSource());
     }
 
     private static ConfigFinding redact(ConfigFinding finding, String replacement) {
