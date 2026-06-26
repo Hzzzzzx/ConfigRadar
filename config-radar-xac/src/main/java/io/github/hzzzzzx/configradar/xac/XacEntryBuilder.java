@@ -25,9 +25,6 @@ final class XacEntryBuilder {
     /** Default encrypt type used by the J2C secret template. */
     static final String DEFAULT_ENCRYPT_TYPE = "ADVANCED2.6";
 
-    /** Default init source for J2C secrets (manual input). */
-    static final String DEFAULT_INIT_SOURCE = "input";
-
     private XacEntryBuilder() {
     }
 
@@ -48,11 +45,11 @@ final class XacEntryBuilder {
             groupOf(normalizedKey),
             normalizedKey,
             value,
-            SENSITIVE.matchesKey(normalizedKey) ? 1 : 0,
-            "",
-            AppConfigCenterExporter.DEFAULT_VERSION,
-            AppConfigCenterExporter.DEFAULT_VERSION,
-            ""
+            SENSITIVE.matchesKey(normalizedKey) ? 1 : null,
+            null,
+            null,
+            null,
+            null
         );
     }
 
@@ -61,12 +58,12 @@ final class XacEntryBuilder {
         var type = typeHint(normalizedKey);
         return new J2cSecretEntry(
             underscoreKey,
-            DEFAULT_INIT_SOURCE,
-            type,
-            "",
+            null,
+            type.isEmpty() ? null : type,
+            null,
             "${" + underscoreKey + "}",
             DEFAULT_ENCRYPT_TYPE,
-            type.isEmpty() ? "" : type,
+            type.isEmpty() ? null : type,
             DEFAULT_SCOPE
         );
     }

@@ -14,25 +14,25 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * {@link DiffConsumer} for the {@code xac} format: renders a config diff as two XAC-platform
- * artifacts.
+ * {@link DiffConsumer} for the {@code xac} format: renders a config diff as three artifacts.
  *
- * <ul>
- *   <li>{@code app-configs-changed.yaml} — a manifest of the keys to <b>add or update</b> in the
- *       config center: all {@code added} findings plus the new values of {@code changed} keys.
+ * <ol>
+ *   <li>{@code app-configs-changed.yaml} — the keys to <b>add or update</b> that <b>have a value</b>:
+ *       value-bearing {@code added} findings plus {@code changed} keys whose new value is non-empty.
  *       Partitioned into {@code app_configs} / {@code J2C.secrets} exactly like the full-inventory
- *       {@link XacConsumer}, so the same deploy tooling consumes both.</li>
- *   <li>{@code removed.yaml} — a plain list of the keys to <b>delete</b> from the config center
- *       ({@code removed} findings), as requested for the diff scenario.</li>
- * </ul>
+ *       {@link XacConsumer}, so the same deploy tooling consumes both. This is the strict-shape
+ *       artifact.</li>
+ *   <li>{@code app-configs-missing.yaml} — valueless {@code added} findings and {@code changed} keys
+ *       whose new value is empty. These need a human to fill in a value. Listed plainly, each with a
+ *       {@code source} (where the key is referenced) so a reviewer knows where to look.</li>
+ *   <li>{@code removed.yaml} — the keys to <b>delete</b> ({@code removed} findings), a plain list.</li>
+ * </ol>
  *
- * <p>Entry building is shared with {@link XacConsumer} via {@link XacEntryBuilder}, so the two
- * consumers never disagree on secret routing, group derivation, etc.
+ * <p>Entry building for the strict artifact is shared with {@link XacConsumer} via
+ * {@link XacEntryBuilder}, so the two consumers never diverge on secret routing or grouping.
  *
- * <p>{@code changed} entries only carry key/field/oldValue/newValue/newSource (no full finding),
- * so their entries are built from the {@code value} field change. Keys whose only change is a
- * non-value field (e.g. {@code value.type}, {@code source.path}) are skipped, since there is no new
- * deployable value to publish.
+ * <p>{@code changed} entries only carry key/field/oldValue/newValue/newSource (no full finding), so
+ * their entries are built from the {@code value} field change; non-value field changes are skipped.
  */
 public final class XacDiffConsumer implements DiffConsumer {
 
@@ -43,21 +43,27 @@ public final class XacDiffConsumer implements DiffConsumer {
 
     @Override
     public void consume(ConfigDiff diff, ConsumerContext context, ConsumerSink sink) throws Exception {
-        writeUpsertManifest(diff, context, sink);
+        writeChangedManifest(diff, context, sink);
+        writeMissingList(diff, context, sink);
         writeRemovedList(diff, context, sink);
     }
 
-    private void writeUpsertManifest(ConfigDiff diff, ConsumerContext context, ConsumerSink sink) throws Exception {
+    /** File 1: value-bearing added/changed keys, strict XAC shape (app_configs / J2C.secrets). */
+    private void writeChangedManifest(ConfigDiff diff, ConsumerContext context, ConsumerSink sink) throws Exception {
         var entries = new ArrayList<AppConfigEntry>();
         var secrets = new ArrayList<J2cSecretEntry>();
 
-        // added: full findings, value-bearing.
+        // added: only value-bearing findings go into the strict manifest.
         for (var finding : diff.added()) {
+            var value = XacEntryBuilder.valueOr(finding);
+            if (value.isBlank()) {
+                continue; // valueless added keys go to the missing list instead
+            }
             var key = finding.normalizedKey();
             if (XacEntryBuilder.SENSITIVE.matchesKey(key)) {
-                secrets.add(XacEntryBuilder.toSecret(key, XacEntryBuilder.valueOr(finding), finding));
+                secrets.add(XacEntryBuilder.toSecret(key, value, finding));
             } else {
-                entries.add(XacEntryBuilder.toEntry(key, XacEntryBuilder.valueOr(finding)));
+                entries.add(XacEntryBuilder.toEntry(key, value));
             }
         }
 
@@ -72,12 +78,20 @@ public final class XacDiffConsumer implements DiffConsumer {
             if (!seen.add(key)) {
                 continue;
             }
-            var value = change.newValue() != null ? change.newValue() : "";
+            var value = change.newValue();
+            if (value == null || value.isBlank()) {
+                continue; // valueless changes go to the missing list instead
+            }
             if (XacEntryBuilder.SENSITIVE.matchesKey(key)) {
                 secrets.add(XacEntryBuilder.toSecret(key, value, null));
             } else {
                 entries.add(XacEntryBuilder.toEntry(key, value));
             }
+        }
+
+        // Nothing value-bearing to upsert -> skip the file entirely rather than emit an empty manifest.
+        if (entries.isEmpty() && secrets.isEmpty()) {
+            return;
         }
 
         entries.sort(Comparator.comparing(AppConfigEntry::config_key));
@@ -92,7 +106,7 @@ public final class XacDiffConsumer implements DiffConsumer {
         var manifest = new LinkedHashMap<String, Object>();
         manifest.put("apiVersion", "com.huawei.his.appconfigcenter.v3");
         manifest.put("kind", "his.appconfigcenter");
-        manifest.put("metadata", Map.of("name", appName(context, diff)));
+        manifest.put("metadata", Map.of("name", appName(context)));
         manifest.put("data", data);
 
         try (var out = sink.openFile("app-configs-changed.yaml");
@@ -101,6 +115,58 @@ public final class XacDiffConsumer implements DiffConsumer {
         }
     }
 
+    /** File 2: valueless added/changed keys, plain list with source reference for review. */
+    private void writeMissingList(ConfigDiff diff, ConsumerContext context, ConsumerSink sink) throws Exception {
+        var items = new ArrayList<Map<String, Object>>();
+
+        for (var finding : diff.added()) {
+            if (!XacEntryBuilder.valueOr(finding).isBlank()) {
+                continue;
+            }
+            items.add(missingItem(finding.normalizedKey(), finding.source().path(), "added without value"));
+        }
+
+        var seen = new java.util.HashSet<String>();
+        for (var change : diff.changed()) {
+            if (!change.field().equals("value")) {
+                continue;
+            }
+            var key = change.key();
+            if (!seen.add(key)) {
+                continue;
+            }
+            var value = change.newValue();
+            if (value != null && !value.isBlank()) {
+                continue;
+            }
+            items.add(missingItem(key, change.newSource(), "changed to empty value"));
+        }
+
+        if (items.isEmpty()) {
+            return;
+        }
+
+        var root = new LinkedHashMap<String, Object>();
+        root.put("apiVersion", "com.huawei.his.appconfigcenter.v3");
+        root.put("kind", "his.appconfigcenter");
+        root.put("metadata", Map.of("name", appName(context)));
+        root.put("missing", items);
+
+        try (var out = sink.openFile("app-configs-missing.yaml");
+             var writer = new OutputStreamWriter(out)) {
+            ManifestYaml.dump(root, writer);
+        }
+    }
+
+    private static Map<String, Object> missingItem(String key, String source, String reason) {
+        var entry = new LinkedHashMap<String, Object>();
+        entry.put("config_key", key);
+        entry.put("source", source);
+        entry.put("reason", reason);
+        return entry;
+    }
+
+    /** File 3: removed keys, plain list. */
     private void writeRemovedList(ConfigDiff diff, ConsumerContext context, ConsumerSink sink) throws Exception {
         var items = diff.removed().stream()
             .map(ConfigFinding::normalizedKey)
@@ -114,10 +180,14 @@ public final class XacDiffConsumer implements DiffConsumer {
             })
             .toList();
 
+        if (items.isEmpty()) {
+            return;
+        }
+
         var root = new LinkedHashMap<String, Object>();
         root.put("apiVersion", "com.huawei.his.appconfigcenter.v3");
         root.put("kind", "his.appconfigcenter");
-        root.put("metadata", Map.of("name", appName(context, diff)));
+        root.put("metadata", Map.of("name", appName(context)));
         root.put("removed", items);
 
         try (var out = sink.openFile("removed.yaml");
@@ -126,7 +196,7 @@ public final class XacDiffConsumer implements DiffConsumer {
         }
     }
 
-    private static String appName(ConsumerContext context, ConfigDiff diff) {
+    private static String appName(ConsumerContext context) {
         var name = context.property("name");
         if (name != null && !name.isBlank()) {
             return name;

@@ -395,25 +395,36 @@ public final class ConfigRadarCli implements Runnable {
                 var diff = new KeyBasedDiffStrategy().diff(baseInventory, headInventory);
                 var filtered = new ConfigDiffFilter().filter(diff, changedFiles, headInventory);
 
-                writeParent(output);
                 var toWrite = redactSensitive
                     ? new SensitiveValueRedactionEnricher().redact(filtered, RedactionPolicy.redactSensitive())
                     : filtered;
-                // Always write the standalone YAML diff report (backward compatible), then route the
-                // same diff through the selected consumer for additional formats (e.g. xac).
-                YamlSupport.mapper().writeValue(output.toFile(), toWrite);
-                System.err.println("config-radar: wrote " + output + " (added=" + filtered.summary().added()
-                    + ", removed=" + filtered.summary().removed()
-                    + ", changed=" + filtered.summary().changed() + ")");
-                if (!"yaml".equals(consumerId)) {
+
+                if ("yaml".equals(consumerId)) {
+                    // yaml-only mode: -o is the exact output file (backward compatible).
+                    writeParent(output);
+                    YamlSupport.mapper().writeValue(output.toFile(), toWrite);
+                    System.err.println("config-radar: wrote " + output + " (added=" + filtered.summary().added()
+                        + ", removed=" + filtered.summary().removed()
+                        + ", changed=" + filtered.summary().changed() + ")");
+                } else {
+                    // consumer mode: -o is the output directory. The diff YAML and all consumer
+                    // artifacts (e.g. xac) are written into it, so they never collide with each other.
+                    if (Files.exists(output) && !Files.isDirectory(output)) {
+                        return fail("--consumer requires -o to be a directory, but it is an existing file: " + output);
+                    }
+                    Files.createDirectories(output);
                     var consumer = builtinDiffConsumers().find(consumerId);
                     if (consumer.isEmpty()) {
                         return fail("Unknown --consumer '" + consumerId + "'; available: " + builtinDiffConsumers().ids());
                     }
+                    // Standalone diff report inside the directory, then the consumer's own files.
+                    var diffPath = output.resolve("config-diff.yaml");
+                    YamlSupport.mapper().writeValue(diffPath.toFile(), toWrite);
                     var context = new ConsumerContext(profile, region, namespace, parseContextProps(contextProps));
-                    var sink = new DirectoryConsumerSink(output.getParent());
-                    consumer.get().consume(toWrite, context, sink);
-                    System.err.println("config-radar: consumer '" + consumerId + "' wrote into " + output.getParent());
+                    consumer.get().consume(toWrite, context, new DirectoryConsumerSink(output));
+                    System.err.println("config-radar: wrote into " + output + " (added=" + filtered.summary().added()
+                        + ", removed=" + filtered.summary().removed()
+                        + ", changed=" + filtered.summary().changed() + ")");
                 }
                 return 0;
             } finally {

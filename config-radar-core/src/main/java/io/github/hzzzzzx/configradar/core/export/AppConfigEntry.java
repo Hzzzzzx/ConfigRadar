@@ -22,13 +22,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "docker_version",
     "remark"
 })
-@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record AppConfigEntry(
     String scope,
     String group_name,
     String config_key,
     Object config_value,
-    int secret,
+    Integer secret,
     String sub_application_id,
     String version,
     String docker_version,
