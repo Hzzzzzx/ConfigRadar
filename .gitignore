@@ -4,3 +4,5 @@ dist/
 .code-review-graph/
 .DS_Store
 scan-output/
+--output
+.understand-anything/
