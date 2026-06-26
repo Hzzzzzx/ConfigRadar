@@ -22,7 +22,7 @@ ConfigRadar is a static configuration inventory and change-analysis tool for Jav
 
 If the jar already exists, skip this. The two commands below assume the jar path; substitute as needed. Typical path: `dist/config-radar-cli.jar`.
 
-## Three commands
+## Four commands
 
 ```bash
 # Generate an inventory of one project
@@ -31,11 +31,14 @@ java -jar <jar> inventory <project-root> -o <inventory.yaml> [options]
 # Compare two inventories (e.g. before/after a release)
 java -jar <jar> diff --base <before.yaml> --head <after.yaml> -o <diff.yaml> [options]
 
+# Compare config between two git commits directly (checks out each, scans, diffs, filters to changed files)
+java -jar <jar> config-diff --repo <repo> --base-ref <commit> --head-ref <commit> -o <out> [options]
+
 # Convert an inventory to the app-config-center format
 java -jar <jar> export --inventory <inventory.yaml> -o <app-configs.yaml> [options]
 ```
 
-The diff workflow is always: scan two states → diff the two YAML files. ConfigRadar never diffs source directly.
+There are two diff paths. `diff` compares two already-scanned inventory YAMLs. `config-diff` does the whole thing in one shot against git: it materializes each commit into a temporary worktree, scans both, diffs, and keeps only changes touching files git reports as changed. Use `diff` when you already have inventories (or the two states are not in one git repo); use `config-diff` for a one-command "what config changed between these two commits" answer.
 
 ### inventory options
 
@@ -59,6 +62,23 @@ The diff workflow is always: scan two states → diff the two YAML files. Config
 | `--base <f>` / `--head <f>` | The two inventories to compare (required). |
 | `-o, --output <f>` | Diff YAML output (required). |
 | `--redact-sensitive` | Mask sensitive values in the diff. |
+| `--consumer <id>` | Render the diff via a consumer in addition to the YAML. Default `yaml` (just the file). `xac` emits the diff as XAC artifacts — see "config-diff options" for the `-o` directory rule and the `-D`/profile hints. |
+| `-D key=value` | Downstream context property (repeatable), passed to the consumer. |
+| `--profile <p>` / `--region <r>` / `--namespace <n>` | Hints passed to the consumer. |
+
+### config-diff options
+
+| Option | Purpose |
+|---|---|
+| `--repo <d>` | Git repository path (default: current directory). |
+| `--base-ref <c>` / `--head-ref <c>` | Commit-ish to compare (required): tag, branch, or sha. |
+| `-o, --output <d>` | Output path (required). **A directory when `--consumer` is set; a file otherwise.** |
+| `--profile <p>` / `--region <r>` / `--namespace <n>` | Scan hints applied to both commits. Use the SAME value on both sides or matching keys appear as add+remove instead of changed. |
+| `--redact-sensitive` | Mask sensitive-looking values. |
+| `--consumer <id>` | Render artifacts beyond the diff YAML. Default `yaml`: `-o` is the exact output file. Any other consumer (e.g. `xac`): `-o` is the output directory; the diff YAML (`config-diff.yaml`) and the consumer's files are written into it. |
+| `-D key=value` | Downstream context property (repeatable). For the `xac` consumer: `-D scope-mapping=<file>` and `-D scope.<profile>=<scope>` resolve deploy scopes by profile. |
+
+> If `--consumer` is set, `-o` MUST be a directory (not a file). Giving an existing file path errors out. This differs from the default `yaml` mode where `-o` is the file itself.
 
 ### export options
 
@@ -133,6 +153,26 @@ java -jar <jar> diff --base before.yaml --head after.yaml -o config-diff.yaml
 ```
 
 The diff reports `added` / `removed` / `changed` (value or default changed) plus `uncertainChanged` (new dynamic access) and new `checks`. **Use the SAME `--profile/--region/--namespace` on both inventories** or matching keys will appear as add+remove instead of changed.
+
+### 2b. Config changes between two git commits, exported to XAC (one command)
+
+Goal: in a single command, find what config changed between two commits/branches and emit XAC deployment artifacts — no manual scan-then-diff, no checkout by hand.
+
+```bash
+java -jar <jar> config-diff \
+  --repo <repo> --base-ref <old-commit> --head-ref <new-commit> \
+  -o scan-output/config-diff/ --consumer xac \
+  --profile prod -D scope.prod=obp-prod
+```
+
+`-o` is the **output directory** (not a file) under `--consumer`. It receives:
+
+- `config-diff.yaml` — the raw machine-readable diff.
+- `app-configs-changed.yaml` — keys to **add or update that have a value**, strict XAC shape (`app_configs` + `J2C.secrets`). A changed key uses its **new** value; a sensitive key (password/secret/token) is routed to `J2C.secrets`. Only written if at least one value-bearing change exists.
+- `app-configs-missing.yaml` — added/changed keys that have **no value** (e.g. read in code but never defined). Each entry carries the `source` where it is referenced and a `reason`, for human review. Only written if any exist.
+- `removed.yaml` — keys to **delete**, plain list with `config_key`/`group_name`. Only written if any exist.
+
+When you run this, report to the user: how many keys to upsert (and which are sensitive/need out-of-band provisioning), which are valueless and need a human to fill a value (point at each `source`), and which to delete. State that deploy-time fields (`scope`, `version`, etc.) are placeholders unless resolved via `-D scope-mapping`/`-D scope.<profile>`.
 
 ### 3. Sensitive-config audit
 
