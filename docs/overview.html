@@ -3,231 +3,189 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ConfigRadar · 数据流与架构</title>
+<title>ConfigRadar · 配置产物流转</title>
 <style>
-  :root{
-    --bg:#f7f8fb;--ink:#172033;--muted:#667085;--line:#d8dee8;--card:#fff;
-    --blue:#2563eb;--green:#16a34a;--amber:#d97706;--violet:#7c3aed;--red:#dc2626;
-    --soft-blue:#dbeafe;--soft-green:#dcfce7;--soft-amber:#fef3c7;--soft-violet:#ede9fe;--soft-red:#fee2e2;
-    --mono:"SF Mono","Cascadia Code",Consolas,monospace;
-  }
+  :root{--bg:#f7f8fa;--ink:#172033;--muted:#667085;--line:#d5dbe6;--card:#fff;--blue:#2563eb;--green:#16a34a;--amber:#d97706;--violet:#7c3aed;--red:#dc2626}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif}
-  .wrap{max-width:1180px;margin:0 auto;padding:48px 28px 88px}
-  header{padding:36px 0 40px;border-bottom:1px solid var(--line);margin-bottom:40px}
-  .eyebrow{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--card);color:var(--blue);font-size:13px;font-weight:700}
-  h1{margin:16px 0 12px;font-size:44px;line-height:1.1;letter-spacing:0}
-  .lead{max-width:780px;color:var(--muted);font-size:18px}
-  section{margin:44px 0}
-  h2{font-size:26px;margin:0 0 8px}
-  .sub{color:var(--muted);margin:0 0 20px}
-  h3{font-size:17px;margin:24px 0 10px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px}
-  .card b{display:block;margin-bottom:6px}.card p{margin:0;color:var(--muted)}
-  .pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;margin-bottom:8px}
-  .p-blue{background:var(--soft-blue);color:var(--blue)}.p-green{background:var(--soft-green);color:var(--green)}
-  .p-amber{background:var(--soft-amber);color:var(--amber)}.p-violet{background:var(--soft-violet);color:var(--violet)}
-  .flow{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:22px;overflow:auto}
-  .row{display:grid;grid-template-columns:1fr 38px 1fr 38px 1fr 38px 1fr;gap:10px;align-items:stretch;min-width:860px}
-  .node{border:1px solid var(--line);border-radius:8px;padding:14px;background:#fafbfc}
-  .node .t{font-weight:800;margin-bottom:4px}.node .d{color:var(--muted);font-size:13px}
-  .node.blue{background:var(--soft-blue);border-color:#93c5fd}.node.green{background:var(--soft-green);border-color:#86efac}
-  .node.amber{background:var(--soft-amber);border-color:#fcd34d}.node.violet{background:var(--soft-violet);border-color:#c4b5fd}
-  .node.red{background:var(--soft-red);border-color:#fca5a5}
-  .arr{display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:22px;font-weight:800}
-  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:16px 0}
-  th,td{border-bottom:1px solid var(--line);padding:11px 13px;text-align:left;vertical-align:top}
-  th{background:#eef2f7;color:var(--muted);font-size:12px;letter-spacing:.02em}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:42px 24px 72px}
+  header{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:34px}
+  h1{font-size:38px;line-height:1.15;margin:0 0 12px}
+  h2{font-size:25px;margin:38px 0 8px}
+  h3{font-size:17px;margin:22px 0 8px}
+  p{margin:0 0 14px;color:var(--muted)}
+  .lead{font-size:18px;max-width:760px}
+  .diagram{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px;margin:16px 0 20px;overflow:auto}
+  .lane{display:flex;align-items:stretch;gap:10px;min-width:860px;margin:10px 0}
+  .node{width:190px;border:2px solid var(--line);border-radius:8px;background:#fff;padding:12px;flex:none}
+  .node b{display:block;margin-bottom:5px}
+  .node small{display:block;color:var(--muted);font-size:13px;line-height:1.45}
+  .blue{border-color:#93c5fd;background:#eff6ff}.green{border-color:#86efac;background:#f0fdf4}.amber{border-color:#fcd34d;background:#fffbeb}.violet{border-color:#c4b5fd;background:#f5f3ff}.red{border-color:#fca5a5;background:#fef2f2}
+  .arrow{display:flex;align-items:center;color:var(--blue);font-size:26px;font-weight:700;flex:none}
+  .branch{display:grid;grid-template-columns:140px 1fr;gap:12px;align-items:start;min-width:860px;margin:10px 0}
+  .label{font-weight:700;color:var(--muted);padding-top:42px}
+  .sample{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px}
+  .path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#1d4ed8;background:#eef2ff;border-radius:5px;padding:3px 6px;display:inline-block;margin-bottom:8px}
+  pre{margin:0;white-space:pre-wrap;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#344054}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:12px}
+  th,td{border-bottom:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  th{background:#eef2f7;color:#475467;font-size:13px}
   tr:last-child td{border-bottom:none}
-  code{font-family:var(--mono);background:#eef2f7;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:#0f3a7a}
-  pre{background:#111827;color:#f9fafb;border-radius:8px;padding:16px;overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.55}
-  .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .callout{border-left:4px solid var(--blue);background:var(--card);border-radius:0 8px 8px 0;padding:16px 18px;color:var(--muted)}
-  .callout b{color:var(--ink)}
-  .legend{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;color:var(--muted);font-size:13px}
-  .dot{display:inline-flex;align-items:center;gap:5px}.dot i{width:10px;height:10px;border-radius:50%;display:inline-block}
-  .b{background:var(--blue)}.g{background:var(--green)}.a{background:var(--amber)}.v{background:var(--violet)}.r{background:var(--red)}
-  footer{border-top:1px solid var(--line);padding-top:28px;color:var(--muted);font-size:13px}
-  @media(max-width:820px){h1{font-size:34px}.split{grid-template-columns:1fr}.wrap{padding:32px 18px 64px}}
+  .note{border-left:4px solid var(--blue);background:var(--card);padding:14px 16px;color:var(--muted);border-radius:0 8px 8px 0}
+  footer{border-top:1px solid var(--line);margin-top:44px;padding-top:22px;color:var(--muted)}
+  @media(max-width:760px){.sample{grid-template-columns:1fr}.wrap{padding:28px 16px 56px}h1{font-size:30px}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<main class="wrap">
   <header>
-    <span class="eyebrow">Java / Spring 静态配置资产盘点</span>
-    <h1>ConfigRadar 当前架构与数据流</h1>
-    <p class="lead">ConfigRadar 的核心思路是：先把注解、配置文件、部署文件里的线索统一成稳定的配置事实清单，再基于这份清单做 HTML 报告、平台导出和版本 diff。</p>
+    <h1>ConfigRadar 的配置数据流</h1>
+    <p class="lead">这页只讲数据怎么流：原始配置长什么样，经过哪一步，最后变成什么配置产物。设计文档是主链路，代码扫描是兜底和校验。</p>
   </header>
 
   <section>
-    <h2>1. 当前代码现状</h2>
-    <p class="sub">现在已经不是单一 detector，而是一条可扩展流水线。</p>
-    <div class="grid">
-      <div class="card"><span class="pill p-blue">输入层</span><b>CLI 参数与扫描上下文</b><p><code>inventory</code>、<code>diff</code>、<code>config-diff</code>、<code>export</code> 已成型，profile、include/exclude、rules、consumer 都通过上下文传入。</p></div>
-      <div class="card"><span class="pill p-green">扫描层</span><b>多 detector 静态扫描</b><p>覆盖 Spring 配置文件、Java 源码、metadata、XML、HOCON、Docker、Compose、Kubernetes，以及可选 codegraph 语义 detector。</p></div>
-      <div class="card"><span class="pill p-amber">模型层</span><b>稳定配置事实模型</b><p>确定 key 进入 <code>ConfigFinding</code>，动态表达式进入 <code>UncertainFinding</code>，最终组合为 <code>ConfigInventory</code>。</p></div>
-      <div class="card"><span class="pill p-violet">消费层</span><b>同一份 inventory 多种输出</b><p>YAML、HTML、default app_configs、XAC、diff 都从 inventory 派生，扫描和输出格式解耦。</p></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>2. 总体数据流</h2>
-    <p class="sub">颜色含义：蓝色是入口，绿色是扫描，黄色是事实模型，紫色是输出，红色是 diff 审查点。</p>
-    <div class="legend">
-      <span class="dot"><i class="b"></i>入口</span><span class="dot"><i class="g"></i>扫描</span><span class="dot"><i class="a"></i>事实模型</span><span class="dot"><i class="v"></i>输出</span><span class="dot"><i class="r"></i>diff</span>
-    </div>
-    <div class="flow">
-      <div class="row">
-        <div class="node blue"><div class="t">项目源码</div><div class="d">Java、yml、properties、XML、Dockerfile、k8s</div></div>
-        <div class="arr">→</div>
-        <div class="node green"><div class="t">FileIndex + Detectors</div><div class="d">分类文件，并把不同来源解析成扫描发现</div></div>
-        <div class="arr">→</div>
-        <div class="node amber"><div class="t">Normalize + Inventory</div><div class="d">归一化 key，分流 items / uncertain，补 summary 和 checks</div></div>
-        <div class="arr">→</div>
-        <div class="node violet"><div class="t">消费者</div><div class="d">YAML、HTML 报告、平台导出、diff 输入</div></div>
-      </div>
-    </div>
-    <div class="callout"><b>重点：</b>下游不要直接消费源码扫描细节，统一消费 <code>ConfigInventory</code>。这让 detector 可以继续增强，而 diff/report/export 的契约保持稳定。</div>
-  </section>
-
-  <section>
-    <h2>3. 数据转换过程</h2>
-    <p class="sub">从“源码里的配置线索”到“可 diff 的结构化事实”。</p>
-    <div class="split">
-      <div>
-        <h3>Java 注解读取</h3>
-        <pre><code>@Value("${payment.client.timeout:3000}")
-private int timeout;</code></pre>
-        <div class="flow">
-          <div class="row">
-            <div class="node blue"><div class="t">@Value</div><div class="d">${payment.client.timeout:3000}</div></div>
-            <div class="arr">→</div>
-            <div class="node green"><div class="t">Java AST</div><div class="d">解析占位符和默认值</div></div>
-            <div class="arr">→</div>
-            <div class="node amber"><div class="t">ConfigFinding</div><div class="d">role=READ，defaultValue=3000，source=Java 行号</div></div>
-            <div class="arr">→</div>
-            <div class="node violet"><div class="t">items</div><div class="d">进入 inventory 主清单</div></div>
-          </div>
+    <h2>1. 总体图：两条路径汇到同一个配置产物</h2>
+    <div class="diagram">
+      <div class="branch">
+        <div class="label">主路径</div>
+        <div class="lane">
+          <div class="node blue"><b>设计阶段配置文档</b><small>docs/config/payment-config.yaml<br>人先梳理配置项</small></div>
+          <div class="arrow">→</div>
+          <div class="node green"><b>转换规则</b><small>字段映射、命名规范、敏感项分区</small></div>
+          <div class="arrow">→</div>
+          <div class="node violet"><b>XAC 配置产物</b><small>dist/xac/app-config.yaml<br>上线交付主产物</small></div>
         </div>
       </div>
-      <div>
-        <h3>配置文件定义</h3>
-        <pre><code>payment:
-  client:
-    timeout: 5000</code></pre>
-        <div class="flow">
-          <div class="row">
-            <div class="node blue"><div class="t">application.yml</div><div class="d">层级 YAML</div></div>
-            <div class="arr">→</div>
-            <div class="node green"><div class="t">展开路径</div><div class="d">payment.client.timeout</div></div>
-            <div class="arr">→</div>
-            <div class="node amber"><div class="t">ConfigFinding</div><div class="d">role=DEFINE，value=5000，source=YAML 行号</div></div>
-            <div class="arr">→</div>
-            <div class="node violet"><div class="t">items</div><div class="d">和 READ 放在同一事实源里</div></div>
-          </div>
+      <div class="branch">
+        <div class="label">兜底路径</div>
+        <div class="lane">
+          <div class="node blue"><b>项目源码</b><small>src/main/java<br>src/main/resources</small></div>
+          <div class="arrow">→</div>
+          <div class="node amber"><b>扫描出的配置清单</b><small>target/config-inventory.yaml<br>真实实现里的配置线索</small></div>
+          <div class="arrow">→</div>
+          <div class="node red"><b>校验结果</b><small>漏项、默认值不一致、动态 key、敏感项</small></div>
+          <div class="arrow">↘</div>
+          <div class="node violet"><b>修正 XAC 产物</b><small>补齐或提醒人工确认</small></div>
         </div>
       </div>
     </div>
+    <div class="note">对外讲法：不是靠扫代码去猜最终配置。最终交付以设计文档转换出的 XAC 产物为主，代码扫描负责验证“设计里写的”和“代码里实际用的”是否一致。</div>
+  </section>
 
-    <h3>动态 key 的处理</h3>
-    <pre><code>environment.getProperty(prefix + ".timeout");</code></pre>
-    <div class="flow">
-      <div class="row">
-        <div class="node blue"><div class="t">动态表达式</div><div class="d">prefix + ".timeout"</div></div>
-        <div class="arr">→</div>
-        <div class="node green"><div class="t">静态解析</div><div class="d">无法确认 prefix 的真实值</div></div>
-        <div class="arr">→</div>
-        <div class="node amber"><div class="t">UncertainFinding</div><div class="d">记录表达式、来源、风险，不猜 key</div></div>
-        <div class="arr">→</div>
-        <div class="node violet"><div class="t">uncertain</div><div class="d">报告和 diff 中单独提示人工确认</div></div>
+  <section>
+    <h2>2. 主路径：设计文档转成 XAC 产物</h2>
+    <div class="sample">
+      <div class="box">
+        <div class="path">docs/config/payment-config.yaml</div>
+        <pre>service: payment-service
+configs:
+  - key: payment.client.timeout
+    value: "5000"
+    scope: prod
+    desc: 支付客户端超时时间
+  - key: payment.client.token
+    secret: true
+    desc: 支付网关 token</pre>
+      </div>
+      <div class="box">
+        <div class="path">dist/xac/app-config.yaml</div>
+        <pre>data:
+  app_configs:
+    - config_key: payment.client.timeout
+      config_value: "5000"
+      secret: 0
+  J2C:
+    secrets:
+      - key: payment_client_token
+        password: "${payment_client_token}"</pre>
+      </div>
+    </div>
+    <div class="diagram">
+      <div class="lane">
+        <div class="node blue"><b>设计文档</b><small>人写的配置清单</small></div>
+        <div class="arrow">→</div>
+        <div class="node green"><b>字段映射</b><small>key/value/scope/secret</small></div>
+        <div class="arrow">→</div>
+        <div class="node green"><b>敏感项分区</b><small>普通配置进 app_configs<br>密钥进 J2C</small></div>
+        <div class="arrow">→</div>
+        <div class="node violet"><b>XAC YAML</b><small>平台可接收产物</small></div>
       </div>
     </div>
   </section>
 
   <section>
-    <h2>4. Inventory 是中心模型</h2>
-    <p class="sub">所有输出都围绕这份结构，而不是围绕某个 detector 的临时结果。</p>
+    <h2>3. 兜底路径：从代码扫出配置，再反向校验</h2>
+    <div class="sample">
+      <div class="box">
+        <div class="path">src/main/java/com/acme/PaymentClient.java</div>
+        <pre>读取配置：
+payment.client.timeout
+
+默认值：
+3000
+
+来源：
+Java 文件第 18 行</pre>
+      </div>
+      <div class="box">
+        <div class="path">src/main/resources/application-prod.yml</div>
+        <pre>配置文件里定义：
+payment.client.timeout = 5000
+
+环境：
+prod
+
+来源：
+application-prod.yml</pre>
+      </div>
+    </div>
+    <div class="diagram">
+      <div class="lane">
+        <div class="node blue"><b>代码注解 / 配置文件</b><small>真实实现里的配置线索</small></div>
+        <div class="arrow">→</div>
+        <div class="node amber"><b>配置清单</b><small>payment.client.timeout<br>哪里读、哪里定义</small></div>
+        <div class="arrow">→</div>
+        <div class="node red"><b>和设计文档对账</b><small>文档是否漏写？<br>默认值是否冲突？</small></div>
+        <div class="arrow">→</div>
+        <div class="node violet"><b>校验结论</b><small>通过 / 需要补文档 / 需要人工确认</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 一个 key 的对账结果长这样</h2>
     <table>
-      <thead><tr><th>结构</th><th>含义</th><th>典型字段</th></tr></thead>
+      <thead><tr><th>来源</th><th>文件路径</th><th>看到的信息</th><th>结论</th></tr></thead>
       <tbody>
-        <tr><td><code>ConfigFinding</code></td><td>确定 key 的配置事实</td><td>key、normalizedKey、role、value、defaultValue、environment、source、confidence、detectorId</td></tr>
-        <tr><td><code>UncertainFinding</code></td><td>有配置访问意图，但 key 无法静态确定</td><td>expression、reason、rootSink、source、confidence</td></tr>
-        <tr><td><code>InventoryCheck</code></td><td>自动审查提示</td><td>敏感 key、远程配置中心入口、动态配置访问</td></tr>
-        <tr><td><code>Diagnostic</code></td><td>扫描过程诊断</td><td>某个 detector 失败时记录 warning，不拖垮整次扫描</td></tr>
+        <tr><td>设计文档</td><td>docs/config/payment-config.yaml</td><td>payment.client.timeout = 5000</td><td>主数据</td></tr>
+        <tr><td>代码读取</td><td>src/main/java/com/acme/PaymentClient.java:18</td><td>读取 payment.client.timeout，默认 3000</td><td>提醒：默认值和设计值不同，需要确认</td></tr>
+        <tr><td>配置文件</td><td>src/main/resources/application-prod.yml</td><td>prod 下定义 5000</td><td>和设计文档一致</td></tr>
       </tbody>
     </table>
   </section>
 
   <section>
-    <h2>5. Diff 场景数据流</h2>
-    <p class="sub">diff 比较的是两份 inventory，不是源码文本。</p>
-    <div class="flow">
-      <div class="row">
-        <div class="node blue"><div class="t">base 源码</div><div class="d">旧版本项目</div></div>
-        <div class="arr">→</div>
-        <div class="node green"><div class="t">扫描</div><div class="d">base inventory</div></div>
-        <div class="arr">→</div>
-        <div class="node red"><div class="t">KeyBasedDiffStrategy</div><div class="d">identity = normalizedKey + role + profile + region + namespace</div></div>
-        <div class="arr">←</div>
-        <div class="node green"><div class="t">扫描</div><div class="d">head inventory</div></div>
+    <h2>5. 版本 Diff：对比的是两份配置清单</h2>
+    <div class="diagram">
+      <div class="lane">
+        <div class="node blue"><b>旧版本源码</b><small>release-1.0</small></div>
+        <div class="arrow">→</div>
+        <div class="node amber"><b>旧配置清单</b><small>base inventory</small></div>
+        <div class="arrow">↔</div>
+        <div class="node amber"><b>新配置清单</b><small>head inventory</small></div>
+        <div class="arrow">←</div>
+        <div class="node blue"><b>新版本源码</b><small>main</small></div>
+      </div>
+      <div class="lane">
+        <div class="node red"><b>Diff 输出</b><small>新增配置、删除配置、值变化、动态项变化、敏感项提示</small></div>
+        <div class="arrow">→</div>
+        <div class="node violet"><b>上线前审查</b><small>这次发布到底改了哪些配置</small></div>
       </div>
     </div>
-    <table>
-      <thead><tr><th>输出区块</th><th>代表什么</th></tr></thead>
-      <tbody>
-        <tr><td><code>added</code></td><td>新版本新增的配置事实，比如新增了某个 key 的定义或读取。</td></tr>
-        <tr><td><code>removed</code></td><td>旧版本存在但新版本消失的配置事实。</td></tr>
-        <tr><td><code>changed</code></td><td>同一个 identity 下，value、defaultValue、source.path 等字段变化。</td></tr>
-        <tr><td><code>uncertainChanged</code></td><td>新出现的动态配置访问，需要人工审查。</td></tr>
-        <tr><td><code>checks</code></td><td>diff 阶段补充的风险提示，比如新敏感 key 或新远程配置入口。</td></tr>
-      </tbody>
-    </table>
   </section>
 
-  <section>
-    <h2>6. config-diff 的端到端流程</h2>
-    <p class="sub">适合放进 CI 或提交流程：给两个 git ref，工具自己扫描并降噪。</p>
-    <div class="flow">
-      <div class="row">
-        <div class="node blue"><div class="t">base-ref / head-ref</div><div class="d">用户输入两个提交点</div></div>
-        <div class="arr">→</div>
-        <div class="node green"><div class="t">临时 worktree</div><div class="d">分别 checkout 两个版本并扫描</div></div>
-        <div class="arr">→</div>
-        <div class="node red"><div class="t">完整 diff</div><div class="d">先按 inventory identity 得到完整配置变化</div></div>
-        <div class="arr">→</div>
-        <div class="node violet"><div class="t">过滤输出</div><div class="d">只保留 git changed files 相关配置项</div></div>
-      </div>
-    </div>
-    <pre><code>java -jar config-radar-cli.jar config-diff \
-  --repo ./my-service \
-  --base-ref v1.2.0 \
-  --head-ref main \
-  -o changes.yaml</code></pre>
-  </section>
-
-  <section>
-    <h2>7. HTML 报告的位置</h2>
-    <p class="sub">HTML 不是新的事实源，只是 inventory 的人类审查视图。</p>
-    <div class="flow">
-      <div class="row">
-        <div class="node amber"><div class="t">ConfigInventory</div><div class="d">统一事实源</div></div>
-        <div class="arr">→</div>
-        <div class="node violet"><div class="t">HtmlReportConsumer</div><div class="d">按 key 聚合，选出 Spring 优先级下的生效值</div></div>
-        <div class="arr">→</div>
-        <div class="node violet"><div class="t">config-report.html</div><div class="d">统计卡、分布图、搜索、详情弹窗、uncertain、diagnostics</div></div>
-        <div class="arr">→</div>
-        <div class="node blue"><div class="t">人工审查</div><div class="d">上线配置准备、缺值补全、风险确认</div></div>
-      </div>
-    </div>
-    <pre><code>java -jar config-radar-cli.jar inventory ./my-service \
-  -o ./out/inventory.yaml \
-  --consumer html</code></pre>
-  </section>
-
-  <footer>
-    详细 Markdown 版见 <code>docs/current-architecture-and-flow.md</code>。当前核心边界：扫描负责事实，diff 负责比较事实，consumer 负责投影事实。
-  </footer>
-</div>
+  <footer>重点：设计文档生成 XAC 是主链路；代码扫描生成清单，用来兜底校验和做版本差异审查。</footer>
+</main>
 </body>
 </html>
