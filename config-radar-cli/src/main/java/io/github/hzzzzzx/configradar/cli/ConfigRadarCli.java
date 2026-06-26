@@ -370,12 +370,17 @@ public final class ConfigRadarCli implements Runnable {
             try {
                 baseWt = Files.createTempDirectory("cr-cfgdiff-base");
                 headWt = Files.createTempDirectory("cr-cfgdiff-head");
+                System.err.println("config-radar: checking out " + baseRef + " ...");
                 git.addWorktree(repoRoot, baseRef, baseWt);
+                System.err.println("config-radar: checking out " + headRef + " ...");
                 git.addWorktree(repoRoot, headRef, headWt);
 
+                System.err.println("config-radar: scanning base " + baseRef + " ...");
                 var baseInventory = scan(baseWt);
+                System.err.println("config-radar: scanning head " + headRef + " ...");
                 var headInventory = scan(headWt);
 
+                System.err.println("config-radar: diffing " + baseRef + ".." + headRef + " ...");
                 var diff = new KeyBasedDiffStrategy().diff(baseInventory, headInventory);
                 var filtered = new ConfigDiffFilter().filter(diff, changedFiles, headInventory);
 
@@ -384,6 +389,9 @@ public final class ConfigRadarCli implements Runnable {
                     ? new SensitiveValueRedactionEnricher().redact(filtered, RedactionPolicy.redactSensitive())
                     : filtered;
                 YamlSupport.mapper().writeValue(output.toFile(), toWrite);
+                System.err.println("config-radar: wrote " + output + " (added=" + filtered.summary().added()
+                    + ", removed=" + filtered.summary().removed()
+                    + ", changed=" + filtered.summary().changed() + ")");
                 return 0;
             } finally {
                 if (baseWt != null) git.removeWorktree(repoRoot, baseWt);

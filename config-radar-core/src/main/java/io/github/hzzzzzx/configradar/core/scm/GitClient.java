@@ -20,7 +20,14 @@ import java.util.concurrent.TimeUnit;
  */
 public final class GitClient {
 
-    private static final long TIMEOUT_SECONDS = 60;
+    /** Timeout for quick read-only queries (diff, rev-parse). These are normally sub-second. */
+    private static final long QUERY_TIMEOUT_SECONDS = 120;
+
+    /**
+     * Timeout for worktree operations (add/remove), which check out the full tree. On Windows/NTFS
+     * this can take minutes for large repositories, so the budget is generous.
+     */
+    private static final long WORKTREE_TIMEOUT_SECONDS = 900;
 
     /**
      * Returns the repository root for the given path, or null if it is not inside a git repository.
@@ -30,7 +37,7 @@ public final class GitClient {
      */
     public Path repositoryRoot(Path repo) {
         try {
-            var output = run(repo, "git", "-C", repo.toString(), "rev-parse", "--show-toplevel");
+            var output = run(repo, QUERY_TIMEOUT_SECONDS, "git", "-C", repo.toString(), "rev-parse", "--show-toplevel");
             return Path.of(output.strip());
         } catch (Exception ignored) {
             return null;
@@ -46,7 +53,7 @@ public final class GitClient {
      * @return list of changed file paths, normalized to forward slashes
      */
     public List<String> changedFiles(Path repo, String baseRef, String headRef) throws Exception {
-        var output = run(repo, "git", "-C", repo.toString(), "diff", "--name-only", baseRef, headRef);
+        var output = run(repo, QUERY_TIMEOUT_SECONDS, "git", "-C", repo.toString(), "diff", "--name-only", baseRef, headRef);
         var files = new ArrayList<String>();
         for (var line : output.split("\n")) {
             var trimmed = line.strip();
@@ -66,7 +73,7 @@ public final class GitClient {
      */
     public void addWorktree(Path repo, String ref, Path path) throws Exception {
         Files.createDirectories(path.getParent());
-        run(repo, "git", "-C", repo.toString(), "worktree", "add", "--detach", path.toString(), ref);
+        run(repo, WORKTREE_TIMEOUT_SECONDS, "git", "-C", repo.toString(), "worktree", "add", "--detach", path.toString(), ref);
     }
 
     /**
@@ -77,22 +84,22 @@ public final class GitClient {
      */
     public void removeWorktree(Path repo, Path path) {
         try {
-            run(repo, "git", "-C", repo.toString(), "worktree", "remove", "--force", path.toString());
+            run(repo, WORKTREE_TIMEOUT_SECONDS, "git", "-C", repo.toString(), "worktree", "remove", "--force", path.toString());
         } catch (Exception ignored) {
             // best-effort cleanup; the worktree may already be gone or removal may fail on some systems
         }
     }
 
-    private static String run(Path cwd, String... command) throws Exception {
+    private static String run(Path cwd, long timeoutSeconds, String... command) throws Exception {
         var process = new ProcessBuilder(command)
             .directory(cwd.toFile())
             .redirectErrorStream(true)
             .start();
-        var finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        var finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
         var output = new String(process.getInputStream().readAllBytes());
         if (!finished) {
             process.destroyForcibly();
-            throw new IOException("git timed out");
+            throw new IOException("git timed out after " + timeoutSeconds + "s: " + String.join(" ", command));
         }
         if (process.exitValue() != 0) {
             throw new IOException("git failed: " + output.strip());
