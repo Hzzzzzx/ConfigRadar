@@ -1,0 +1,38 @@
+# XAC deployment-platform config — TEMPLATE.
+# Copy to: <project-root>/XAC/<application-name>.yaml
+# Rules:
+#   app_configs  -> non-sensitive config: REAL value from the design.
+#   J2C.secrets  -> sensitive keys:       keep the KEY, value is a PLACEHOLDER ${underscore_key} only.
+#   Fixed constants: apiVersion, kind, encrypt_type. Do not change them.
+
+apiVersion: com.huawei.his.appconfigcenter.v3
+kind: his.appconfigcenter
+metadata:
+    name: APPLICATION_NAME                  # <-- the app's deploy name (artifactId / service name)
+data:
+    app_configs:
+        # normal config entry — fill value from the design
+        - scope: ${app_deploy_unit_name}    # or a design-given scope
+          group_name: GROUP                 # first segment of config_key before the first '.' ; 'default' if none
+          config_key: some.key
+          config_value: 'VALUE'             # real value, as a string; '' if pending (add a remark)
+          secret: 0                         # always 0 here
+          sub_application_id: ''
+          version: '1.0'
+          docker_version: '1.0'
+          remark: ''
+        # ...add more app_configs entries, sorted by config_key...
+
+    J2C:
+        secrets:
+            # sensitive entry — KEY real, VALUE placeholder only. Never write the real secret.
+            - key: some_key                # underscore form: '.' and '-' -> '_', lowercased
+              init_source: input           # default; manual entry at the config center
+              type: ''                     # 'redis' | 'mysql' | '' (best-effort hint)
+              account: ''
+              password: ${some_key}        # PLACEHOLDER, same underscore form as `key`
+              encrypt_type: ADVANCED2.6    # fixed
+              remark: ''
+              scope: ${app_deploy_unit_name}
+            # ...add more secrets, sorted by key...
+        scope: ${app_deploy_unit_name}      # scope for the whole J2C block
