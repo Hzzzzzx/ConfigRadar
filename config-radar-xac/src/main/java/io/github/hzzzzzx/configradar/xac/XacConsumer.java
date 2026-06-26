@@ -40,6 +40,7 @@ public final class XacConsumer implements InventoryConsumer {
     @Override
     public void consume(ConfigInventory inventory, ConsumerContext context, ConsumerSink sink) throws Exception {
         var byKey = deduplicate(inventory.items());
+        var scopeMapping = XacEntryBuilder.buildScopeMapping(context);
         var entries = new ArrayList<AppConfigEntry>();
         var secrets = new ArrayList<J2cSecretEntry>();
         var definedKeys = new java.util.HashSet<String>();
@@ -52,11 +53,12 @@ public final class XacConsumer implements InventoryConsumer {
         for (var entry : byKey.entrySet()) {
             var key = entry.getKey();
             var winner = entry.getValue();
+            var scope = scopeMapping.resolve(XacEntryBuilder.profileOf(winner));
             boolean hasValue = definedKeys.contains(key) || winner.defaultValue() != null;
             if (XacEntryBuilder.SENSITIVE.matchesKey(key)) {
-                secrets.add(XacEntryBuilder.toSecret(key, hasValue ? XacEntryBuilder.valueOr(winner) : "", winner));
+                secrets.add(XacEntryBuilder.toSecret(key, hasValue ? XacEntryBuilder.valueOr(winner) : "", winner, scope));
             } else if (hasValue) {
-                entries.add(XacEntryBuilder.toEntry(key, XacEntryBuilder.valueOr(winner)));
+                entries.add(XacEntryBuilder.toEntry(key, XacEntryBuilder.valueOr(winner), scope));
             }
         }
 

@@ -50,6 +50,10 @@ public final class XacDiffConsumer implements DiffConsumer {
 
     /** File 1: value-bearing added/changed keys, strict XAC shape (app_configs / J2C.secrets). */
     private void writeChangedManifest(ConfigDiff diff, ConsumerContext context, ConsumerSink sink) throws Exception {
+        var scopeMapping = XacEntryBuilder.buildScopeMapping(context);
+        // changed entries carry no finding, so their profile is unknown; fall back to the command's
+        // global --profile hint (context.profile()) when resolving their scope.
+        var changedProfile = context.profile();
         var entries = new ArrayList<AppConfigEntry>();
         var secrets = new ArrayList<J2cSecretEntry>();
 
@@ -60,10 +64,11 @@ public final class XacDiffConsumer implements DiffConsumer {
                 continue; // valueless added keys go to the missing list instead
             }
             var key = finding.normalizedKey();
+            var scope = scopeMapping.resolve(XacEntryBuilder.profileOf(finding));
             if (XacEntryBuilder.SENSITIVE.matchesKey(key)) {
-                secrets.add(XacEntryBuilder.toSecret(key, value, finding));
+                secrets.add(XacEntryBuilder.toSecret(key, value, finding, scope));
             } else {
-                entries.add(XacEntryBuilder.toEntry(key, value));
+                entries.add(XacEntryBuilder.toEntry(key, value, scope));
             }
         }
 
@@ -82,10 +87,11 @@ public final class XacDiffConsumer implements DiffConsumer {
             if (value == null || value.isBlank()) {
                 continue; // valueless changes go to the missing list instead
             }
+            var scope = scopeMapping.resolve(changedProfile);
             if (XacEntryBuilder.SENSITIVE.matchesKey(key)) {
-                secrets.add(XacEntryBuilder.toSecret(key, value, null));
+                secrets.add(XacEntryBuilder.toSecret(key, value, null, scope));
             } else {
-                entries.add(XacEntryBuilder.toEntry(key, value));
+                entries.add(XacEntryBuilder.toEntry(key, value, scope));
             }
         }
 

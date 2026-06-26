@@ -199,18 +199,6 @@ public final class ConfigRadarCli implements Runnable {
             return registry;
         }
 
-        /** Parses -D key=value pairs into a map for the consumer context. */
-        private static java.util.Map<String, String> parseContextProps(java.util.List<String> props) {
-            var map = new java.util.LinkedHashMap<String, String>();
-            for (var prop : props) {
-                var eq = prop.indexOf('=');
-                if (eq > 0) {
-                    map.put(prop.substring(0, eq), prop.substring(eq + 1));
-                }
-            }
-            return map;
-        }
-
         private static Path resolveRulesFile(Path projectRoot, Path explicitRulesFile) {
             if (explicitRulesFile != null) {
                 return explicitRulesFile;
@@ -228,14 +216,34 @@ public final class ConfigRadarCli implements Runnable {
         @Option(names = "--head", required = true, description = "Head inventory YAML.")
         private Path head;
 
-        @Option(names = {"-o", "--output"}, required = true, description = "Diff YAML output path.")
+        @Option(names = {"-o", "--output"}, required = true,
+            description = "Diff YAML output path (file in yaml mode; directory under --consumer).")
         private Path output;
 
         @Option(names = "--redact-sensitive", description = "Mask sensitive-looking values before diffing.")
         private boolean redactSensitive;
 
+        @Option(names = "--profile", description = "Default profile hint, passed to consumers.")
+        private String profile;
+
+        @Option(names = "--region", description = "Default region hint, passed to consumers.")
+        private String region;
+
+        @Option(names = "--namespace", description = "Default namespace hint, passed to consumers.")
+        private String namespace;
+
+        @Option(names = "--consumer", defaultValue = "yaml",
+            description = "Consumer id (default: yaml). Additional consumers (e.g. xac) are discovered from modules on the classpath.")
+        private String consumerId;
+
+        @Option(names = "-D", description = "Downstream context property (key=value, repeatable). Passed to the consumer.")
+        private java.util.List<String> contextProps = java.util.List.of();
+
         /**
-         * Runs the diff command shell by loading two inventories and writing a diff artifact.
+         * Loads two inventories, diffs them, and writes the result. With the default {@code yaml}
+         * consumer {@code -o} is the exact output file; with another consumer {@code -o} is the
+         * output directory (the diff YAML and consumer artifacts are written into it), mirroring
+         * {@code config-diff}.
          *
          * @return process exit code
          * @throws Exception when inventories cannot be read or the output cannot be written
@@ -256,8 +264,23 @@ public final class ConfigRadarCli implements Runnable {
                 var redactor = new SensitiveValueRedactionEnricher();
                 diff = redactor.redact(diff, RedactionPolicy.redactSensitive());
             }
-            writeParent(output);
-            mapper.writeValue(output.toFile(), diff);
+
+            if ("yaml".equals(consumerId)) {
+                writeParent(output);
+                mapper.writeValue(output.toFile(), diff);
+            } else {
+                if (Files.exists(output) && !Files.isDirectory(output)) {
+                    return fail("--consumer requires -o to be a directory, but it is an existing file: " + output);
+                }
+                Files.createDirectories(output);
+                var consumer = builtinDiffConsumers().find(consumerId);
+                if (consumer.isEmpty()) {
+                    return fail("Unknown --consumer '" + consumerId + "'; available: " + builtinDiffConsumers().ids());
+                }
+                mapper.writeValue(output.resolve("config-diff.yaml").toFile(), diff);
+                var context = new ConsumerContext(profile, region, namespace, parseContextProps(contextProps));
+                consumer.get().consume(diff, context, new DirectoryConsumerSink(output));
+            }
             return 0;
         }
     }
@@ -498,32 +521,6 @@ public final class ConfigRadarCli implements Runnable {
             var result = ScanPipeline.defaults(false).scan(input, options, ConfigRules.empty());
             return result.inventory();
         }
-
-        /**
-         * Builds the diff-consumer registry: core built-ins first, then any discovered via
-         * ServiceLoader (e.g. the XAC module's diff consumer). Mirrors the inventory command's
-         * {@code builtinConsumers()} but is isolated to diff consumers.
-         */
-        private static DiffConsumerRegistry builtinDiffConsumers() {
-            var registry = new DiffConsumerRegistry()
-                .register(new YamlDiffConsumer());
-            for (var discovered : java.util.ServiceLoader.load(DiffConsumer.class)) {
-                registry.register(discovered);
-            }
-            return registry;
-        }
-
-        /** Parses -D key=value pairs into a map for the consumer context. */
-        private static java.util.Map<String, String> parseContextProps(java.util.List<String> props) {
-            var map = new java.util.LinkedHashMap<String, String>();
-            for (var prop : props) {
-                var eq = prop.indexOf('=');
-                if (eq > 0) {
-                    map.put(prop.substring(0, eq), prop.substring(eq + 1));
-                }
-            }
-            return map;
-        }
     }
 
     /**
@@ -549,5 +546,31 @@ public final class ConfigRadarCli implements Runnable {
         if (parent != null) {
             Files.createDirectories(parent);
         }
+    }
+
+    /**
+     * Builds the diff-consumer registry: core built-ins first, then any discovered via
+     * ServiceLoader (e.g. the XAC module's diff consumer). Shared by the {@code diff} and
+     * {@code config-diff} subcommands.
+     */
+    static DiffConsumerRegistry builtinDiffConsumers() {
+        var registry = new DiffConsumerRegistry()
+            .register(new YamlDiffConsumer());
+        for (var discovered : java.util.ServiceLoader.load(DiffConsumer.class)) {
+            registry.register(discovered);
+        }
+        return registry;
+    }
+
+    /** Parses {@code -D key=value} pairs into a map for the consumer context. Shared by subcommands. */
+    static java.util.Map<String, String> parseContextProps(java.util.List<String> props) {
+        var map = new java.util.LinkedHashMap<String, String>();
+        for (var prop : props) {
+            var eq = prop.indexOf('=');
+            if (eq > 0) {
+                map.put(prop.substring(0, eq), prop.substring(eq + 1));
+            }
+        }
+        return map;
     }
 }
