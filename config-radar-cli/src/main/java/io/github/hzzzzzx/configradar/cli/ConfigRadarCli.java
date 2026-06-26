@@ -371,9 +371,9 @@ public final class ConfigRadarCli implements Runnable {
                 baseWt = Files.createTempDirectory("cr-cfgdiff-base");
                 headWt = Files.createTempDirectory("cr-cfgdiff-head");
                 System.err.println("config-radar: checking out " + baseRef + " ...");
-                git.addWorktree(repoRoot, baseRef, baseWt);
+                materializeCommit(git, repoRoot, baseRef, baseWt);
                 System.err.println("config-radar: checking out " + headRef + " ...");
-                git.addWorktree(repoRoot, headRef, headWt);
+                materializeCommit(git, repoRoot, headRef, headWt);
 
                 System.err.println("config-radar: scanning base " + baseRef + " ...");
                 var baseInventory = scan(baseWt);
@@ -394,9 +394,57 @@ public final class ConfigRadarCli implements Runnable {
                     + ", changed=" + filtered.summary().changed() + ")");
                 return 0;
             } finally {
-                if (baseWt != null) git.removeWorktree(repoRoot, baseWt);
-                if (headWt != null) git.removeWorktree(repoRoot, headWt);
+                // baseWt may be a worktree (needs git worktree remove) or an archive dir (plain rmdir).
+                cleanupMaterialized(git, repoRoot, baseWt);
+                cleanupMaterialized(git, repoRoot, headWt);
             }
+        }
+
+        /**
+         * Materializes a commit into a directory: tries a git worktree first (full checkout), and
+         * falls back to git archive (plain file extraction, lighter) when worktree fails. This gives
+         * the best recovery on Windows/NTFS or locked worktrees without asking the user to intervene.
+         */
+        private void materializeCommit(GitClient git, Path repoRoot, String ref, Path target) throws Exception {
+            try {
+                git.addWorktree(repoRoot, ref, target);
+            } catch (Exception worktreeError) {
+                System.err.println("config-radar: worktree failed for " + ref + " (" + messageOf(worktreeError)
+                    + "); falling back to git archive ...");
+                git.archive(repoRoot, ref, target);
+            }
+        }
+
+        /** Cleans up a materialized directory whether it is a worktree or an archive extract. */
+        private static void cleanupMaterialized(GitClient git, Path repoRoot, Path path) {
+            if (path == null) {
+                return;
+            }
+            git.removeWorktree(repoRoot, path); // no-op if it was not a worktree
+            // If it was an archive dir, removeWorktree's git call fails harmlessly; clean the dir.
+            if (java.nio.file.Files.exists(path)) {
+                try {
+                    deleteRecursively(path);
+                } catch (Exception ignored) {
+                    // best-effort; OS will reclaim temp dirs eventually
+                }
+            }
+        }
+
+        private static void deleteRecursively(Path path) throws java.io.IOException {
+            if (java.nio.file.Files.isDirectory(path)) {
+                try (var entries = java.nio.file.Files.list(path)) {
+                    for (var entry : entries.toList()) {
+                        deleteRecursively(entry);
+                    }
+                }
+            }
+            java.nio.file.Files.deleteIfExists(path);
+        }
+
+        private static String messageOf(Throwable error) {
+            var message = error.getMessage();
+            return message != null ? message : error.getClass().getSimpleName();
         }
 
         /** Scans a worktree path into an inventory with the command's profile/region hints. */

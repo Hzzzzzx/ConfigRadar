@@ -74,6 +74,18 @@ final class GitClientTest {
         assertTrue(root.toString().contains("repo"), "root is the repo path");
     }
 
+    @Test
+    void archivesCommitIntoPlainDirectory() throws Exception {
+        var repo = initRepo();
+        Files.writeString(repo.resolve("application.yml"), "server:\n  port: 8080\n");
+        commit(repo, "v1");
+
+        var target = tempDir.resolve("arch");
+        git.archive(repo, "HEAD", target);
+        assertTrue(Files.exists(target.resolve("application.yml")), "archive extracted the file");
+        assertFalse(Files.exists(target.resolve(".git")), "archive has no .git (plain file tree)");
+    }
+
     private static void run(Path cwd, String... command) throws Exception {
         var p = new ProcessBuilder(command).directory(cwd.toFile()).redirectErrorStream(true).start();
         p.waitFor();

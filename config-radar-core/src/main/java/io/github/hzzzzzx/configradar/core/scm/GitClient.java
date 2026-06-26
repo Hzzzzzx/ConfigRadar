@@ -90,6 +90,53 @@ public final class GitClient {
         }
     }
 
+    /**
+     * Extracts a commit's working tree into {@code path} via {@code git archive}, without creating a
+     * git worktree. Used as a fallback when {@link #addWorktree} fails (e.g. worktree lock, NTFS
+     * slowness): archive only materializes files (no .git links, hooks, or index), so it is lighter
+     * and avoids the common worktree failure modes. Scanning does not need git metadata.
+     *
+     * <p>Uses zip format (not tar) so the extraction is done with the JDK's built-in {@code java.util.zip},
+     * with no dependency on a shell pipe or external tar — works on Windows too.
+     *
+     * @param repo path inside the repository
+     * @param ref commit-ish to extract
+     * @param path absolute target directory (created if absent; contents extracted at root)
+     */
+    public void archive(Path repo, String ref, Path path) throws Exception {
+        Files.createDirectories(path);
+        var zipFile = Files.createTempFile("cr-archive-", ".zip");
+        try {
+            run(repo, WORKTREE_TIMEOUT_SECONDS, "git", "-C", repo.toString(),
+                "archive", "--format=zip", "-o", zipFile.toString(), ref);
+            extractZip(zipFile, path);
+        } finally {
+            Files.deleteIfExists(zipFile);
+        }
+    }
+
+    /** Extracts a zip archive into a directory. */
+    private static void extractZip(Path zip, Path dest) throws IOException {
+        try (var zipFs = java.nio.file.FileSystems.newFileSystem(zip, (ClassLoader) null)) {
+            var root = zipFs.getPath("/");
+            try (var walk = Files.walk(root)) {
+                for (var source : walk.toList()) {
+                    var relative = root.relativize(source).toString();
+                    if (relative.isEmpty()) {
+                        continue;
+                    }
+                    var target = dest.resolve(relative);
+                    if (Files.isDirectory(source)) {
+                        Files.createDirectories(target);
+                    } else {
+                        Files.createDirectories(target.getParent());
+                        Files.copy(source, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+        }
+    }
+
     private static String run(Path cwd, long timeoutSeconds, String... command) throws Exception {
         var process = new ProcessBuilder(command)
             .directory(cwd.toFile())
